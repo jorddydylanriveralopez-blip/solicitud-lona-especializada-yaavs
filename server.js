@@ -469,23 +469,45 @@ app.post("/api/submit", (req, res) => {
   });
 });
 
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(publicDir, "index.html"));
+});
+
 app.get("/resultados", (_req, res) => {
   res.sendFile(path.join(publicDir, "resultados.html"));
 });
 
-app.use("/uploads", express.static(uploadsRoot));
-app.use(express.static(publicDir));
+app.use(
+  "/uploads",
+  express.static(uploadsRoot, {
+    fallthrough: false,
+  }),
+);
+
+app.use(
+  express.static(publicDir, {
+    extensions: ["html"],
+    etag: false,
+    lastModified: false,
+    setHeaders(res, filePath) {
+      if (filePath.endsWith(".html")) res.setHeader("Cache-Control", "no-store");
+      else if (filePath.endsWith(".css") || filePath.endsWith(".js")) {
+        res.setHeader("Cache-Control", "no-cache, must-revalidate");
+      }
+    },
+  }),
+);
 
 app.use((req, res) => {
   if (req.path.startsWith("/api/") || req.path.startsWith("/uploads/")) {
-    return res.status(404).json({ error: "Not found" });
+    return res.status(404).json({ ok: false, error: "Not found" });
   }
   res.sendFile(path.join(publicDir, "index.html"));
 });
 
 ensureStore();
 loadYaavsers();
-app.listen(PORT, () => {
-  console.log(`Lona especializada YAAVS → http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Lona especializada YAAVS on http://0.0.0.0:${PORT}`);
   console.log(`Catálogo YAAVSER: ${loadYaavsers().size} claves`);
 });
