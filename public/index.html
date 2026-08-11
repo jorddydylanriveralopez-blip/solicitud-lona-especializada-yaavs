@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#eef4fa" />
+    <meta
+      name="description"
+      content="Solicitud de diseño y producción de lona especializada YAAVS."
+    />
+    <title>Solicitud de lona especializada · YAAVS</title>
+    <link rel="icon" href="./favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles-base.css?v=20260811l1" />
+    <link rel="stylesheet" href="./lona.css?v=20260811l1" />
+  </head>
+  <body class="report-body">
+    <div class="atmosphere" aria-hidden="true">
+      <div class="wash wash-a"></div>
+      <div class="wash wash-b"></div>
+    </div>
+
+    <header class="topbar report-topbar">
+      <div class="brand">
+        <img src="./assets/logo-yaavs.png" alt="YAAVS" class="brand-logo" width="180" height="63" />
+      </div>
+      <a class="ghost-link results-link" href="./resultados">Ver respuestas</a>
+    </header>
+
+    <main class="report-main">
+      <section class="report-hero">
+        <p class="eyebrow">Mercadotecnia · Producción</p>
+        <h1>Solicitud de diseño y producción de lona especializada</h1>
+        <p class="lede">
+          Completa este formulario el ejecutivo de ventas YAAVSTAR junto con el YAAVSER.
+          Verifica medidas exactas, información vigente y autorización del gerente territorial.
+        </p>
+      </section>
+
+      <form id="lonaForm" class="report-form" novalidate>
+        <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+        <section class="card-section" id="secAuth">
+          <header class="section-head">
+            <span>1</span>
+            <h2>Validación de autorización</h2>
+          </header>
+          <fieldset class="choice-group" data-required="true">
+            <legend>¿Esta solicitud ya fue autorizada por el gerente territorial? <span class="req">*</span></legend>
+            <label class="choice">
+              <input type="radio" name="autorizada" value="Sí, ya fue autorizada." required />
+              <span>Sí, ya fue autorizada.</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="autorizada" value="No, aún no cuenta con autorización." />
+              <span>No, aún no cuenta con autorización.</span>
+            </label>
+          </fieldset>
+          <div id="blockNoAuth" class="alert alert-warn" hidden>
+            Para continuar, la solicitud deberá ser autorizada previamente por el gerente correspondiente.
+            Una vez obtenida la aprobación, podrás ingresar nuevamente y completar el formulario.
+          </div>
+        </section>
+
+        <div id="formRest">
+          <section class="card-section">
+            <header class="section-head">
+              <span>2</span>
+              <h2>Datos del ejecutivo de ventas</h2>
+            </header>
+            <div class="grid-2">
+              <label class="field">
+                <span>Nombre completo del ejecutivo <span class="req">*</span></span>
+                <input type="text" name="ejecutivoNombre" required autocomplete="name" />
+              </label>
+              <label class="field">
+                <span>Número telefónico de contacto <span class="req">*</span></span>
+                <input type="tel" name="ejecutivoTelefono" inputmode="tel" required placeholder="10 dígitos" />
+              </label>
+              <label class="field grid-span-2">
+                <span>Correo electrónico corporativo <span class="req">*</span></span>
+                <input type="email" name="ejecutivoCorreo" required autocomplete="email" placeholder="nombre@yaavs.com" />
+              </label>
+            </div>
+          </section>
+
+          <section class="card-section">
+            <header class="section-head">
+              <span>3</span>
+              <h2>Datos del YAAVSER</h2>
+            </header>
+            <div class="grid-2">
+              <label class="field">
+                <span>Nombre completo del YAAVSER <span class="req">*</span></span>
+                <input type="text" name="yaavserNombre" id="yaavserNombre" required autocomplete="off" />
+              </label>
+              <label class="field">
+                <span>Clave de YAAVSER <span class="req">*</span></span>
+                <input
+                  type="text"
+                  name="claveYaavser"
+                  id="claveYaavser"
+                  required
+                  autocomplete="off"
+                  placeholder="Ej. 22CL05843"
+                />
+                <small class="help">Captura la clave completa y verifica que sea correcta.</small>
+              </label>
+              <label class="field grid-span-2">
+                <span>Gerente territorial <span class="req">*</span></span>
+                <input
+                  type="text"
+                  name="gerenteTerritorial"
+                  id="gerenteTerritorial"
+                  required
+                  autocomplete="off"
+                  placeholder="Se completa al capturar la clave"
+                />
+                <small class="help" id="gerenteHint">Al escribir la clave se asigna automáticamente el gerente territorial.</small>
+              </label>
+              <div id="yaavserCard" class="lookup-card" hidden>
+                <p class="lookup-title">YAAVSER encontrado</p>
+                <p id="lookupDetail" class="lookup-detail"></p>
+              </div>
+              <label class="field">
+                <span>Número telefónico de contacto <span class="req">*</span></span>
+                <input type="tel" name="yaavserTelefono" inputmode="tel" required placeholder="10 dígitos" />
+              </label>
+            </div>
+          </section>
+
+          <section class="card-section">
+            <header class="section-head">
+              <span>4</span>
+              <h2>Datos del punto de venta</h2>
+            </header>
+            <div class="grid-2">
+              <label class="field grid-span-2">
+                <span>Nombre comercial del negocio o punto de venta <span class="req">*</span></span>
+                <input type="text" name="puntoVenta" required autocomplete="organization" />
+              </label>
+            </div>
+            <fieldset class="choice-group" data-name="tipoEstablecimiento" data-multi="true" data-required="true">
+              <legend>Tipo de establecimiento <span class="req">*</span></legend>
+              <label class="choice"><input type="checkbox" name="tipoEstablecimiento" value="Tienda de telefonía" /><span>Tienda de telefonía</span></label>
+              <label class="choice"><input type="checkbox" name="tipoEstablecimiento" value="Tienda de accesorios" /><span>Tienda de accesorios</span></label>
+              <label class="choice"><input type="checkbox" name="tipoEstablecimiento" value="Centro de reparación" /><span>Centro de reparación</span></label>
+              <label class="choice"><input type="checkbox" name="tipoEstablecimiento" value="Papelería" /><span>Papelería</span></label>
+              <label class="choice"><input type="checkbox" name="tipoEstablecimiento" value="Farmacia" /><span>Farmacia</span></label>
+              <label class="choice"><input type="checkbox" name="tipoEstablecimiento" value="Local dentro de plaza comercial" /><span>Local dentro de plaza comercial</span></label>
+              <label class="choice"><input type="checkbox" name="tipoEstablecimiento" value="Otro" id="tipoOtroChk" /><span>Otro</span></label>
+            </fieldset>
+            <label class="field" id="tipoOtroWrap" hidden>
+              <span>Especifica el tipo <span class="req">*</span></span>
+              <input type="text" name="tipoEstablecimientoOtro" />
+            </label>
+          </section>
+
+          <section class="card-section">
+            <header class="section-head">
+              <span>5</span>
+              <h2>Objetivo y justificación</h2>
+            </header>
+            <fieldset class="choice-group" data-multi="true" data-required="true">
+              <legend>¿Cuál es el objetivo principal de la lona? <span class="req">*</span></legend>
+              <label class="choice"><input type="checkbox" name="objetivoLona" value="Multiservicio" /><span>Multiservicio</span></label>
+              <label class="choice"><input type="checkbox" name="objetivoLona" value="Multimarca" /><span>Multimarca</span></label>
+              <label class="choice"><input type="checkbox" name="objetivoLona" value="Promocionar una marca o servicio específico" /><span>Promocionar una marca o servicio específico</span></label>
+              <label class="choice"><input type="checkbox" name="objetivoLona" value="Sustituir una lona dañada o desactualizada" /><span>Sustituir una lona dañada o desactualizada</span></label>
+            </fieldset>
+            <fieldset class="choice-group" data-multi="true" data-required="true">
+              <legend>¿Qué resultado se espera obtener? <span class="req">*</span></legend>
+              <label class="choice"><input type="checkbox" name="resultadoEsperado" value="Incrementar la visibilidad del negocio" /><span>Incrementar la visibilidad del negocio</span></label>
+              <label class="choice"><input type="checkbox" name="resultadoEsperado" value="Atraer nuevos clientes" /><span>Atraer nuevos clientes</span></label>
+              <label class="choice"><input type="checkbox" name="resultadoEsperado" value="Incrementar activaciones" /><span>Incrementar activaciones</span></label>
+              <label class="choice"><input type="checkbox" name="resultadoEsperado" value="Incrementar portabilidades" /><span>Incrementar portabilidades</span></label>
+              <label class="choice"><input type="checkbox" name="resultadoEsperado" value="Incrementar recargas" /><span>Incrementar recargas</span></label>
+              <label class="choice"><input type="checkbox" name="resultadoEsperado" value="Dar a conocer nuevos servicios" /><span>Dar a conocer nuevos servicios</span></label>
+              <label class="choice"><input type="checkbox" name="resultadoEsperado" value="Mejorar la imagen del punto de venta" /><span>Mejorar la imagen del punto de venta</span></label>
+            </fieldset>
+            <fieldset class="choice-group" data-multi="true" data-required="true">
+              <legend>Servicios que actualmente ofrece el punto de venta <span class="req">*</span></legend>
+              <label class="choice"><input type="checkbox" name="serviciosActuales" value="Activación de líneas nuevas (venta de chips)" /><span>Activación de líneas nuevas (venta de chips)</span></label>
+              <label class="choice"><input type="checkbox" name="serviciosActuales" value="Portabilidades" /><span>Portabilidades</span></label>
+              <label class="choice"><input type="checkbox" name="serviciosActuales" value="eSIMs" /><span>eSIMs</span></label>
+              <label class="choice"><input type="checkbox" name="serviciosActuales" value="Planes Pospago" /><span>Planes Pospago</span></label>
+              <label class="choice"><input type="checkbox" name="serviciosActuales" value="Recargas" /><span>Recargas</span></label>
+              <label class="choice"><input type="checkbox" name="serviciosActuales" value="Venta de equipos" /><span>Venta de equipos</span></label>
+              <label class="choice"><input type="checkbox" name="serviciosActuales" value="Venta de accesorios" /><span>Venta de accesorios</span></label>
+              <label class="choice"><input type="checkbox" name="serviciosActuales" value="Reparación de equipos" /><span>Reparación de equipos</span></label>
+            </fieldset>
+          </section>
+
+          <section class="card-section">
+            <header class="section-head">
+              <span>6</span>
+              <h2>Especificaciones de la lona</h2>
+            </header>
+            <div class="grid-2">
+              <label class="field">
+                <span>Cantidad de lonas solicitadas <span class="req">*</span></span>
+                <input type="number" name="cantidadLonas" id="cantidadLonas" min="1" max="10" step="1" required value="1" />
+              </label>
+              <fieldset class="choice-group compact" data-required="true">
+                <legend>¿Todas usarán el mismo diseño y medidas? <span class="req">*</span></legend>
+                <label class="choice"><input type="radio" name="mismoDiseno" value="Sí" checked required /><span>Sí</span></label>
+                <label class="choice"><input type="radio" name="mismoDiseno" value="No" /><span>No</span></label>
+              </fieldset>
+            </div>
+            <div id="lonasSpecs" class="lonas-specs"></div>
+          </section>
+
+          <section class="card-section">
+            <header class="section-head">
+              <span>7</span>
+              <h2>Contenido y diseño</h2>
+            </header>
+            <label class="field">
+              <span>Logotipo del punto de venta <span class="req">*</span></span>
+              <input type="file" name="logo" id="logoFile" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" required />
+              <small class="help">JPG, PNG o PDF.</small>
+            </label>
+            <fieldset class="choice-group" data-multi="true" data-required="true">
+              <legend>Marcas principales que deberán aparecer <span class="req">*</span></legend>
+              <label class="choice"><input type="checkbox" name="marcas" value="YAAVS" /><span>YAAVS</span></label>
+              <label class="choice"><input type="checkbox" name="marcas" value="AT&T" /><span>AT&T</span></label>
+              <label class="choice"><input type="checkbox" name="marcas" value="Movistar" /><span>Movistar</span></label>
+              <label class="choice"><input type="checkbox" name="marcas" value="Unefon" /><span>Unefon</span></label>
+              <label class="choice"><input type="checkbox" name="marcas" value="BAIT" /><span>BAIT</span></label>
+              <label class="choice"><input type="checkbox" name="marcas" value="Telcel" /><span>Telcel</span></label>
+            </fieldset>
+            <label class="field">
+              <span>Texto principal o mensaje que se desea comunicar</span>
+              <textarea name="textoPrincipal" rows="3" placeholder="Opcional. Mercadotecnia podrá ajustar el texto."></textarea>
+            </label>
+            <fieldset class="choice-group" data-multi="true" data-required="true">
+              <legend>Datos de contacto que deberán aparecer <span class="req">*</span></legend>
+              <label class="choice"><input type="checkbox" name="datosContactoOpciones" value="Número telefónico" /><span>Número telefónico</span></label>
+              <label class="choice"><input type="checkbox" name="datosContactoOpciones" value="WhatsApp" /><span>WhatsApp</span></label>
+              <label class="choice"><input type="checkbox" name="datosContactoOpciones" value="Redes sociales" /><span>Redes sociales</span></label>
+              <label class="choice"><input type="checkbox" name="datosContactoOpciones" value="Dirección" /><span>Dirección</span></label>
+              <label class="choice"><input type="checkbox" name="datosContactoOpciones" value="Ninguno" id="contactoNinguno" /><span>Ninguno</span></label>
+            </fieldset>
+            <label class="field" id="contactoDetalleWrap" hidden>
+              <span>Captura los datos de contacto <span class="req">*</span></span>
+              <textarea name="datosContactoDetalle" rows="3" placeholder="Teléfono, WhatsApp, redes, dirección…"></textarea>
+            </label>
+            <fieldset class="choice-group compact" data-required="true">
+              <legend>¿Existe un diseño anterior como referencia? <span class="req">*</span></legend>
+              <label class="choice"><input type="radio" name="tieneReferencia" value="Sí" required /><span>Sí</span></label>
+              <label class="choice"><input type="radio" name="tieneReferencia" value="No" checked /><span>No</span></label>
+            </fieldset>
+            <label class="field" id="referenciaWrap" hidden>
+              <span>Adjunta el diseño o referencia anterior <span class="req">*</span></span>
+              <input type="file" name="referencia" id="referenciaFile" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" />
+            </label>
+          </section>
+
+          <section class="card-section">
+            <header class="section-head">
+              <span>8</span>
+              <h2>Confirmación y responsabilidad</h2>
+            </header>
+            <fieldset class="choice-group" data-required="true">
+              <legend>Confirmación del ejecutivo YAAVSTAR <span class="req">*</span></legend>
+              <label class="choice">
+                <input type="checkbox" name="confirmaciones" value="Confirmo que la solicitud cuenta con autorización gerencial." required />
+                <span>Confirmo que la solicitud cuenta con autorización gerencial.</span>
+              </label>
+              <label class="choice">
+                <input type="checkbox" name="confirmaciones" value="Confirmo que las medidas fueron verificadas físicamente." required />
+                <span>Confirmo que las medidas fueron verificadas físicamente.</span>
+              </label>
+              <label class="choice">
+                <input type="checkbox" name="confirmaciones" value="Me comprometo a dar seguimiento a la recepción, instalación y evidencia final." required />
+                <span>Me comprometo a dar seguimiento a la recepción, instalación y evidencia final.</span>
+              </label>
+            </fieldset>
+          </section>
+
+          <div class="form-actions">
+            <p class="form-hint" id="formHint"></p>
+            <button type="submit" class="primary-btn" id="submitBtn">Enviar solicitud</button>
+          </div>
+        </div>
+      </form>
+
+      <section id="successPanel" class="success-panel" hidden>
+        <p class="eyebrow">Listo</p>
+        <h2>¡Solicitud recibida correctamente!</h2>
+        <p>
+          Folio <strong id="successFolio">—</strong>. El área de Mercadotecnia revisará la información,
+          autorización gerencial, medidas y contenido correspondiente.
+        </p>
+        <button type="button" class="primary-btn" id="newRequestBtn">Nueva solicitud</button>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" hidden></div>
+    <script src="./app.js?v=20260811l1" defer></script>
+  </body>
+</html>

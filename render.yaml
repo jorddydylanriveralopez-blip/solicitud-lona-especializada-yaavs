@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: solicitud-lona-especializada-yaavs
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production

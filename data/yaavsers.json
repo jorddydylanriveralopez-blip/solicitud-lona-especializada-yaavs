@@ -1,0 +1,1328 @@
+{
+  "byClave": {
+    "22CL05843": {
+      "clave": "22CL05843",
+      "nombre": "JOSÉ FRANCISCO PÉREZ GARCÍA",
+      "gerente": "Alan Alarcon Morales",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Teziutlán",
+      "estado": "Puebla"
+    },
+    "22CL08792": {
+      "clave": "22CL08792",
+      "nombre": "MARION RODRÍGUEZ MARTINEZ",
+      "gerente": "Alan Alarcon Morales",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Córdoba",
+      "estado": "Veracruz de Ignacio de la Llave"
+    },
+    "22CL04783": {
+      "clave": "22CL04783",
+      "nombre": "ELIDETH GARCÍA BECERRA",
+      "gerente": "Alan Alarcon Morales",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Gutiérrez Zamora",
+      "estado": "Veracruz de Ignacio de la Llave"
+    },
+    "21CL14002": {
+      "clave": "21CL14002",
+      "nombre": "OSWALDO PEREZ FLORES",
+      "gerente": "Alan Alarcon Morales",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Martínez de la Torre",
+      "estado": "Veracruz de Ignacio de la Llave"
+    },
+    "25CB0143173A": {
+      "clave": "25CB0143173A",
+      "nombre": "IRINA GÓMEZ TLAPANCO",
+      "gerente": "Alan Alarcon Morales",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Martínez de la Torre",
+      "estado": "Veracruz de Ignacio de la Llave"
+    },
+    "25CB0653843F": {
+      "clave": "25CB0653843F",
+      "nombre": "ACCESORIOS SARI",
+      "gerente": "Alan Alarcon Morales",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Poza Rica de Hidalgo",
+      "estado": "Veracruz de Ignacio de la Llave"
+    },
+    "25CL004853C9": {
+      "clave": "25CL004853C9",
+      "nombre": "RICARDO BELLO MURRIETA",
+      "gerente": "Alan Alarcon Morales",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Xalapa",
+      "estado": "Veracruz de Ignacio de la Llave"
+    },
+    "25CB07116027": {
+      "clave": "25CB07116027",
+      "nombre": "GATICA DIAZ CARLOS ALBERTO",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Amozoc",
+      "estado": "Puebla"
+    },
+    "25CL060458A5": {
+      "clave": "25CL060458A5",
+      "nombre": "ENRIQUE NIÑO MÉNDEZ",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Puebla",
+      "estado": "Puebla"
+    },
+    "23CL03606": {
+      "clave": "23CL03606",
+      "nombre": "ABIMAEL JUÁREZ SERDAN",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Chalchicomula de Sesma",
+      "estado": "Puebla"
+    },
+    "25CL03988142": {
+      "clave": "25CL03988142",
+      "nombre": "RAMON NICOLAS FLORES",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Cuautlancingo",
+      "estado": "Puebla"
+    },
+    "25CL0190448E": {
+      "clave": "25CL0190448E",
+      "nombre": "IUNEXT CAMBACEO HUEJOTZINGO",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Huejotzingo",
+      "estado": "Puebla"
+    },
+    "21CL15488K2N": {
+      "clave": "21CL15488K2N",
+      "nombre": "MANUEL MORALES TORRES",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Nopalucan",
+      "estado": "Puebla"
+    },
+    "23CL00115NB2": {
+      "clave": "23CL00115NB2",
+      "nombre": "GINA VALERIO",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Puebla",
+      "estado": "Puebla"
+    },
+    "24CB0504772A": {
+      "clave": "24CB0504772A",
+      "nombre": "JOSÉ CRISTIAN",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Puebla",
+      "estado": "Puebla"
+    },
+    "25CL03367B76": {
+      "clave": "25CL03367B76",
+      "nombre": "RICARDO GALICIA MIRANDA",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Puebla",
+      "estado": "Puebla"
+    },
+    "25CL04096113": {
+      "clave": "25CL04096113",
+      "nombre": "MARIA JOSEFINA FRANCISCO DE LAZARO",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Puebla",
+      "estado": "Puebla"
+    },
+    "25CB05795812": {
+      "clave": "25CB05795812",
+      "nombre": "CARLA GONZÁLEZ",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Puebla",
+      "estado": "Puebla"
+    },
+    "24CL05292D18": {
+      "clave": "24CL05292D18",
+      "nombre": "ELIGIO ARENAS",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Puebla",
+      "estado": "Puebla"
+    },
+    "25CB06725F56": {
+      "clave": "25CB06725F56",
+      "nombre": "PRISCILA LÓPEZ SOLIMÁN",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Puebla",
+      "estado": "Puebla"
+    },
+    "23CL05099": {
+      "clave": "23CL05099",
+      "nombre": "ANGELICA ZAMORA",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Puebla",
+      "estado": "Puebla"
+    },
+    "26CL00837034": {
+      "clave": "26CL00837034",
+      "nombre": "ANA LINE",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Puebla",
+      "estado": "Puebla"
+    },
+    "26CB008939D9": {
+      "clave": "26CB008939D9",
+      "nombre": "MARIA DEL CARMEN MONTÚFAR",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Puebla",
+      "estado": "Puebla"
+    },
+    "21CL15439YJ9": {
+      "clave": "21CL15439YJ9",
+      "nombre": "VICTOR MANUEL COVARRUBIAS VAZQUEZ",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Rafael Lara Grajales",
+      "estado": "Puebla"
+    },
+    "23CL05295KQW": {
+      "clave": "23CL05295KQW",
+      "nombre": "ULISES LUNA RAMIREZ",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "San Pedro Cholula",
+      "estado": "Puebla"
+    },
+    "25CB048847EC": {
+      "clave": "25CB048847EC",
+      "nombre": "JOSÉ LUIS SÁNCHEZ JUÁREZ (YAUHQUEMEHCAN)",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Apizaco",
+      "estado": "Tlaxcala"
+    },
+    "22CB08993": {
+      "clave": "22CB08993",
+      "nombre": "LUCIANO HERNÁNDEZ / CUBANITO",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Apizaco",
+      "estado": "Tlaxcala"
+    },
+    "25CL07033B68": {
+      "clave": "25CL07033B68",
+      "nombre": "OLIVER ALFREDO MACIAS ESPARZA",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Tlaxcala",
+      "estado": "Tlaxcala"
+    },
+    "25CL0102667F": {
+      "clave": "25CL0102667F",
+      "nombre": "YARIT RODRIGUEZ",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Tlaxcala",
+      "estado": "Tlaxcala"
+    },
+    "25CL01030DCD": {
+      "clave": "25CL01030DCD",
+      "nombre": "MELANY TECPA TLALMIS",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Tlaxcala",
+      "estado": "Tlaxcala"
+    },
+    "25CL01035D3D": {
+      "clave": "25CL01035D3D",
+      "nombre": "BETTY TLALMIS RODRIGUEZ",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Tlaxcala",
+      "estado": "Tlaxcala"
+    },
+    "24CL04509B8C": {
+      "clave": "24CL04509B8C",
+      "nombre": "ERIC LEAL",
+      "gerente": "Cesar Gutierrez Escarcega",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Tlaxco",
+      "estado": "Tlaxcala"
+    },
+    "23CL02719": {
+      "clave": "23CL02719",
+      "nombre": "EL LIC CELULAR",
+      "gerente": "Erendira Trujillo Aleman",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "El Salto",
+      "estado": "Jalisco"
+    },
+    "25CL04713774": {
+      "clave": "25CL04713774",
+      "nombre": "CRISTINA RODRIGUEZ DIAZ",
+      "gerente": "Erendira Trujillo Aleman",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "El Salto",
+      "estado": "Jalisco"
+    },
+    "26CB01207313": {
+      "clave": "26CB01207313",
+      "nombre": "JOSE JIMÉNEZ LOZANO",
+      "gerente": "Erendira Trujillo Aleman",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "Guadalajara",
+      "estado": "Jalisco"
+    },
+    "26CL01246D16": {
+      "clave": "26CL01246D16",
+      "nombre": "IRIS BOREYO 2",
+      "gerente": "Erendira Trujillo Aleman",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "Guadalajara",
+      "estado": "Jalisco"
+    },
+    "23CL05323": {
+      "clave": "23CL05323",
+      "nombre": "MARIA GUADALUPE MENDOZA",
+      "gerente": "Erendira Trujillo Aleman",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "La Piedad",
+      "estado": "Michoacán de Ocampo"
+    },
+    "21CL10599": {
+      "clave": "21CL10599",
+      "nombre": "ISMAEL BIRRIUETA EKIHUA",
+      "gerente": "Erendira Trujillo Aleman",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "Morelia",
+      "estado": "Michoacán de Ocampo"
+    },
+    "21CB10527": {
+      "clave": "21CB10527",
+      "nombre": "ORLANDO HUMBERTO KU TUZ",
+      "gerente": "Leon Perez Zamudio",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Campeche",
+      "estado": "Campeche"
+    },
+    "22CL05277": {
+      "clave": "22CL05277",
+      "nombre": "KARINA CANUL CRUZ",
+      "gerente": "Leon Perez Zamudio",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Carmen",
+      "estado": "Campeche"
+    },
+    "21CL10438": {
+      "clave": "21CL10438",
+      "nombre": "ISMAEL GOMES EUAN",
+      "gerente": "Leon Perez Zamudio",
+      "coordinador": "Cesar Gutierrez Escarcega",
+      "director": "Alejandro Henonin",
+      "municipio": "Mérida",
+      "estado": "Yucatán"
+    },
+    "23CL00872": {
+      "clave": "23CL00872",
+      "nombre": "MARIO MORENO",
+      "gerente": "Marco Antonio Calderon Martinez",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "Celaya",
+      "estado": "Guanajuato"
+    },
+    "21CL13205": {
+      "clave": "21CL13205",
+      "nombre": "MARÍA REYNA VALDIVIA",
+      "gerente": "Marco Antonio Calderon Martinez",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "León",
+      "estado": "Guanajuato"
+    },
+    "22CL03018": {
+      "clave": "22CL03018",
+      "nombre": "MALENA VILLANUEVA",
+      "gerente": "Marco Antonio Calderon Martinez",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "León",
+      "estado": "Guanajuato"
+    },
+    "24CB01647": {
+      "clave": "24CB01647",
+      "nombre": "CHRISTIAN ONTIVEROS ALDAMA",
+      "gerente": "Marco Antonio Calderon Martinez",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "León",
+      "estado": "Guanajuato"
+    },
+    "24CB0469079B": {
+      "clave": "24CB0469079B",
+      "nombre": "TDA DELTA",
+      "gerente": "Marco Antonio Calderon Martinez",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "León",
+      "estado": "Guanajuato"
+    },
+    "24CL03731C9C": {
+      "clave": "24CL03731C9C",
+      "nombre": "MARCO ANTONIO MIRANDA",
+      "gerente": "Marco Antonio Calderon Martinez",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "Guanajuato",
+      "estado": "Guanajuato"
+    },
+    "23CL06172": {
+      "clave": "23CL06172",
+      "nombre": "ULISES GALLARDO",
+      "gerente": "Marco Antonio Calderon Martinez",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "Villagrán",
+      "estado": "Guanajuato"
+    },
+    "22CL03844": {
+      "clave": "22CL03844",
+      "nombre": "EDGAR VALENTIN CANO",
+      "gerente": "Marco Antonio Calderon Martinez",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "Santa María del Río",
+      "estado": "San Luis Potosí"
+    },
+    "24CL05537E4D": {
+      "clave": "24CL05537E4D",
+      "nombre": "GERARDO ALVARADO",
+      "gerente": "Olyver Alain Guerrero Lozano",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "Juárez",
+      "estado": "Chihuahua"
+    },
+    "23CL00076": {
+      "clave": "23CL00076",
+      "nombre": "JAVIER RAMÍREZ",
+      "gerente": "Olyver Alain Guerrero Lozano",
+      "coordinador": "Rigoberto Rios Mercado",
+      "director": "Alejandro Henonin",
+      "municipio": "Hermosillo",
+      "estado": "Sonora"
+    },
+    "24CL02174F8C": {
+      "clave": "24CL02174F8C",
+      "nombre": "FERNANDO VARGAS",
+      "gerente": "ERICK PEREZ GALINDO",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Toluca",
+      "estado": "México"
+    },
+    "22CL08568RH1": {
+      "clave": "22CL08568RH1",
+      "nombre": "ROBERT RUIZ HDZ/ATOTONILCO QUMA",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Atotonilco de Tula",
+      "estado": "Hidalgo"
+    },
+    "19CL05048M2P": {
+      "clave": "19CL05048M2P",
+      "nombre": "MAURICIO HERNANDEZ/HUEHUETOCA",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Huehuetoca",
+      "estado": "México"
+    },
+    "21CB13542VF2": {
+      "clave": "21CB13542VF2",
+      "nombre": "DANIELA VENCES JIMENEZ",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Tecámac",
+      "estado": "México"
+    },
+    "19CL01631JND": {
+      "clave": "19CL01631JND",
+      "nombre": "HUGO SANCHEZ FRAGOSO",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Temascalapa",
+      "estado": "México"
+    },
+    "19CL04252SJK": {
+      "clave": "19CL04252SJK",
+      "nombre": "ALEJANDRO MUÑOZ",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Temascalapa",
+      "estado": "México"
+    },
+    "24CB02774A91": {
+      "clave": "24CB02774A91",
+      "nombre": "ANA LAURA RÍOS VAZQUEZ/VILLAS DE LA LAGUNA",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Zumpango",
+      "estado": "México"
+    },
+    "23CL033114RM": {
+      "clave": "23CL033114RM",
+      "nombre": "HERMENEGILDO ROSALES",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Acaxochitlán",
+      "estado": "Hidalgo"
+    },
+    "25CL0653347F": {
+      "clave": "25CL0653347F",
+      "nombre": "VERÓNICA AGUILAR / PRADERAS",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Atotonilco de Tula",
+      "estado": "Hidalgo"
+    },
+    "24CB05869826": {
+      "clave": "24CB05869826",
+      "nombre": "MULTI MARK EPAZOYUCAN",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Epazoyucan",
+      "estado": "Hidalgo"
+    },
+    "25CL0124556B": {
+      "clave": "25CL0124556B",
+      "nombre": "OMAR DOÑU SÁNCHEZ \\ IXMIQUILPAN",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Ixmiquilpan",
+      "estado": "Hidalgo"
+    },
+    "19CB00951G4V": {
+      "clave": "19CB00951G4V",
+      "nombre": "MARCO ANTONIO MONTESINOS ALVAREZ CAMBACEO",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Mineral de la Reforma",
+      "estado": "Hidalgo"
+    },
+    "19CL00956SPR": {
+      "clave": "19CL00956SPR",
+      "nombre": "ADRIAN ORTIZ LÓPEZ CUBITOS",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Pachuca de Soto",
+      "estado": "Hidalgo"
+    },
+    "19CL02613S3C": {
+      "clave": "19CL02613S3C",
+      "nombre": "HECTOR AYON",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Pachuca de Soto",
+      "estado": "Hidalgo"
+    },
+    "19CL0282600M": {
+      "clave": "19CL0282600M",
+      "nombre": "ROBERTO LIRA",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Pachuca de Soto",
+      "estado": "Hidalgo"
+    },
+    "23CL02525QTU": {
+      "clave": "23CL02525QTU",
+      "nombre": "RENÉ CHAVARRIA",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Tepeji del Río de Ocampo",
+      "estado": "Hidalgo"
+    },
+    "19CL04113SET": {
+      "clave": "19CL04113SET",
+      "nombre": "NATHAN VILCHES",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Tula de Allende",
+      "estado": "Hidalgo"
+    },
+    "22CL0680745D": {
+      "clave": "22CL0680745D",
+      "nombre": "JOSE LUIS HERNANDEZ",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Tula de Allende",
+      "estado": "Hidalgo"
+    },
+    "24CL04010177": {
+      "clave": "24CL04010177",
+      "nombre": "CRISTIAN VILCHIS TIANGUIS",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Tula de Allende",
+      "estado": "Hidalgo"
+    },
+    "19CL01025EOB": {
+      "clave": "19CL01025EOB",
+      "nombre": "MICHELLE PINEDA",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Tulancingo de Bravo",
+      "estado": "Hidalgo"
+    },
+    "24CL07229DF0": {
+      "clave": "24CL07229DF0",
+      "nombre": "JOHANA CRUZ TULANCINGO",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Tulancingo de Bravo",
+      "estado": "Hidalgo"
+    },
+    "24CB0115673H": {
+      "clave": "24CB0115673H",
+      "nombre": "ROXANA SANTILLAN CAMBACEO",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Querétaro",
+      "estado": "Querétaro"
+    },
+    "24CB024757B5": {
+      "clave": "24CB024757B5",
+      "nombre": "YENI CAMBACEO",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Querétaro",
+      "estado": "Querétaro"
+    },
+    "22CL05546RF1": {
+      "clave": "22CL05546RF1",
+      "nombre": "ALDO ALFARO - TXS",
+      "gerente": "Jesus Redonda Perez",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Tequisquiapan",
+      "estado": "Querétaro"
+    },
+    "20CB09734": {
+      "clave": "20CB09734",
+      "nombre": "REYNA GARCÍA",
+      "gerente": "Jorge Mandujano Martinez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Jiutepec",
+      "estado": "Morelos"
+    },
+    "26CB00045A00": {
+      "clave": "26CB00045A00",
+      "nombre": "CHARCOCEL LECHERIA",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Gustavo A. Madero",
+      "estado": "Ciudad de México"
+    },
+    "19CL00724": {
+      "clave": "19CL00724",
+      "nombre": "FERNANDO AYALA AC GAM",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Gustavo A. Madero",
+      "estado": "Ciudad de México"
+    },
+    "19CL01128": {
+      "clave": "19CL01128",
+      "nombre": "FABIOLA HUERTA GAMC",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Gustavo A. Madero",
+      "estado": "Ciudad de México"
+    },
+    "23CL01425": {
+      "clave": "23CL01425",
+      "nombre": "MIGUEL CHAVEZ GAM",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Gustavo A. Madero",
+      "estado": "Ciudad de México"
+    },
+    "24CL051580CA": {
+      "clave": "24CL051580CA",
+      "nombre": "FERNANDO GALLEGOS GAM N",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Gustavo A. Madero",
+      "estado": "Ciudad de México"
+    },
+    "25CL035841B3": {
+      "clave": "25CL035841B3",
+      "nombre": "YANET URBANO LOPEZ",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Gustavo A. Madero",
+      "estado": "Ciudad de México"
+    },
+    "22CL03589": {
+      "clave": "22CL03589",
+      "nombre": "TERESA MARTINEZ BARRERA NEZA",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Nezahualcóyotl",
+      "estado": "México"
+    },
+    "23CL06194": {
+      "clave": "23CL06194",
+      "nombre": "MOOBIL SHOP NEZAC",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Nezahualcóyotl",
+      "estado": "México"
+    },
+    "24CL06696B4E": {
+      "clave": "24CL06696B4E",
+      "nombre": "SAMANTHA SALAS NEZA",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Nezahualcóyotl",
+      "estado": "México"
+    },
+    "23CL06467": {
+      "clave": "23CL06467",
+      "nombre": "OSVALDO GARCÍA SUC 2 MELCHOR 2",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Melchor Ocampo",
+      "estado": "México"
+    },
+    "19CL02784": {
+      "clave": "19CL02784",
+      "nombre": "PABLO HDZ SUAREZ TULTI PA2",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Ecatepec de Morelos",
+      "estado": "México"
+    },
+    "19CL02723": {
+      "clave": "19CL02723",
+      "nombre": "EMMANUEL  HERNANDEZ AC",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Tlalnepantla de Baz",
+      "estado": "México"
+    },
+    "22CL06838HER": {
+      "clave": "22CL06838HER",
+      "nombre": "LUIS ANGEL GARCIA PEÑA TLALNE",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Tlalnepantla de Baz",
+      "estado": "México"
+    },
+    "19CL00374": {
+      "clave": "19CL00374",
+      "nombre": "ELIAS PADILLA TLALNE",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Tlalnepantla de Baz",
+      "estado": "México"
+    },
+    "20CL09920": {
+      "clave": "20CL09920",
+      "nombre": "EDGAR COLIN  EX MELCHOR 1",
+      "gerente": "Juan Fernando Garcia Aguilar",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Tultepec",
+      "estado": "México"
+    },
+    "23CL08561QSO": {
+      "clave": "23CL08561QSO",
+      "nombre": "LAURA FLORES LOC CRT2",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Cuajimalpa de Morelos",
+      "estado": "Ciudad de México"
+    },
+    "25CL06217393": {
+      "clave": "25CL06217393",
+      "nombre": "ISRAEL MARTINEZ DOS",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Cuauhtémoc",
+      "estado": "Ciudad de México"
+    },
+    "25CL035697E7": {
+      "clave": "25CL035697E7",
+      "nombre": "VERONICA MIRANDA PINO SUAREZ",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Cuauhtémoc",
+      "estado": "Ciudad de México"
+    },
+    "24CL04741210": {
+      "clave": "24CL04741210",
+      "nombre": "JOSE LUIS FLORES",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Cuauhtémoc",
+      "estado": "Ciudad de México"
+    },
+    "25CL03478BD9": {
+      "clave": "25CL03478BD9",
+      "nombre": "VALENTINA FLORES COYO",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Iztapalapa",
+      "estado": "Ciudad de México"
+    },
+    "24CL01242EDA": {
+      "clave": "24CL01242EDA",
+      "nombre": "BEATRIZ REYES MARTÍNEZ",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "La Magdalena Contreras",
+      "estado": "Ciudad de México"
+    },
+    "24CL027957D5": {
+      "clave": "24CL027957D5",
+      "nombre": "ALFREDO SÁNCHEZ RAZO LOCAL 1",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "La Magdalena Contreras",
+      "estado": "Ciudad de México"
+    },
+    "25CL01883FD9": {
+      "clave": "25CL01883FD9",
+      "nombre": "OMAR GARCÍA EL ROSAL",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "La Magdalena Contreras",
+      "estado": "Ciudad de México"
+    },
+    "26CL010761DE": {
+      "clave": "26CL010761DE",
+      "nombre": "ANGÉLICA GALINDO CALIXTO",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "La Magdalena Contreras",
+      "estado": "Ciudad de México"
+    },
+    "20CL09654": {
+      "clave": "20CL09654",
+      "nombre": "LUIS ALBERTO JUAREZ ARROYO",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Miguel Hidalgo",
+      "estado": "Ciudad de México"
+    },
+    "26CL00315E82": {
+      "clave": "26CL00315E82",
+      "nombre": "MTS ARNOLD HERNÁNDEZ GARCÍA",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Miguel Hidalgo",
+      "estado": "Ciudad de México"
+    },
+    "22CL04241MYS": {
+      "clave": "22CL04241MYS",
+      "nombre": "MARÍA LUISA SANTIAGO",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Miguel Hidalgo",
+      "estado": "Ciudad de México"
+    },
+    "19CL06263ET3": {
+      "clave": "19CL06263ET3",
+      "nombre": "ANGELICA FLORES CASTILLO",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Tlalpan",
+      "estado": "Ciudad de México"
+    },
+    "20CL06512JJP": {
+      "clave": "20CL06512JJP",
+      "nombre": "CHRISTIAN RODRIGUEZ",
+      "gerente": "Luis Daniel Ugalde Welsh",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Tlalpan",
+      "estado": "Ciudad de México"
+    },
+    "25CL038987B5": {
+      "clave": "25CL038987B5",
+      "nombre": "ALBERTO TORRES ,JOSÉ CARLOS T",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Atenco",
+      "estado": "México"
+    },
+    "23CL04662": {
+      "clave": "23CL04662",
+      "nombre": "GZABDI IXTAPAN",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Atenco",
+      "estado": "México"
+    },
+    "22CL08590SGR": {
+      "clave": "22CL08590SGR",
+      "nombre": "ALBERTO ISRAEL",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Chicoloapan",
+      "estado": "México"
+    },
+    "26CB007988BC": {
+      "clave": "26CB007988BC",
+      "nombre": "EMANUEL GONZÁLEZ TELCEL",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Ecatepec de Morelos",
+      "estado": "México"
+    },
+    "22CL05154PE4": {
+      "clave": "22CL05154PE4",
+      "nombre": "ACCESORIOS MELINA",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Ecatepec de Morelos",
+      "estado": "México"
+    },
+    "23CL00926ALF": {
+      "clave": "23CL00926ALF",
+      "nombre": "MARCO ANTONIO LINARES SÁNCHEZ",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Ecatepec de Morelos",
+      "estado": "México"
+    },
+    "19CL01424MH4": {
+      "clave": "19CL01424MH4",
+      "nombre": "ARTURO CASTILLO",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Ecatepec de Morelos",
+      "estado": "México"
+    },
+    "21CL11448MN2": {
+      "clave": "21CL11448MN2",
+      "nombre": "GUADALUPE RAMIREZ RIOS",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Ixtapaluca",
+      "estado": "México"
+    },
+    "22CL02289512": {
+      "clave": "22CL02289512",
+      "nombre": "MARCOS VAZQUEZ GÁLVEZ",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Ixtapaluca",
+      "estado": "México"
+    },
+    "19CL00396SCV": {
+      "clave": "19CL00396SCV",
+      "nombre": "EFRAIN SANTIAGO GARCIA",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "La Paz",
+      "estado": "México"
+    },
+    "19CL01183SCV": {
+      "clave": "19CL01183SCV",
+      "nombre": "ANGEL GALINDO",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Ecatepec de Morelos",
+      "estado": "México"
+    },
+    "19CL00230SFG": {
+      "clave": "19CL00230SFG",
+      "nombre": "FRANCISCO VEGA TEXCOCO",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Texcoco",
+      "estado": "México"
+    },
+    "23CL04288SS4": {
+      "clave": "23CL04288SS4",
+      "nombre": "PABLO REYES / TOCUILA",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Texcoco",
+      "estado": "México"
+    },
+    "24CL02948439": {
+      "clave": "24CL02948439",
+      "nombre": "GRUPO ZABDI /  LETICIA CASTAÑEDA",
+      "gerente": "Luis Eduardo Vazquez Hernandez",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Tezoyuca",
+      "estado": "México"
+    },
+    "19CL01883": {
+      "clave": "19CL01883",
+      "nombre": "S1C6-ARMANDO MORALES",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Iztapalapa",
+      "estado": "Ciudad de México"
+    },
+    "21CL17179": {
+      "clave": "21CL17179",
+      "nombre": "S2C2-VICTOR  LEYVA",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Iztapalapa",
+      "estado": "Ciudad de México"
+    },
+    "19CL01914": {
+      "clave": "19CL01914",
+      "nombre": "S1C4-MIGUEL ARREOLA",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Iztapalapa",
+      "estado": "Ciudad de México"
+    },
+    "25CB06227EC4": {
+      "clave": "25CB06227EC4",
+      "nombre": "TANIA MEDRANO",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Iztapalapa",
+      "estado": "Ciudad de México"
+    },
+    "20CL09037": {
+      "clave": "20CL09037",
+      "nombre": "DAVID LOPEZ HERRERA",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Chimalhuacán",
+      "estado": "México"
+    },
+    "23CL01088MS7": {
+      "clave": "23CL01088MS7",
+      "nombre": "S2C4  GABRIEL NERY ANAYA",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Chimalhuacán",
+      "estado": "México"
+    },
+    "23CL03997": {
+      "clave": "23CL03997",
+      "nombre": "MARIBEL AMADOR SUMANO",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Chimalhuacán",
+      "estado": "México"
+    },
+    "25CL032923B2": {
+      "clave": "25CL032923B2",
+      "nombre": "SOL ORTIZ RAMIREZ",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Chimalhuacán",
+      "estado": "México"
+    },
+    "25CL032963C8": {
+      "clave": "25CL032963C8",
+      "nombre": "CESAR ENRIQUE CAMBRON ESCUDERO",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Chimalhuacán",
+      "estado": "México"
+    },
+    "25CL0394904D": {
+      "clave": "25CL0394904D",
+      "nombre": "S2C4 PERLA ARRIETA",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Chimalhuacán",
+      "estado": "México"
+    },
+    "24CL05778279": {
+      "clave": "24CL05778279",
+      "nombre": "S1C5 ANGELICA HERNÁNDEZ",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Valle de Chalco Solidaridad",
+      "estado": "México"
+    },
+    "22CB07855": {
+      "clave": "22CB07855",
+      "nombre": "OSCAR ROMÁN",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Jojutla",
+      "estado": "Morelos"
+    },
+    "22CB08078S4E": {
+      "clave": "22CB08078S4E",
+      "nombre": "JHONATAN BASTIDAS ANGEL",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Jojutla",
+      "estado": "Morelos"
+    },
+    "24CB06171399": {
+      "clave": "24CB06171399",
+      "nombre": "CHRISTIAN DUQUE",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Cuautla",
+      "estado": "Morelos"
+    },
+    "23CB05572": {
+      "clave": "23CB05572",
+      "nombre": "JOSE ALFREDO ACOSTA ALQUICIRA",
+      "gerente": "Manuel Vazquez Aguila",
+      "coordinador": "Vacante Territorial Centro",
+      "director": "David Jimenez",
+      "municipio": "Temixco",
+      "estado": "Morelos"
+    },
+    "20CL07324ZQX": {
+      "clave": "20CL07324ZQX",
+      "nombre": "LUIS ÑUNEZ PADIERNA",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Atizapán de Zaragoza",
+      "estado": "México"
+    },
+    "24CL07010CC7": {
+      "clave": "24CL07010CC7",
+      "nombre": "MARTA SUSANA PAPELERÍA BONFIL",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Atizapán de Zaragoza",
+      "estado": "México"
+    },
+    "21CL16171": {
+      "clave": "21CL16171",
+      "nombre": "MIKITA ZAPATA 2",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Atizapán de Zaragoza",
+      "estado": "México"
+    },
+    "22CL01270": {
+      "clave": "22CL01270",
+      "nombre": "LUIS ENRIQUE LÓPEZ DOMÍNGUEZ",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Cuautitlán",
+      "estado": "México"
+    },
+    "25CL04648865": {
+      "clave": "25CL04648865",
+      "nombre": "LESLIE GALILEA JIMÉNEZ LOCAL",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Cuautitlán",
+      "estado": "México"
+    },
+    "21CL16325": {
+      "clave": "21CL16325",
+      "nombre": "MIKITA BOSQUES DE MORELOS",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Cuautitlán Izcalli",
+      "estado": "México"
+    },
+    "19CL01080": {
+      "clave": "19CL01080",
+      "nombre": "FERNANDO GARCIA",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Cuautitlán Izcalli",
+      "estado": "México"
+    },
+    "23CL06000": {
+      "clave": "23CL06000",
+      "nombre": "JAVIER LÓPEZ",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Ecatepec de Morelos",
+      "estado": "México"
+    },
+    "21CL16315": {
+      "clave": "21CL16315",
+      "nombre": "MIKITA SECUNDARIA 21",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Ecatepec de Morelos",
+      "estado": "México"
+    },
+    "19CL00164": {
+      "clave": "19CL00164",
+      "nombre": "YEIMI GARCÍA CALDERÓN",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Naucalpan de Juárez",
+      "estado": "México"
+    },
+    "25CL02487EB3": {
+      "clave": "25CL02487EB3",
+      "nombre": "BARUC HERNÁNDEZ Local",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Naucalpan de Juárez",
+      "estado": "México"
+    },
+    "23CL07129": {
+      "clave": "23CL07129",
+      "nombre": "SNEAKERWORLD",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Nicolás Romero",
+      "estado": "México"
+    },
+    "25CL012509D0": {
+      "clave": "25CL012509D0",
+      "nombre": "ACCESORIOS Y CELULARES TELCEL",
+      "gerente": "Vacante Territorial",
+      "coordinador": "Rodolfo Reynoso Castelan",
+      "director": "David Jimenez",
+      "municipio": "Nicolás Romero",
+      "estado": "México"
+    }
+  },
+  "count": 147
+}
