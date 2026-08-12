@@ -107,10 +107,6 @@
               <span>3</span>
               <h2>Datos del gerente correspondiente</h2>
             </header>
-            <p class="section-note">
-              Se completa automáticamente al capturar la clave YAAVSER en la sección 5. Si no aparece,
-              captúralo manualmente.
-            </p>
             <div class="grid-2">
               <label class="field grid-span-2">
                 <span>Nombre completo del gerente correspondiente <span class="req">*</span></span>
@@ -119,23 +115,30 @@
                   name="gerenteTerritorial"
                   id="gerenteTerritorial"
                   required
-                  autocomplete="off"
-                  placeholder="Se completa con la clave YAAVSER"
+                  autocomplete="name"
+                  placeholder="Nombre completo del gerente"
                 />
-                <small class="help" id="gerenteHint">Al escribir la clave YAAVSER se asigna automáticamente.</small>
               </label>
               <label class="field">
                 <span>Coordinador</span>
-                <input type="text" name="coordinador" id="coordinador" autocomplete="off" readonly />
+                <input
+                  type="text"
+                  name="coordinador"
+                  id="coordinador"
+                  autocomplete="off"
+                  placeholder="Opcional"
+                />
               </label>
               <label class="field">
                 <span>Territorio / estado</span>
-                <input type="text" name="territorioGerente" id="territorioGerente" autocomplete="off" readonly />
+                <input
+                  type="text"
+                  name="territorioGerente"
+                  id="territorioGerente"
+                  autocomplete="off"
+                  placeholder="Opcional"
+                />
               </label>
-              <div id="yaavserCard" class="lookup-card" hidden>
-                <p class="lookup-title">Datos encontrados con la clave</p>
-                <p id="lookupDetail" class="lookup-detail"></p>
-              </div>
             </div>
           </section>
 
@@ -180,7 +183,7 @@
                   autocomplete="off"
                   placeholder="Ej. 22CL05843"
                 />
-                <small class="help">Captura la clave completa. Con ella se completa el gerente correspondiente.</small>
+                <small class="help">Captura la clave completa del YAAVSER.</small>
               </label>
               <label class="field">
                 <span>Número telefónico de contacto <span class="req">*</span></span>
@@ -329,6 +332,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260812b1" defer></script>
+    <script src="./app.js?v=20260812b5" defer></script>
   </body>
 </html>

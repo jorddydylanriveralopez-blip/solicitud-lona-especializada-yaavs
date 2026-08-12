@@ -13,14 +13,6 @@
   const toldosSpecs = document.getElementById("toldosSpecs");
   const lonaQtyNote = document.getElementById("lonaQtyNote");
   const toldoQtyNote = document.getElementById("toldoQtyNote");
-  const gerenteInput = document.getElementById("gerenteTerritorial");
-  const gerenteHint = document.getElementById("gerenteHint");
-  const coordinadorInput = document.getElementById("coordinador");
-  const territorioInput = document.getElementById("territorioGerente");
-  const yaavserNombre = document.getElementById("yaavserNombre");
-  const claveInput = document.getElementById("claveYaavser");
-  const yaavserCard = document.getElementById("yaavserCard");
-  const lookupDetail = document.getElementById("lookupDetail");
   const heroTitle = document.getElementById("heroTitle");
   const heroLede = document.getElementById("heroLede");
   const objetivoLegend = document.getElementById("objetivoLegend");
@@ -43,9 +35,6 @@
     "Solo frente",
   ];
   const MATERIALES_TOLDO = ["Lona PVC", "Poliéster", "Por definir con Mercadotecnia"];
-
-  let lookupTimer = null;
-  let lastLookupClave = "";
 
   function showToast(msg) {
     if (!toast) return;
@@ -369,61 +358,6 @@
     return out;
   }
 
-  async function lookupClave() {
-    const raw = String(claveInput.value || "").trim();
-    if (raw.length < 5) {
-      yaavserCard.hidden = true;
-      gerenteHint.textContent = "Al escribir la clave YAAVSER se asigna automáticamente.";
-      gerenteHint.classList.remove("ok", "warn");
-      return;
-    }
-    if (raw === lastLookupClave) return;
-    lastLookupClave = raw;
-    gerenteHint.textContent = "Buscando gerente territorial…";
-    gerenteHint.classList.remove("ok", "warn");
-    try {
-      const res = await fetch(`/api/yaavser/${encodeURIComponent(raw)}`);
-      const data = await res.json();
-      if (!res.ok || !data.found) {
-        yaavserCard.hidden = true;
-        if (coordinadorInput) coordinadorInput.value = "";
-        if (territorioInput) territorioInput.value = "";
-        gerenteHint.textContent =
-          "Clave no encontrada en el catálogo. Captura el gerente territorial manualmente.";
-        gerenteHint.classList.add("warn");
-        gerenteHint.classList.remove("ok");
-        return;
-      }
-      gerenteInput.value = data.gerente || "";
-      if (coordinadorInput) coordinadorInput.value = data.coordinador || "";
-      if (territorioInput) {
-        territorioInput.value = [data.municipio, data.estado].filter(Boolean).join(", ");
-      }
-      if (data.nombre && !String(yaavserNombre.value || "").trim()) {
-        yaavserNombre.value = data.nombre;
-      }
-      yaavserCard.hidden = false;
-      lookupDetail.textContent = [
-        data.nombre,
-        data.municipio && data.estado ? `${data.municipio}, ${data.estado}` : data.estado || data.municipio,
-        data.coordinador ? `Coord.: ${data.coordinador}` : "",
-      ]
-        .filter(Boolean)
-        .join(" · ");
-      gerenteHint.textContent = "Gerente territorial asignado desde la clave YAAVSER.";
-      gerenteHint.classList.add("ok");
-      gerenteHint.classList.remove("warn");
-    } catch (_) {
-      gerenteHint.textContent = "No se pudo consultar el catálogo. Captura el gerente manualmente.";
-      gerenteHint.classList.add("warn");
-    }
-  }
-
-  function scheduleLookup() {
-    window.clearTimeout(lookupTimer);
-    lookupTimer = window.setTimeout(lookupClave, 350);
-  }
-
   function syncTipoOtro() {
     const on = document.getElementById("tipoOtroChk")?.checked;
     document.getElementById("tipoOtroWrap").hidden = !on;
@@ -725,9 +659,6 @@
     if (t.hasAttribute("data-contacto")) syncContacto();
     if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
   });
-
-  claveInput.addEventListener("input", scheduleLookup);
-  claveInput.addEventListener("blur", lookupClave);
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
