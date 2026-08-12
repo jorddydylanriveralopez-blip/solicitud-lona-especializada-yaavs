@@ -119,7 +119,7 @@
     return Number(form.querySelector('input[name="cantidadToldos"]:checked')?.value || 1) === 2 ? 2 : 1;
   }
 
-  const MARCAS = ["YAAVS", "AT&T", "Movistar", "Unefon", "BAIT", "Telcel"];
+  const MARCAS = ["AT&T", "Movistar", "Unefon", "BAIT", "Telcel"];
   const CONTACTO_OPTS = [
     "Número telefónico",
     "WhatsApp",
@@ -151,7 +151,6 @@
   }
 
   function designFieldsHtml(prefix, i) {
-    const marcasOpts = prefix === "toldo" ? MARCAS.filter((m) => m !== "YAAVS") : MARCAS;
     return `
       <div class="design-block">
         <h4>Contenido y diseño</h4>
@@ -159,12 +158,10 @@
         <fieldset class="choice-group" data-multi="true">
           <legend>Marcas principales que deberán aparecer <span class="req">*</span></legend>
           <p class="multi-hint">Puedes elegir más de una respuesta.</p>
-          ${marcasOpts
-            .map(
-              (m) =>
-                `<label class="choice"><input type="checkbox" name="marcas_${prefix}_${i}" value="${escapeHtml(m)}" /><span>${escapeHtml(m)}</span></label>`,
-            )
-            .join("")}
+          ${MARCAS.map(
+            (m) =>
+              `<label class="choice"><input type="checkbox" name="marcas_${prefix}_${i}" value="${escapeHtml(m)}" /><span>${escapeHtml(m)}</span></label>`,
+          ).join("")}
         </fieldset>
         <label class="field">
           <span>Texto principal o mensaje que se desea comunicar</span>
