@@ -17,22 +17,7 @@
 
   const ACABADOS = ["Dobladillo", "Ojillos", "Dobladillo y ojillos", "Sin acabados"];
   const ORIENTACIONES = ["Horizontal", "Vertical", "Cuadrada"];
-  const TIPOS_TOLDO = [
-    "Toldo",
-    "Cortina desplegable",
-    "Toldo de fachada",
-    "Toldo lateral / de pasillo",
-    "Otro",
-  ];
-  const PARTES_TOLDO = [
-    "Techo",
-    "4 paredes",
-    "3 paredes",
-    "2 paredes",
-    "Valance / faldón",
-    "Solo frente",
-  ];
-  const MATERIALES_TOLDO = ["Lona PVC", "Poliéster", "Por definir con Mercadotecnia"];
+  const TIPOS_TOLDO = ["Toldo", "Cortina desplegable"];
 
   function showToast(msg) {
     if (!toast) return;
@@ -166,6 +151,7 @@
   }
 
   function designFieldsHtml(prefix, i) {
+    const marcasOpts = prefix === "toldo" ? MARCAS.filter((m) => m !== "YAAVS") : MARCAS;
     return `
       <div class="design-block">
         <h4>Contenido y diseño</h4>
@@ -173,10 +159,12 @@
         <fieldset class="choice-group" data-multi="true">
           <legend>Marcas principales que deberán aparecer <span class="req">*</span></legend>
           <p class="multi-hint">Puedes elegir más de una respuesta.</p>
-          ${MARCAS.map(
-            (m) =>
-              `<label class="choice"><input type="checkbox" name="marcas_${prefix}_${i}" value="${escapeHtml(m)}" /><span>${escapeHtml(m)}</span></label>`,
-          ).join("")}
+          ${marcasOpts
+            .map(
+              (m) =>
+                `<label class="choice"><input type="checkbox" name="marcas_${prefix}_${i}" value="${escapeHtml(m)}" /><span>${escapeHtml(m)}</span></label>`,
+            )
+            .join("")}
         </fieldset>
         <label class="field">
           <span>Texto principal o mensaje que se desea comunicar</span>
@@ -306,20 +294,27 @@
     const count = toldoCount();
     const blocks = [];
     for (let i = 1; i <= count; i += 1) {
-      const title = count === 1 ? "Toldo" : `Toldo ${i}`;
+      const title = count === 1 ? "Toldo / cortina" : `Toldo / cortina ${i}`;
       blocks.push(`
         <div class="lona-block" data-toldo="${i}">
           <h3>${escapeHtml(title)}</h3>
-          <fieldset class="choice-group">
+          <fieldset class="choice-group compact">
             <legend>Tipo <span class="req">*</span></legend>
             ${TIPOS_TOLDO.map(
               (t) =>
-                `<label class="choice"><input type="radio" name="tipoToldo_${i}" value="${escapeHtml(t)}" data-toldo-tipo="${i}" /><span>${escapeHtml(t)}</span></label>`,
+                `<label class="choice"><input type="radio" name="tipoToldo_${i}" value="${escapeHtml(t)}" /><span>${escapeHtml(t)}</span></label>`,
             ).join("")}
           </fieldset>
-          <label class="field" data-toldo-otro-wrap="${i}" hidden>
-            <span>Especifica el tipo <span class="req">*</span></span>
-            <input type="text" name="tipoToldoOtro_${i}" data-k="tipoOtro" />
+          <label class="field">
+            <span>Ubicación del punto de venta (Google Maps) <span class="req">*</span></span>
+            <input
+              type="url"
+              name="ubicacionMaps_${i}"
+              data-k="ubicacionMaps"
+              inputmode="url"
+              placeholder="Pega aquí el link de Google Maps"
+            />
+            <small class="help">Abre Google Maps, comparte la ubicación y pega el enlace.</small>
           </label>
           <div class="grid-2">
             <label class="field">
@@ -340,21 +335,6 @@
               <label class="choice"><input type="radio" name="estructura_${i}" value="No" checked /><span>No</span></label>
             </fieldset>
           </div>
-          <fieldset class="choice-group" data-multi="true">
-            <legend>Partes a imprimir / diseñar <span class="req">*</span></legend>
-            <p class="multi-hint">Puedes elegir más de una respuesta.</p>
-            ${PARTES_TOLDO.map(
-              (p) =>
-                `<label class="choice"><input type="checkbox" name="partes_${i}" value="${escapeHtml(p)}" /><span>${escapeHtml(p)}</span></label>`,
-            ).join("")}
-          </fieldset>
-          <fieldset class="choice-group">
-            <legend>Material del toldo <span class="req">*</span></legend>
-            ${MATERIALES_TOLDO.map(
-              (m, idx) =>
-                `<label class="choice"><input type="radio" name="materialToldo_${i}" value="${escapeHtml(m)}" ${idx === 0 ? "checked" : ""} /><span>${escapeHtml(m)}</span></label>`,
-            ).join("")}
-          </fieldset>
           ${designFieldsHtml("toldo", i)}
         </div>
       `);
@@ -416,14 +396,12 @@
       out.push({
         toldo: count === 1 ? "Toldo 1" : `Toldo ${i}`,
         tipo,
-        tipoOtro: String(block.querySelector('[data-k="tipoOtro"]')?.value || "").trim(),
+        ubicacionMaps: String(block.querySelector('[data-k="ubicacionMaps"]')?.value || "").trim(),
         ancho: Number(block.querySelector('[data-k="ancho"]')?.value || 0),
         largo: Number(block.querySelector('[data-k="largo"]')?.value || 0),
         alto: Number(block.querySelector('[data-k="alto"]')?.value || 0),
         incluyeEstructura:
           form.querySelector(`input[name="estructura_${i}"]:checked`)?.value || "",
-        partes: [...form.querySelectorAll(`input[name="partes_${i}"]:checked`)].map((el) => el.value),
-        material: form.querySelector(`input[name="materialToldo_${i}"]:checked`)?.value || "",
         ...collectDesign("toldo", i),
       });
     }
@@ -433,15 +411,6 @@
   function syncTipoOtro() {
     const on = document.getElementById("tipoOtroChk")?.checked;
     document.getElementById("tipoOtroWrap").hidden = !on;
-  }
-
-  function syncTipoToldoOtro() {
-    const count = toldoCount();
-    for (let i = 1; i <= count; i += 1) {
-      const tipo = form.querySelector(`input[name="tipoToldo_${i}"]:checked`)?.value || "";
-      const wrap = toldosSpecs?.querySelector(`[data-toldo-otro-wrap="${i}"]`);
-      if (wrap) wrap.hidden = tipo !== "Otro";
-    }
   }
 
   function syncContacto() {
@@ -634,9 +603,9 @@
           errors.push(`Selecciona el tipo de ${t.toldo}.`);
           markInvalid(block);
         }
-        if (t.tipo === "Otro" && !t.tipoOtro) {
-          errors.push(`Especifica el tipo de ${t.toldo}.`);
-          markInvalid(block?.querySelector('[data-k="tipoOtro"]'));
+        if (!t.ubicacionMaps) {
+          errors.push(`Captura la ubicación de Google Maps de ${t.toldo}.`);
+          markInvalid(block?.querySelector('[data-k="ubicacionMaps"]'));
         }
         if (!t.ancho || !t.largo || !t.alto) {
           errors.push(`Captura medidas de ${t.toldo}.`);
@@ -644,14 +613,6 @@
         }
         if (!t.incluyeEstructura) {
           errors.push(`Indica si ${t.toldo} incluye estructura.`);
-          markInvalid(block);
-        }
-        if (!t.partes.length) {
-          errors.push(`Selecciona partes a imprimir de ${t.toldo}.`);
-          markInvalid(block);
-        }
-        if (!t.material) {
-          errors.push(`Selecciona el material de ${t.toldo}.`);
           markInvalid(block);
         }
         validateDesign("toldo", i, t.toldo, errors);
@@ -724,12 +685,10 @@
     }
     if (t.name === "cantidadToldos") {
       renderToldos();
-      syncTipoToldoOtro();
       syncContacto();
       syncReferencia();
     }
     if (t.name === "tipoEstablecimiento") syncTipoOtro();
-    if (t.name?.startsWith("tipoToldo_")) syncTipoToldoOtro();
     if (t.hasAttribute("data-contacto")) syncContacto();
     if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
   });
@@ -777,7 +736,6 @@
   renderToldos();
   syncMaterial();
   syncTipoOtro();
-  syncTipoToldoOtro();
   syncContacto();
   syncReferencia();
 })();
