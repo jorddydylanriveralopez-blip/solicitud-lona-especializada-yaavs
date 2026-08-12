@@ -137,9 +137,13 @@
   font-weight: 500;
 }
 
-.report-form {
+.report-form,
+#afterMaterial,
+#formRest,
+#flowLona,
+#flowToldo {
   display: grid;
-  gap: 1rem;
+  gap: 1.65rem;
 }
 
 .card-section {
