@@ -1,27 +1,12 @@
 .report-body .topbar.report-topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 1rem;
   padding: max(0.85rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.75rem
     max(1rem, env(safe-area-inset-left));
   position: relative;
   z-index: 2;
-}
-
-.results-link {
-  text-decoration: none;
-  color: #f4f8fc;
-  font-weight: 700;
-  font-size: 0.9rem;
-  padding: 0.65rem 0.95rem;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(10px);
 }
 
 .report-main {
