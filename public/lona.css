@@ -307,6 +307,21 @@
   color: var(--navy);
 }
 
+.design-block {
+  margin-top: 1rem;
+  padding-top: 0.95rem;
+  border-top: 1px dashed rgba(15, 36, 64, 0.14);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.design-block h4 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 0.92rem;
+  color: var(--navy);
+}
+
 .form-actions {
   display: flex;
   flex-direction: column;

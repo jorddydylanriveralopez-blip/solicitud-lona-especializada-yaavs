@@ -87,13 +87,6 @@ const FIELD_ORDER = [
   ["lonas", "Especificaciones por lona"],
   ["cantidadToldos", "Cantidad de toldos"],
   ["toldos", "Especificaciones por toldo"],
-  ["marcas", "Marcas"],
-  ["textoPrincipal", "Texto principal"],
-  ["datosContactoOpciones", "Datos de contacto (opciones)"],
-  ["datosContactoDetalle", "Datos de contacto (detalle)"],
-  ["tieneReferencia", "¿Diseño de referencia?"],
-  ["logoFiles", "Logotipo"],
-  ["referenciaFiles", "Referencia"],
   ["confirmaciones", "Confirmaciones"],
   ["id", "ID interno"],
 ];
@@ -119,14 +112,9 @@ const COLUMN_WIDTHS = {
   serviciosActuales: 36,
   cantidadLonas: 12,
   mismoDiseno: 16,
-  lonas: 48,
-  marcas: 24,
-  textoPrincipal: 36,
-  datosContactoOpciones: 24,
-  datosContactoDetalle: 36,
-  tieneReferencia: 16,
-  logoFiles: 28,
-  referenciaFiles: 28,
+  lonas: 56,
+  cantidadToldos: 12,
+  toldos: 56,
   confirmaciones: 40,
   id: 28,
 };
@@ -235,6 +223,20 @@ function saveNamedFiles(entryId, fieldKey, files) {
   return out;
 }
 
+function attachItemFiles(entryId, items, prefix, files) {
+  if (!Array.isArray(items)) return items;
+  return items.map((item, idx) => {
+    const i = idx + 1;
+    const logoFiles = saveNamedFiles(entryId, `logo_${prefix}_${i}`, files);
+    const referenciaFiles = saveNamedFiles(entryId, `referenciaFile_${prefix}_${i}`, files);
+    return {
+      ...item,
+      logoFiles,
+      referenciaFiles,
+    };
+  });
+}
+
 function stringifyComplex(v) {
   if (v == null) return "";
   if (Array.isArray(v)) {
@@ -242,7 +244,15 @@ function stringifyComplex(v) {
       .map((row) => {
         if (row && typeof row === "object") {
           return Object.entries(row)
-            .map(([k, val]) => `${k}: ${Array.isArray(val) ? val.join(", ") : val}`)
+            .map(([k, val]) => {
+              if (Array.isArray(val)) {
+                if (val.length && typeof val[0] === "object") {
+                  return `${k}: ${val.map((f) => f.name || f.url || "").filter(Boolean).join(", ")}`;
+                }
+                return `${k}: ${val.join(", ")}`;
+              }
+              return `${k}: ${val}`;
+            })
             .join(" | ");
         }
         return String(row);
@@ -269,7 +279,7 @@ function flatten(entry) {
   for (const [key] of FIELD_ORDER) {
     if (key === "receivedAt" || key === "id" || key === "folio") continue;
     const v = a[key];
-    if (key === "lonas" || key === "toldos" || key === "logoFiles" || key === "referenciaFiles") {
+    if (key === "lonas" || key === "toldos") {
       out[key] = stringifyComplex(v);
     } else if (Array.isArray(v)) out[key] = v.join(", ");
     else if (v == null) out[key] = "";
@@ -456,8 +466,12 @@ app.post("/api/submit", (req, res) => {
       }
       const entry = normalize(body);
       const files = req.files || [];
-      entry.answers.logoFiles = saveNamedFiles(entry.id, "logo", files);
-      entry.answers.referenciaFiles = saveNamedFiles(entry.id, "referencia", files);
+      if (Array.isArray(entry.answers.lonas)) {
+        entry.answers.lonas = attachItemFiles(entry.id, entry.answers.lonas, "lona", files);
+      }
+      if (Array.isArray(entry.answers.toldos)) {
+        entry.answers.toldos = attachItemFiles(entry.id, entry.answers.toldos, "toldo", files);
+      }
 
       const list = readResponses();
       list.push(entry);

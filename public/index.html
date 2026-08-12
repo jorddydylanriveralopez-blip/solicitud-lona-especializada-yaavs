@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260811l5" />
-    <link rel="stylesheet" href="./lona.css?v=20260811l5" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260811l6" />
+    <link rel="stylesheet" href="./lona.css?v=20260812a1" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -250,7 +250,7 @@
           <section class="card-section">
             <header class="section-head">
               <span>8</span>
-              <h2>Especificaciones de la lona</h2>
+              <h2>Especificaciones y diseño de la lona</h2>
             </header>
             <fieldset class="choice-group compact" data-required="true">
               <legend>¿Cuántas lonas solicitas? <span class="req">*</span></legend>
@@ -258,7 +258,7 @@
               <label class="choice"><input type="radio" name="cantidadLonas" value="2" /><span>2 lonas</span></label>
             </fieldset>
             <p class="section-note" id="lonaQtyNote" hidden>
-              Como pediste 2 lonas, completa las especificaciones de cada una por separado.
+              Como pediste 2 lonas, completa medidas y diseño de cada una por separado.
             </p>
             <div id="lonasSpecs" class="lonas-specs"></div>
           </section>
@@ -268,7 +268,7 @@
           <section class="card-section">
             <header class="section-head">
               <span>8</span>
-              <h2>Especificaciones del toldo</h2>
+              <h2>Especificaciones y diseño del toldo</h2>
             </header>
             <fieldset class="choice-group compact" data-required="true">
               <legend>¿Cuántos toldos solicitas? <span class="req">*</span></legend>
@@ -276,7 +276,7 @@
               <label class="choice"><input type="radio" name="cantidadToldos" value="2" /><span>2 toldos</span></label>
             </fieldset>
             <p class="section-note" id="toldoQtyNote" hidden>
-              Como pediste 2 toldos, completa las especificaciones de cada uno por separado.
+              Como pediste 2 toldos, completa medidas y diseño de cada uno por separado.
             </p>
             <div id="toldosSpecs" class="lonas-specs"></div>
           </section>
@@ -285,52 +285,6 @@
           <section class="card-section">
             <header class="section-head">
               <span>9</span>
-              <h2>Contenido y diseño</h2>
-            </header>
-            <label class="field">
-              <span>Logotipo del punto de venta <span class="req">*</span></span>
-              <input type="file" name="logo" id="logoFile" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" required />
-              <small class="help">JPG, PNG o PDF.</small>
-            </label>
-            <fieldset class="choice-group" data-multi="true" data-required="true">
-              <legend>Marcas principales que deberán aparecer <span class="req">*</span></legend>
-              <label class="choice"><input type="checkbox" name="marcas" value="YAAVS" /><span>YAAVS</span></label>
-              <label class="choice"><input type="checkbox" name="marcas" value="AT&T" /><span>AT&T</span></label>
-              <label class="choice"><input type="checkbox" name="marcas" value="Movistar" /><span>Movistar</span></label>
-              <label class="choice"><input type="checkbox" name="marcas" value="Unefon" /><span>Unefon</span></label>
-              <label class="choice"><input type="checkbox" name="marcas" value="BAIT" /><span>BAIT</span></label>
-              <label class="choice"><input type="checkbox" name="marcas" value="Telcel" /><span>Telcel</span></label>
-            </fieldset>
-            <label class="field">
-              <span>Texto principal o mensaje que se desea comunicar</span>
-              <textarea name="textoPrincipal" rows="3" placeholder="Opcional. Mercadotecnia podrá ajustar el texto."></textarea>
-            </label>
-            <fieldset class="choice-group" data-multi="true" data-required="true">
-              <legend>Datos de contacto que deberán aparecer <span class="req">*</span></legend>
-              <label class="choice"><input type="checkbox" name="datosContactoOpciones" value="Número telefónico" /><span>Número telefónico</span></label>
-              <label class="choice"><input type="checkbox" name="datosContactoOpciones" value="WhatsApp" /><span>WhatsApp</span></label>
-              <label class="choice"><input type="checkbox" name="datosContactoOpciones" value="Redes sociales" /><span>Redes sociales</span></label>
-              <label class="choice"><input type="checkbox" name="datosContactoOpciones" value="Dirección" /><span>Dirección</span></label>
-              <label class="choice"><input type="checkbox" name="datosContactoOpciones" value="Ninguno" id="contactoNinguno" /><span>Ninguno</span></label>
-            </fieldset>
-            <label class="field" id="contactoDetalleWrap" hidden>
-              <span>Captura los datos de contacto <span class="req">*</span></span>
-              <textarea name="datosContactoDetalle" rows="3" placeholder="Teléfono, WhatsApp, redes, dirección…"></textarea>
-            </label>
-            <fieldset class="choice-group compact" data-required="true">
-              <legend>¿Existe un diseño anterior como referencia? <span class="req">*</span></legend>
-              <label class="choice"><input type="radio" name="tieneReferencia" value="Sí" required /><span>Sí</span></label>
-              <label class="choice"><input type="radio" name="tieneReferencia" value="No" checked /><span>No</span></label>
-            </fieldset>
-            <label class="field" id="referenciaWrap" hidden>
-              <span>Adjunta el diseño o referencia anterior <span class="req">*</span></span>
-              <input type="file" name="referencia" id="referenciaFile" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" />
-            </label>
-          </section>
-
-          <section class="card-section">
-            <header class="section-head">
-              <span>10</span>
               <h2>Confirmación y responsabilidad</h2>
             </header>
             <fieldset class="choice-group" data-required="true">
@@ -370,6 +324,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260811l5" defer></script>
+    <script src="./app.js?v=20260812a1" defer></script>
   </body>
 </html>

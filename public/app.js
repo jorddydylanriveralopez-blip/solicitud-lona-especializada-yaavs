@@ -147,13 +147,66 @@
     return Number(form.querySelector('input[name="cantidadToldos"]:checked')?.value || 1) === 2 ? 2 : 1;
   }
 
+  const MARCAS = ["YAAVS", "AT&T", "Movistar", "Unefon", "BAIT", "Telcel"];
+  const CONTACTO_OPTS = [
+    "Número telefónico",
+    "WhatsApp",
+    "Redes sociales",
+    "Dirección",
+    "Ninguno",
+  ];
+
+  function designFieldsHtml(prefix, i) {
+    return `
+      <div class="design-block">
+        <h4>Contenido y diseño</h4>
+        <label class="field">
+          <span>Logotipo del punto de venta <span class="req">*</span></span>
+          <input type="file" name="logo_${prefix}_${i}" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" />
+          <small class="help">JPG, PNG o PDF.</small>
+        </label>
+        <fieldset class="choice-group" data-multi="true">
+          <legend>Marcas principales que deberán aparecer <span class="req">*</span></legend>
+          ${MARCAS.map(
+            (m) =>
+              `<label class="choice"><input type="checkbox" name="marcas_${prefix}_${i}" value="${escapeHtml(m)}" /><span>${escapeHtml(m)}</span></label>`,
+          ).join("")}
+        </fieldset>
+        <label class="field">
+          <span>Texto principal o mensaje que se desea comunicar</span>
+          <textarea name="texto_${prefix}_${i}" rows="3" placeholder="Opcional. Mercadotecnia podrá ajustar el texto."></textarea>
+        </label>
+        <fieldset class="choice-group" data-multi="true">
+          <legend>Datos de contacto que deberán aparecer <span class="req">*</span></legend>
+          ${CONTACTO_OPTS.map(
+            (c) =>
+              `<label class="choice"><input type="checkbox" name="contacto_${prefix}_${i}" value="${escapeHtml(c)}" data-contacto="${prefix}_${i}" /><span>${escapeHtml(c)}</span></label>`,
+          ).join("")}
+        </fieldset>
+        <label class="field" data-contacto-detalle="${prefix}_${i}" hidden>
+          <span>Captura los datos de contacto <span class="req">*</span></span>
+          <textarea name="contactoDetalle_${prefix}_${i}" rows="3" placeholder="Teléfono, WhatsApp, redes, dirección…"></textarea>
+        </label>
+        <fieldset class="choice-group compact">
+          <legend>¿Existe un diseño anterior como referencia? <span class="req">*</span></legend>
+          <label class="choice"><input type="radio" name="referencia_${prefix}_${i}" value="Sí" data-ref="${prefix}_${i}" /><span>Sí</span></label>
+          <label class="choice"><input type="radio" name="referencia_${prefix}_${i}" value="No" checked data-ref="${prefix}_${i}" /><span>No</span></label>
+        </fieldset>
+        <label class="field" data-ref-wrap="${prefix}_${i}" hidden>
+          <span>Adjunta el diseño o referencia anterior <span class="req">*</span></span>
+          <input type="file" name="referenciaFile_${prefix}_${i}" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" />
+        </label>
+      </div>
+    `;
+  }
+
   function renderLonas() {
     if (!lonasSpecs) return;
     const count = lonaCount();
     if (lonaQtyNote) lonaQtyNote.hidden = count < 2;
     const blocks = [];
     for (let i = 1; i <= count; i += 1) {
-      const title = count === 1 ? "Especificaciones de la lona" : `Lona ${i}`;
+      const title = count === 1 ? "Lona" : `Lona ${i}`;
       blocks.push(`
         <div class="lona-block" data-lona="${i}">
           <h3>${escapeHtml(title)}</h3>
@@ -181,6 +234,7 @@
                 `<label class="choice"><input type="checkbox" name="acabados_${i}" value="${escapeHtml(a)}" /><span>${escapeHtml(a)}</span></label>`,
             ).join("")}
           </fieldset>
+          ${designFieldsHtml("lona", i)}
         </div>
       `);
     }
@@ -193,7 +247,7 @@
     if (toldoQtyNote) toldoQtyNote.hidden = count < 2;
     const blocks = [];
     for (let i = 1; i <= count; i += 1) {
-      const title = count === 1 ? "Especificaciones del toldo" : `Toldo ${i}`;
+      const title = count === 1 ? "Toldo" : `Toldo ${i}`;
       blocks.push(`
         <div class="lona-block" data-toldo="${i}">
           <h3>${escapeHtml(title)}</h3>
@@ -241,10 +295,28 @@
                 `<label class="choice"><input type="radio" name="materialToldo_${i}" value="${escapeHtml(m)}" ${idx === 0 ? "checked" : ""} /><span>${escapeHtml(m)}</span></label>`,
             ).join("")}
           </fieldset>
+          ${designFieldsHtml("toldo", i)}
         </div>
       `);
     }
     toldosSpecs.innerHTML = blocks.join("");
+  }
+
+  function collectDesign(prefix, i) {
+    const marcas = [...form.querySelectorAll(`input[name="marcas_${prefix}_${i}"]:checked`)].map(
+      (el) => el.value,
+    );
+    const contacto = [...form.querySelectorAll(`input[name="contacto_${prefix}_${i}"]:checked`)].map(
+      (el) => el.value,
+    );
+    return {
+      marcas,
+      textoPrincipal: String(form[`texto_${prefix}_${i}`]?.value || "").trim(),
+      datosContactoOpciones: contacto,
+      datosContactoDetalle: String(form[`contactoDetalle_${prefix}_${i}`]?.value || "").trim(),
+      tieneReferencia:
+        form.querySelector(`input[name="referencia_${prefix}_${i}"]:checked`)?.value || "No",
+    };
   }
 
   function collectLonas() {
@@ -266,6 +338,7 @@
         alto: Number(alto),
         orientacion,
         acabados,
+        ...collectDesign("lona", i),
       });
     }
     return out;
@@ -290,6 +363,7 @@
           form.querySelector(`input[name="estructura_${i}"]:checked`)?.value || "",
         partes: [...form.querySelectorAll(`input[name="partes_${i}"]:checked`)].map((el) => el.value),
         material: form.querySelector(`input[name="materialToldo_${i}"]:checked`)?.value || "",
+        ...collectDesign("toldo", i),
       });
     }
     return out;
@@ -365,21 +439,71 @@
   }
 
   function syncContacto() {
-    const vals = checkedValues("datosContactoOpciones");
-    const ninguno = vals.includes("Ninguno");
-    if (ninguno) {
-      form.querySelectorAll('input[name="datosContactoOpciones"]').forEach((el) => {
-        if (el.value !== "Ninguno") el.checked = false;
-      });
-    }
-    const needs = checkedValues("datosContactoOpciones").some((v) => v !== "Ninguno");
-    document.getElementById("contactoDetalleWrap").hidden = !needs;
+    const keys = new Set();
+    form.querySelectorAll("[data-contacto]").forEach((el) => keys.add(el.getAttribute("data-contacto")));
+    keys.forEach((key) => {
+      const vals = [...form.querySelectorAll(`input[data-contacto="${key}"]:checked`)].map(
+        (el) => el.value,
+      );
+      if (vals.includes("Ninguno")) {
+        form.querySelectorAll(`input[data-contacto="${key}"]`).forEach((el) => {
+          if (el.value !== "Ninguno") el.checked = false;
+        });
+      }
+      const needs = [...form.querySelectorAll(`input[data-contacto="${key}"]:checked`)].some(
+        (el) => el.value !== "Ninguno",
+      );
+      const wrap = form.querySelector(`[data-contacto-detalle="${key}"]`);
+      if (wrap) wrap.hidden = !needs;
+    });
   }
 
   function syncReferencia() {
-    const yes = form.querySelector('input[name="tieneReferencia"]:checked')?.value === "Sí";
-    document.getElementById("referenciaWrap").hidden = !yes;
-    document.getElementById("referenciaFile").required = yes;
+    form.querySelectorAll("[data-ref]").forEach((el) => {
+      const key = el.getAttribute("data-ref");
+      const yes =
+        form.querySelector(`input[name="referencia_${key}"]:checked`)?.value === "Sí";
+      const wrap = form.querySelector(`[data-ref-wrap="${key}"]`);
+      if (wrap) wrap.hidden = !yes;
+    });
+  }
+
+  function validateDesign(prefix, i, label, errors) {
+    const logoInput = form.querySelector(`input[name="logo_${prefix}_${i}"]`);
+    if (!logoInput?.files?.length) {
+      errors.push(`Adjunta el logotipo de ${label}.`);
+      markInvalid(logoInput);
+    }
+    const marcas = [...form.querySelectorAll(`input[name="marcas_${prefix}_${i}"]:checked`)];
+    if (!marcas.length) {
+      errors.push(`Selecciona marcas de ${label}.`);
+      markInvalid(form.querySelector(`input[name="marcas_${prefix}_${i}"]`));
+    }
+    const contacto = [...form.querySelectorAll(`input[name="contacto_${prefix}_${i}"]:checked`)].map(
+      (el) => el.value,
+    );
+    if (!contacto.length) {
+      errors.push(`Selecciona datos de contacto de ${label}.`);
+      markInvalid(form.querySelector(`input[name="contacto_${prefix}_${i}"]`));
+    }
+    if (contacto.some((v) => v !== "Ninguno")) {
+      if (!String(form[`contactoDetalle_${prefix}_${i}`]?.value || "").trim()) {
+        errors.push(`Captura los datos de contacto de ${label}.`);
+        markInvalid(form[`contactoDetalle_${prefix}_${i}`]);
+      }
+    }
+    const ref = form.querySelector(`input[name="referencia_${prefix}_${i}"]:checked`)?.value;
+    if (!ref) {
+      errors.push(`Indica si hay referencia de diseño en ${label}.`);
+      markInvalid(form.querySelector(`input[name="referencia_${prefix}_${i}"]`));
+    }
+    if (ref === "Sí") {
+      const refFile = form.querySelector(`input[name="referenciaFile_${prefix}_${i}"]`);
+      if (!refFile?.files?.length) {
+        errors.push(`Adjunta la referencia de ${label}.`);
+        markInvalid(refFile);
+      }
+    }
   }
 
   function clearInvalid() {
@@ -441,8 +565,6 @@
       ["objetivoLona", "Selecciona el objetivo del material."],
       ["resultadoEsperado", "Selecciona el resultado esperado."],
       ["serviciosActuales", "Selecciona los servicios actuales."],
-      ["marcas", "Selecciona al menos una marca."],
-      ["datosContactoOpciones", "Selecciona los datos de contacto a mostrar."],
       ["confirmaciones", "Debes aceptar las tres confirmaciones."],
     ];
     for (const [name, msg] of multiRequired) {
@@ -462,12 +584,6 @@
         errors.push("Especifica el tipo de establecimiento.");
         markInvalid(form.tipoEstablecimientoOtro);
       }
-    }
-
-    const contactoNeeds = checkedValues("datosContactoOpciones").some((v) => v !== "Ninguno");
-    if (contactoNeeds && !String(form.datosContactoDetalle.value || "").trim()) {
-      errors.push("Captura los datos de contacto que deben aparecer.");
-      markInvalid(form.datosContactoDetalle);
     }
 
     if (isLona()) {
@@ -492,6 +608,7 @@
           errors.push(`Selecciona acabados de ${l.lona}.`);
           markInvalid(block);
         }
+        validateDesign("lona", i, l.lona, errors);
       });
     }
 
@@ -529,19 +646,8 @@
           errors.push(`Selecciona el material de ${t.toldo}.`);
           markInvalid(block);
         }
+        validateDesign("toldo", i, t.toldo, errors);
       });
-    }
-
-    if (!form.logo.files?.length) {
-      errors.push("Adjunta el logotipo del punto de venta.");
-      markInvalid(form.logo);
-    }
-
-    if (form.querySelector('input[name="tieneReferencia"]:checked')?.value === "Sí") {
-      if (!form.referencia.files?.length) {
-        errors.push("Adjunta el diseño o referencia anterior.");
-        markInvalid(form.referencia);
-      }
     }
 
     return [...new Set(errors)];
@@ -567,11 +673,6 @@
       objetivoLona: checkedValues("objetivoLona"),
       resultadoEsperado: checkedValues("resultadoEsperado"),
       serviciosActuales: checkedValues("serviciosActuales"),
-      marcas: checkedValues("marcas"),
-      textoPrincipal: String(form.textoPrincipal.value || "").trim(),
-      datosContactoOpciones: checkedValues("datosContactoOpciones"),
-      datosContactoDetalle: String(form.datosContactoDetalle.value || "").trim(),
-      tieneReferencia: form.querySelector('input[name="tieneReferencia"]:checked')?.value || "No",
       confirmaciones: checkedValues("confirmaciones"),
     };
 
@@ -590,20 +691,39 @@
     };
   }
 
+  function appendItemFiles(fd, prefix, count) {
+    for (let i = 1; i <= count; i += 1) {
+      const logo = form.querySelector(`input[name="logo_${prefix}_${i}"]`);
+      if (logo?.files?.[0]) fd.append(`logo_${prefix}_${i}`, logo.files[0]);
+      const refYes =
+        form.querySelector(`input[name="referencia_${prefix}_${i}"]:checked`)?.value === "Sí";
+      const refFile = form.querySelector(`input[name="referenciaFile_${prefix}_${i}"]`);
+      if (refYes && refFile?.files?.[0]) {
+        fd.append(`referenciaFile_${prefix}_${i}`, refFile.files[0]);
+      }
+    }
+  }
+
   form.addEventListener("change", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
     if (t.name === "material") syncMaterial();
     if (t.name === "autorizada") syncAuthGate();
-    if (t.name === "cantidadLonas") renderLonas();
+    if (t.name === "cantidadLonas") {
+      renderLonas();
+      syncContacto();
+      syncReferencia();
+    }
     if (t.name === "cantidadToldos") {
       renderToldos();
       syncTipoToldoOtro();
+      syncContacto();
+      syncReferencia();
     }
     if (t.name === "tipoEstablecimiento") syncTipoOtro();
     if (t.name?.startsWith("tipoToldo_")) syncTipoToldoOtro();
-    if (t.name === "datosContactoOpciones") syncContacto();
-    if (t.name === "tieneReferencia") syncReferencia();
+    if (t.hasAttribute("data-contacto")) syncContacto();
+    if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
   });
 
   claveInput.addEventListener("input", scheduleLookup);
@@ -626,13 +746,8 @@
     try {
       const fd = new FormData();
       fd.append("answers", JSON.stringify(buildAnswers()));
-      if (form.logo.files?.[0]) fd.append("logo", form.logo.files[0]);
-      if (
-        form.querySelector('input[name="tieneReferencia"]:checked')?.value === "Sí" &&
-        form.referencia.files?.[0]
-      ) {
-        fd.append("referencia", form.referencia.files[0]);
-      }
+      if (isLona()) appendItemFiles(fd, "lona", lonaCount());
+      if (isToldo()) appendItemFiles(fd, "toldo", toldoCount());
       const res = await fetch("/api/submit", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo enviar");

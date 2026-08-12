@@ -29,13 +29,6 @@
     ["lonas", "Especificaciones"],
     ["cantidadToldos", "Cantidad toldos"],
     ["toldos", "Especificaciones toldos"],
-    ["marcas", "Marcas"],
-    ["textoPrincipal", "Texto principal"],
-    ["datosContactoOpciones", "Contacto (opciones)"],
-    ["datosContactoDetalle", "Contacto (detalle)"],
-    ["tieneReferencia", "¿Referencia?"],
-    ["logoFiles", "Logotipo"],
-    ["referenciaFiles", "Referencia"],
     ["confirmaciones", "Confirmaciones"],
   ];
 
