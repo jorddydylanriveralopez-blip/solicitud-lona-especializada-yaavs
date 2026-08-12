@@ -41,7 +41,7 @@ body {
 body {
   font-family: var(--font);
   color: var(--ink);
-  background: var(--cloud);
+  background: #050b14;
   overflow-x: hidden;
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -52,41 +52,37 @@ body {
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, #f8fbff 0%, #eef4fa 48%, #e8f1f8 100%);
+  background: #050b14;
 }
 
-.wash {
+.scene-photo {
   position: absolute;
-  border-radius: 50%;
-  filter: blur(64px);
-  opacity: 0.55;
-  animation: drift 18s var(--ease) infinite alternate;
+  inset: 0;
+  background: url("./assets/bg-yaavs-tech.jpg") center / cover no-repeat;
+  transform: scale(1.06);
+  filter: saturate(1.08) contrast(1.06);
+  animation: photo-drift 34s ease-in-out infinite alternate;
 }
 
-.wash-a {
-  width: 420px;
-  height: 420px;
-  top: -120px;
-  left: -80px;
-  background: rgba(37, 99, 181, 0.18);
+.scene-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(5, 11, 20, 0.52) 0%,
+      rgba(5, 11, 20, 0.28) 34%,
+      rgba(5, 11, 20, 0.62) 100%
+    ),
+    radial-gradient(ellipse 72% 48% at 50% 0%, rgba(59, 143, 217, 0.2), transparent 62%);
 }
 
-.wash-b {
-  width: 380px;
-  height: 380px;
-  right: -100px;
-  bottom: 8%;
-  background: rgba(0, 151, 178, 0.14);
-  animation-delay: -6s;
-}
-
-@keyframes drift {
+@keyframes photo-drift {
   from {
-    transform: translate3d(0, 0, 0);
+    transform: scale(1.06) translate3d(0, 0, 0);
   }
   to {
-    transform: translate3d(18px, -14px, 0);
+    transform: scale(1.12) translate3d(-1.2%, -0.7%, 0);
   }
 }
 
@@ -102,6 +98,7 @@ body {
   width: min(200px, 52vw);
   height: auto;
   display: block;
+  filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.45));
   animation: brand-in 0.7s var(--ease) both;
 }
 

@@ -11,7 +11,7 @@
 
 .results-link {
   text-decoration: none;
-  color: var(--navy);
+  color: #f4f8fc;
   font-weight: 700;
   font-size: 0.9rem;
   padding: 0.65rem 0.95rem;
@@ -19,8 +19,9 @@
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  background: rgba(15, 36, 64, 0.06);
-  border: 1px solid rgba(15, 36, 64, 0.1);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(10px);
 }
 
 .report-main {
@@ -35,7 +36,16 @@
   margin: 0.5rem 0 1.25rem;
 }
 
-.report-hero .eyebrow,
+.report-hero .eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6fd4e8;
+  font-weight: 800;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+}
+
 .success-panel .eyebrow {
   margin: 0 0 0.35rem;
   font-size: 0.75rem;
@@ -45,7 +55,16 @@
   font-weight: 800;
 }
 
-.report-hero h1,
+.report-hero h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  letter-spacing: -0.03em;
+  color: #f7fbff;
+  line-height: 1.15;
+  text-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
 .success-panel h2 {
   margin: 0;
   font-family: var(--display);
@@ -55,7 +74,19 @@
   line-height: 1.15;
 }
 
-.report-hero .lede,
+.report-hero .lede {
+  margin: 0.55rem 0 0;
+  color: rgba(232, 241, 248, 0.88);
+  font-size: clamp(0.95rem, 2.5vw, 1.05rem);
+  max-width: 44rem;
+  line-height: 1.45;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
+}
+
+.report-hero .lede strong {
+  color: #fff;
+}
+
 .success-panel p {
   margin: 0.55rem 0 0;
   color: var(--muted);
@@ -112,11 +143,12 @@
 }
 
 .card-section {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(15, 36, 64, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 20px;
   padding: clamp(0.95rem, 2.5vw, 1.25rem);
-  box-shadow: 0 14px 36px rgba(15, 36, 64, 0.06);
+  box-shadow: 0 22px 50px rgba(2, 8, 18, 0.34);
+  backdrop-filter: blur(14px);
 }
 
 .section-head {
@@ -358,11 +390,12 @@
 }
 
 .success-panel {
-  background: rgba(255, 255, 255, 0.94);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.9));
   border-radius: 20px;
   padding: 1.4rem;
-  border: 1px solid rgba(15, 36, 64, 0.08);
-  box-shadow: 0 14px 36px rgba(15, 36, 64, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 22px 50px rgba(2, 8, 18, 0.34);
+  backdrop-filter: blur(14px);
 }
 
 .success-panel .primary-btn {
