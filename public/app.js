@@ -11,8 +11,6 @@
   const submitBtn = document.getElementById("submitBtn");
   const lonasSpecs = document.getElementById("lonasSpecs");
   const toldosSpecs = document.getElementById("toldosSpecs");
-  const lonaQtyNote = document.getElementById("lonaQtyNote");
-  const toldoQtyNote = document.getElementById("toldoQtyNote");
   const heroTitle = document.getElementById("heroTitle");
   const heroLede = document.getElementById("heroLede");
   const objetivoLegend = document.getElementById("objetivoLegend");
@@ -192,7 +190,6 @@
   function renderLonas() {
     if (!lonasSpecs) return;
     const count = lonaCount();
-    if (lonaQtyNote) lonaQtyNote.hidden = count < 2;
     const blocks = [];
     for (let i = 1; i <= count; i += 1) {
       const title = count === 1 ? "Lona" : `Lona ${i}`;
@@ -233,7 +230,6 @@
   function renderToldos() {
     if (!toldosSpecs) return;
     const count = toldoCount();
-    if (toldoQtyNote) toldoQtyNote.hidden = count < 2;
     const blocks = [];
     for (let i = 1; i <= count; i += 1) {
       const title = count === 1 ? "Toldo" : `Toldo ${i}`;
