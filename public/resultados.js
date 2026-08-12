@@ -10,6 +10,8 @@
     ["receivedAt", "Fecha y hora"],
     ["autorizada", "Autorizada"],
     ["gerenteTerritorial", "Gerente territorial"],
+    ["coordinador", "Coordinador"],
+    ["territorioGerente", "Territorio / estado"],
     ["ejecutivoNombre", "Ejecutivo"],
     ["ejecutivoTelefono", "Tel. ejecutivo"],
     ["ejecutivoCorreo", "Correo ejecutivo"],

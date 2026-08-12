@@ -9,6 +9,8 @@
   const lonasSpecs = document.getElementById("lonasSpecs");
   const gerenteInput = document.getElementById("gerenteTerritorial");
   const gerenteHint = document.getElementById("gerenteHint");
+  const coordinadorInput = document.getElementById("coordinador");
+  const territorioInput = document.getElementById("territorioGerente");
   const yaavserNombre = document.getElementById("yaavserNombre");
   const claveInput = document.getElementById("claveYaavser");
   const yaavserCard = document.getElementById("yaavserCard");
@@ -137,8 +139,7 @@
     const raw = String(claveInput.value || "").trim();
     if (raw.length < 5) {
       yaavserCard.hidden = true;
-      gerenteHint.textContent =
-        "Al escribir la clave se asigna automáticamente el gerente territorial.";
+      gerenteHint.textContent = "Al escribir la clave YAAVSER se asigna automáticamente.";
       gerenteHint.classList.remove("ok", "warn");
       return;
     }
@@ -151,6 +152,8 @@
       const data = await res.json();
       if (!res.ok || !data.found) {
         yaavserCard.hidden = true;
+        if (coordinadorInput) coordinadorInput.value = "";
+        if (territorioInput) territorioInput.value = "";
         gerenteHint.textContent =
           "Clave no encontrada en el catálogo. Captura el gerente territorial manualmente.";
         gerenteHint.classList.add("warn");
@@ -158,6 +161,10 @@
         return;
       }
       gerenteInput.value = data.gerente || "";
+      if (coordinadorInput) coordinadorInput.value = data.coordinador || "";
+      if (territorioInput) {
+        territorioInput.value = [data.municipio, data.estado].filter(Boolean).join(", ");
+      }
       if (data.nombre && !String(yaavserNombre.value || "").trim()) {
         yaavserNombre.value = data.nombre;
       }
@@ -328,6 +335,8 @@
     return {
       autorizada: form.querySelector('input[name="autorizada"]:checked')?.value || "",
       gerenteTerritorial: String(form.gerenteTerritorial.value || "").trim(),
+      coordinador: String(form.coordinador?.value || "").trim(),
+      territorioGerente: String(form.territorioGerente?.value || "").trim(),
       ejecutivoNombre: String(form.ejecutivoNombre.value || "").trim(),
       ejecutivoTelefono: String(form.ejecutivoTelefono.value || "").trim(),
       ejecutivoCorreo: String(form.ejecutivoCorreo.value || "").trim(),

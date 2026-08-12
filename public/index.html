@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260811l1" />
-    <link rel="stylesheet" href="./lona.css?v=20260811l1" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260811l2" />
+    <link rel="stylesheet" href="./lona.css?v=20260811l2" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -68,9 +68,57 @@
         </section>
 
         <div id="formRest">
-          <section class="card-section">
+          <section class="card-section" id="secGerente">
             <header class="section-head">
               <span>2</span>
+              <h2>Datos del gerente territorial</h2>
+            </header>
+            <p class="section-note">
+              Captura primero la clave YAAVSER para asignar automáticamente el gerente territorial.
+            </p>
+            <div class="grid-2">
+              <label class="field">
+                <span>Clave de YAAVSER <span class="req">*</span></span>
+                <input
+                  type="text"
+                  name="claveYaavser"
+                  id="claveYaavser"
+                  required
+                  autocomplete="off"
+                  placeholder="Ej. 22CL05843"
+                />
+                <small class="help">Captura la clave completa y verifica que sea correcta.</small>
+              </label>
+              <label class="field">
+                <span>Nombre completo del gerente territorial <span class="req">*</span></span>
+                <input
+                  type="text"
+                  name="gerenteTerritorial"
+                  id="gerenteTerritorial"
+                  required
+                  autocomplete="off"
+                  placeholder="Se completa con la clave"
+                />
+                <small class="help" id="gerenteHint">Al escribir la clave se asigna automáticamente.</small>
+              </label>
+              <label class="field">
+                <span>Coordinador</span>
+                <input type="text" name="coordinador" id="coordinador" autocomplete="off" readonly />
+              </label>
+              <label class="field">
+                <span>Territorio / estado</span>
+                <input type="text" name="territorioGerente" id="territorioGerente" autocomplete="off" readonly />
+              </label>
+              <div id="yaavserCard" class="lookup-card" hidden>
+                <p class="lookup-title">Datos encontrados con la clave</p>
+                <p id="lookupDetail" class="lookup-detail"></p>
+              </div>
+            </div>
+          </section>
+
+          <section class="card-section">
+            <header class="section-head">
+              <span>3</span>
               <h2>Datos del ejecutivo de ventas</h2>
             </header>
             <div class="grid-2">
@@ -91,7 +139,7 @@
 
           <section class="card-section">
             <header class="section-head">
-              <span>3</span>
+              <span>4</span>
               <h2>Datos del YAAVSER</h2>
             </header>
             <div class="grid-2">
@@ -99,34 +147,6 @@
                 <span>Nombre completo del YAAVSER <span class="req">*</span></span>
                 <input type="text" name="yaavserNombre" id="yaavserNombre" required autocomplete="off" />
               </label>
-              <label class="field">
-                <span>Clave de YAAVSER <span class="req">*</span></span>
-                <input
-                  type="text"
-                  name="claveYaavser"
-                  id="claveYaavser"
-                  required
-                  autocomplete="off"
-                  placeholder="Ej. 22CL05843"
-                />
-                <small class="help">Captura la clave completa y verifica que sea correcta.</small>
-              </label>
-              <label class="field grid-span-2">
-                <span>Gerente territorial <span class="req">*</span></span>
-                <input
-                  type="text"
-                  name="gerenteTerritorial"
-                  id="gerenteTerritorial"
-                  required
-                  autocomplete="off"
-                  placeholder="Se completa al capturar la clave"
-                />
-                <small class="help" id="gerenteHint">Al escribir la clave se asigna automáticamente el gerente territorial.</small>
-              </label>
-              <div id="yaavserCard" class="lookup-card" hidden>
-                <p class="lookup-title">YAAVSER encontrado</p>
-                <p id="lookupDetail" class="lookup-detail"></p>
-              </div>
               <label class="field">
                 <span>Número telefónico de contacto <span class="req">*</span></span>
                 <input type="tel" name="yaavserTelefono" inputmode="tel" required placeholder="10 dígitos" />
@@ -136,7 +156,7 @@
 
           <section class="card-section">
             <header class="section-head">
-              <span>4</span>
+              <span>5</span>
               <h2>Datos del punto de venta</h2>
             </header>
             <div class="grid-2">
@@ -163,7 +183,7 @@
 
           <section class="card-section">
             <header class="section-head">
-              <span>5</span>
+              <span>6</span>
               <h2>Objetivo y justificación</h2>
             </header>
             <fieldset class="choice-group" data-multi="true" data-required="true">
@@ -198,7 +218,7 @@
 
           <section class="card-section">
             <header class="section-head">
-              <span>6</span>
+              <span>7</span>
               <h2>Especificaciones de la lona</h2>
             </header>
             <div class="grid-2">
@@ -217,7 +237,7 @@
 
           <section class="card-section">
             <header class="section-head">
-              <span>7</span>
+              <span>8</span>
               <h2>Contenido y diseño</h2>
             </header>
             <label class="field">
@@ -263,7 +283,7 @@
 
           <section class="card-section">
             <header class="section-head">
-              <span>8</span>
+              <span>9</span>
               <h2>Confirmación y responsabilidad</h2>
             </header>
             <fieldset class="choice-group" data-required="true">
@@ -302,6 +322,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260811l1" defer></script>
+    <script src="./app.js?v=20260811l2" defer></script>
   </body>
 </html>
