@@ -10,6 +10,9 @@
   const hint = document.getElementById("formHint");
   const submitBtn = document.getElementById("submitBtn");
   const lonasSpecs = document.getElementById("lonasSpecs");
+  const toldosSpecs = document.getElementById("toldosSpecs");
+  const lonaQtyNote = document.getElementById("lonaQtyNote");
+  const toldoQtyNote = document.getElementById("toldoQtyNote");
   const gerenteInput = document.getElementById("gerenteTerritorial");
   const gerenteHint = document.getElementById("gerenteHint");
   const coordinadorInput = document.getElementById("coordinador");
@@ -24,6 +27,22 @@
 
   const ACABADOS = ["Dobladillo", "Ojillos", "Dobladillo y ojillos", "Sin acabados"];
   const ORIENTACIONES = ["Horizontal", "Vertical", "Cuadrada"];
+  const TIPOS_TOLDO = [
+    "Toldo",
+    "Columna desplegable",
+    "Toldo de fachada",
+    "Toldo lateral / de pasillo",
+    "Otro",
+  ];
+  const PARTES_TOLDO = [
+    "Techo",
+    "4 paredes",
+    "3 paredes",
+    "2 paredes",
+    "Valance / faldón",
+    "Solo frente",
+  ];
+  const MATERIALES_TOLDO = ["Lona PVC", "Poliéster", "Por definir con Mercadotecnia"];
 
   let lookupTimer = null;
   let lastLookupClave = "";
@@ -94,13 +113,8 @@
 
     flowLona.hidden = mat !== "Lona";
     flowToldo.hidden = mat !== "Toldo";
-
-    if (form.cantidadLonas) form.cantidadLonas.required = mat === "Lona";
-    if (form.cantidadToldos) form.cantidadToldos.required = mat === "Toldo";
-    if (form.toldoAncho) form.toldoAncho.required = mat === "Toldo";
-    if (form.toldoLargo) form.toldoLargo.required = mat === "Toldo";
-    if (form.toldoAlto) form.toldoAlto.required = mat === "Toldo";
-
+    renderLonas();
+    renderToldos();
     syncAuthGate();
   }
 
@@ -126,20 +140,20 @@
   }
 
   function lonaCount() {
-    const n = Number(form.cantidadLonas?.value || 1);
-    return Math.min(10, Math.max(1, Number.isFinite(n) ? n : 1));
+    return Number(form.querySelector('input[name="cantidadLonas"]:checked')?.value || 1) === 2 ? 2 : 1;
   }
 
-  function sameDesign() {
-    return (form.querySelector('input[name="mismoDiseno"]:checked')?.value || "Sí") === "Sí";
+  function toldoCount() {
+    return Number(form.querySelector('input[name="cantidadToldos"]:checked')?.value || 1) === 2 ? 2 : 1;
   }
 
   function renderLonas() {
     if (!lonasSpecs) return;
-    const count = sameDesign() ? 1 : lonaCount();
+    const count = lonaCount();
+    if (lonaQtyNote) lonaQtyNote.hidden = count < 2;
     const blocks = [];
     for (let i = 1; i <= count; i += 1) {
-      const title = sameDesign() ? "Especificaciones de la lona" : `Lona ${i}`;
+      const title = count === 1 ? "Especificaciones de la lona" : `Lona ${i}`;
       blocks.push(`
         <div class="lona-block" data-lona="${i}">
           <h3>${escapeHtml(title)}</h3>
@@ -173,9 +187,69 @@
     lonasSpecs.innerHTML = blocks.join("");
   }
 
+  function renderToldos() {
+    if (!toldosSpecs) return;
+    const count = toldoCount();
+    if (toldoQtyNote) toldoQtyNote.hidden = count < 2;
+    const blocks = [];
+    for (let i = 1; i <= count; i += 1) {
+      const title = count === 1 ? "Especificaciones del toldo" : `Toldo ${i}`;
+      blocks.push(`
+        <div class="lona-block" data-toldo="${i}">
+          <h3>${escapeHtml(title)}</h3>
+          <fieldset class="choice-group">
+            <legend>Tipo <span class="req">*</span></legend>
+            ${TIPOS_TOLDO.map(
+              (t) =>
+                `<label class="choice"><input type="radio" name="tipoToldo_${i}" value="${escapeHtml(t)}" data-toldo-tipo="${i}" /><span>${escapeHtml(t)}</span></label>`,
+            ).join("")}
+          </fieldset>
+          <label class="field" data-toldo-otro-wrap="${i}" hidden>
+            <span>Especifica el tipo <span class="req">*</span></span>
+            <input type="text" name="tipoToldoOtro_${i}" data-k="tipoOtro" />
+          </label>
+          <div class="grid-2">
+            <label class="field">
+              <span>Ancho (cm) <span class="req">*</span></span>
+              <input type="number" min="1" step="1" inputmode="numeric" data-k="ancho" />
+            </label>
+            <label class="field">
+              <span>Profundidad / largo (cm) <span class="req">*</span></span>
+              <input type="number" min="1" step="1" inputmode="numeric" data-k="largo" />
+            </label>
+            <label class="field">
+              <span>Alto (cm) <span class="req">*</span></span>
+              <input type="number" min="1" step="1" inputmode="numeric" data-k="alto" />
+            </label>
+            <fieldset class="choice-group compact">
+              <legend>¿Incluye estructura? <span class="req">*</span></legend>
+              <label class="choice"><input type="radio" name="estructura_${i}" value="Sí" /><span>Sí</span></label>
+              <label class="choice"><input type="radio" name="estructura_${i}" value="No" checked /><span>No</span></label>
+            </fieldset>
+          </div>
+          <fieldset class="choice-group" data-multi="true">
+            <legend>Partes a imprimir / diseñar <span class="req">*</span></legend>
+            ${PARTES_TOLDO.map(
+              (p) =>
+                `<label class="choice"><input type="checkbox" name="partes_${i}" value="${escapeHtml(p)}" /><span>${escapeHtml(p)}</span></label>`,
+            ).join("")}
+          </fieldset>
+          <fieldset class="choice-group">
+            <legend>Material del toldo <span class="req">*</span></legend>
+            ${MATERIALES_TOLDO.map(
+              (m, idx) =>
+                `<label class="choice"><input type="radio" name="materialToldo_${i}" value="${escapeHtml(m)}" ${idx === 0 ? "checked" : ""} /><span>${escapeHtml(m)}</span></label>`,
+            ).join("")}
+          </fieldset>
+        </div>
+      `);
+    }
+    toldosSpecs.innerHTML = blocks.join("");
+  }
+
   function collectLonas() {
     if (!isLona()) return [];
-    const count = sameDesign() ? 1 : lonaCount();
+    const count = lonaCount();
     const out = [];
     for (let i = 1; i <= count; i += 1) {
       const block = lonasSpecs.querySelector(`[data-lona="${i}"]`);
@@ -187,11 +261,35 @@
         (el) => el.value,
       );
       out.push({
-        lona: sameDesign() ? "Única" : `Lona ${i}`,
+        lona: count === 1 ? "Lona 1" : `Lona ${i}`,
         ancho: Number(ancho),
         alto: Number(alto),
         orientacion,
         acabados,
+      });
+    }
+    return out;
+  }
+
+  function collectToldos() {
+    if (!isToldo()) return [];
+    const count = toldoCount();
+    const out = [];
+    for (let i = 1; i <= count; i += 1) {
+      const block = toldosSpecs.querySelector(`[data-toldo="${i}"]`);
+      if (!block) continue;
+      const tipo = form.querySelector(`input[name="tipoToldo_${i}"]:checked`)?.value || "";
+      out.push({
+        toldo: count === 1 ? "Toldo 1" : `Toldo ${i}`,
+        tipo,
+        tipoOtro: String(block.querySelector('[data-k="tipoOtro"]')?.value || "").trim(),
+        ancho: Number(block.querySelector('[data-k="ancho"]')?.value || 0),
+        largo: Number(block.querySelector('[data-k="largo"]')?.value || 0),
+        alto: Number(block.querySelector('[data-k="alto"]')?.value || 0),
+        incluyeEstructura:
+          form.querySelector(`input[name="estructura_${i}"]:checked`)?.value || "",
+        partes: [...form.querySelectorAll(`input[name="partes_${i}"]:checked`)].map((el) => el.value),
+        material: form.querySelector(`input[name="materialToldo_${i}"]:checked`)?.value || "",
       });
     }
     return out;
@@ -258,9 +356,12 @@
   }
 
   function syncTipoToldoOtro() {
-    const on = document.getElementById("tipoToldoOtroChk")?.checked;
-    const wrap = document.getElementById("tipoToldoOtroWrap");
-    if (wrap) wrap.hidden = !on;
+    const count = toldoCount();
+    for (let i = 1; i <= count; i += 1) {
+      const tipo = form.querySelector(`input[name="tipoToldo_${i}"]:checked`)?.value || "";
+      const wrap = toldosSpecs?.querySelector(`[data-toldo-otro-wrap="${i}"]`);
+      if (wrap) wrap.hidden = tipo !== "Otro";
+    }
   }
 
   function syncContacto() {
@@ -370,6 +471,10 @@
     }
 
     if (isLona()) {
+      if (!form.querySelector('input[name="cantidadLonas"]:checked')) {
+        errors.push("Selecciona si solicitas 1 o 2 lonas.");
+        markInvalid(form.querySelector('input[name="cantidadLonas"]'));
+      }
       const lonas = collectLonas();
       if (!lonas.length) errors.push("Completa las especificaciones de la lona.");
       lonas.forEach((l, idx) => {
@@ -391,38 +496,40 @@
     }
 
     if (isToldo()) {
-      if (!form.querySelector('input[name="tipoToldo"]:checked')) {
-        errors.push("Selecciona el tipo de toldo.");
-        markInvalid(form.querySelector('input[name="tipoToldo"]'));
+      if (!form.querySelector('input[name="cantidadToldos"]:checked')) {
+        errors.push("Selecciona si solicitas 1 o 2 toldos.");
+        markInvalid(form.querySelector('input[name="cantidadToldos"]'));
       }
-      if (document.getElementById("tipoToldoOtroChk")?.checked) {
-        if (!String(form.tipoToldoOtro.value || "").trim()) {
-          errors.push("Especifica el tipo de toldo.");
-          markInvalid(form.tipoToldoOtro);
+      const toldos = collectToldos();
+      if (!toldos.length) errors.push("Completa las especificaciones del toldo.");
+      toldos.forEach((t, idx) => {
+        const i = idx + 1;
+        const block = toldosSpecs.querySelector(`[data-toldo="${i}"]`);
+        if (!t.tipo) {
+          errors.push(`Selecciona el tipo de ${t.toldo}.`);
+          markInvalid(block);
         }
-      }
-      for (const [name, msg] of [
-        ["toldoAncho", "Captura el ancho del toldo."],
-        ["toldoLargo", "Captura la profundidad / largo del toldo."],
-        ["toldoAlto", "Captura el alto del toldo."],
-      ]) {
-        if (!String(form.elements[name]?.value || "").trim()) {
-          errors.push(msg);
-          markInvalid(form.elements[name]);
+        if (t.tipo === "Otro" && !t.tipoOtro) {
+          errors.push(`Especifica el tipo de ${t.toldo}.`);
+          markInvalid(block?.querySelector('[data-k="tipoOtro"]'));
         }
-      }
-      if (!checkedValues("partesToldo").length) {
-        errors.push("Selecciona las partes del toldo a imprimir.");
-        markInvalid(form.querySelector('input[name="partesToldo"]'));
-      }
-      if (!form.querySelector('input[name="materialToldo"]:checked')) {
-        errors.push("Selecciona el material del toldo.");
-        markInvalid(form.querySelector('input[name="materialToldo"]'));
-      }
-      if (!form.querySelector('input[name="incluyeEstructura"]:checked')) {
-        errors.push("Indica si el toldo incluye estructura.");
-        markInvalid(form.querySelector('input[name="incluyeEstructura"]'));
-      }
+        if (!t.ancho || !t.largo || !t.alto) {
+          errors.push(`Captura medidas de ${t.toldo}.`);
+          markInvalid(block);
+        }
+        if (!t.incluyeEstructura) {
+          errors.push(`Indica si ${t.toldo} incluye estructura.`);
+          markInvalid(block);
+        }
+        if (!t.partes.length) {
+          errors.push(`Selecciona partes a imprimir de ${t.toldo}.`);
+          markInvalid(block);
+        }
+        if (!t.material) {
+          errors.push(`Selecciona el material de ${t.toldo}.`);
+          markInvalid(block);
+        }
+      });
     }
 
     if (!form.logo.files?.length) {
@@ -472,25 +579,14 @@
       return {
         ...base,
         cantidadLonas: lonaCount(),
-        mismoDiseno: sameDesign() ? "Sí" : "No",
         lonas: collectLonas(),
       };
     }
 
     return {
       ...base,
-      cantidadToldos: Number(form.cantidadToldos?.value || 1),
-      mismoDisenoToldo:
-        form.querySelector('input[name="mismoDisenoToldo"]:checked')?.value || "Sí",
-      tipoToldo: form.querySelector('input[name="tipoToldo"]:checked')?.value || "",
-      tipoToldoOtro: String(form.tipoToldoOtro?.value || "").trim(),
-      toldoAncho: Number(form.toldoAncho?.value || 0),
-      toldoLargo: Number(form.toldoLargo?.value || 0),
-      toldoAlto: Number(form.toldoAlto?.value || 0),
-      incluyeEstructura:
-        form.querySelector('input[name="incluyeEstructura"]:checked')?.value || "",
-      partesToldo: checkedValues("partesToldo"),
-      materialToldo: form.querySelector('input[name="materialToldo"]:checked')?.value || "",
+      cantidadToldos: toldoCount(),
+      toldos: collectToldos(),
     };
   }
 
@@ -499,14 +595,17 @@
     if (!(t instanceof HTMLElement)) return;
     if (t.name === "material") syncMaterial();
     if (t.name === "autorizada") syncAuthGate();
-    if (t.name === "mismoDiseno" || t.name === "cantidadLonas") renderLonas();
+    if (t.name === "cantidadLonas") renderLonas();
+    if (t.name === "cantidadToldos") {
+      renderToldos();
+      syncTipoToldoOtro();
+    }
     if (t.name === "tipoEstablecimiento") syncTipoOtro();
-    if (t.name === "tipoToldo") syncTipoToldoOtro();
+    if (t.name?.startsWith("tipoToldo_")) syncTipoToldoOtro();
     if (t.name === "datosContactoOpciones") syncContacto();
     if (t.name === "tieneReferencia") syncReferencia();
   });
 
-  form.cantidadLonas?.addEventListener("input", renderLonas);
   claveInput.addEventListener("input", scheduleLookup);
   claveInput.addEventListener("blur", lookupClave);
 
@@ -555,6 +654,7 @@
   });
 
   renderLonas();
+  renderToldos();
   syncMaterial();
   syncTipoOtro();
   syncTipoToldoOtro();

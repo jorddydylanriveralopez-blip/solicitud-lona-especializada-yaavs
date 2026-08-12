@@ -68,7 +68,7 @@ const FIELD_ORDER = [
   ["receivedAt", "Fecha y hora"],
   ["material", "Material"],
   ["autorizada", "Autorizada por gerente"],
-  ["gerenteTerritorial", "Gerente territorial"],
+  ["gerenteTerritorial", "Gerente correspondiente"],
   ["coordinador", "Coordinador"],
   ["territorioGerente", "Territorio / estado"],
   ["ejecutivoNombre", "Ejecutivo de ventas"],
@@ -84,18 +84,9 @@ const FIELD_ORDER = [
   ["resultadoEsperado", "Resultado esperado"],
   ["serviciosActuales", "Servicios actuales"],
   ["cantidadLonas", "Cantidad de lonas"],
-  ["mismoDiseno", "¿Mismo diseño y medidas?"],
   ["lonas", "Especificaciones por lona"],
   ["cantidadToldos", "Cantidad de toldos"],
-  ["mismoDisenoToldo", "¿Mismo diseño toldo?"],
-  ["tipoToldo", "Tipo de toldo"],
-  ["tipoToldoOtro", "Tipo toldo (otro)"],
-  ["toldoAncho", "Toldo ancho cm"],
-  ["toldoLargo", "Toldo largo cm"],
-  ["toldoAlto", "Toldo alto cm"],
-  ["incluyeEstructura", "¿Incluye estructura?"],
-  ["partesToldo", "Partes del toldo"],
-  ["materialToldo", "Material del toldo"],
+  ["toldos", "Especificaciones por toldo"],
   ["marcas", "Marcas"],
   ["textoPrincipal", "Texto principal"],
   ["datosContactoOpciones", "Datos de contacto (opciones)"],
@@ -278,7 +269,7 @@ function flatten(entry) {
   for (const [key] of FIELD_ORDER) {
     if (key === "receivedAt" || key === "id" || key === "folio") continue;
     const v = a[key];
-    if (key === "lonas" || key === "logoFiles" || key === "referenciaFiles") {
+    if (key === "lonas" || key === "toldos" || key === "logoFiles" || key === "referenciaFiles") {
       out[key] = stringifyComplex(v);
     } else if (Array.isArray(v)) out[key] = v.join(", ");
     else if (v == null) out[key] = "";

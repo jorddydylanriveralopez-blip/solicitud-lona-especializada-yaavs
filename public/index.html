@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260811l4" />
-    <link rel="stylesheet" href="./lona.css?v=20260811l4" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260811l5" />
+    <link rel="stylesheet" href="./lona.css?v=20260811l5" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -76,7 +76,10 @@
             <h2>Validación de autorización</h2>
           </header>
           <fieldset class="choice-group" data-required="true">
-            <legend>¿Esta solicitud ya fue autorizada por el gerente territorial? <span class="req">*</span></legend>
+            <legend>
+              ¿Esta solicitud ya fue autorizada por el gerente territorial y subdirección comercial?
+              <span class="req">*</span>
+            </legend>
             <label class="choice">
               <input type="radio" name="autorizada" value="Sí, ya fue autorizada." required />
               <span>Sí, ya fue autorizada.</span>
@@ -87,8 +90,9 @@
             </label>
           </fieldset>
           <div id="blockNoAuth" class="alert alert-warn" hidden>
-            Para continuar, la solicitud deberá ser autorizada previamente por el gerente correspondiente.
-            Una vez obtenida la aprobación, podrás ingresar nuevamente y completar el formulario.
+            Para continuar, la solicitud deberá ser autorizada previamente por el gerente territorial y la
+            subdirección comercial. Una vez obtenida la aprobación, podrás ingresar nuevamente y completar
+            el formulario.
           </div>
         </section>
 
@@ -96,35 +100,24 @@
           <section class="card-section" id="secGerente">
             <header class="section-head">
               <span>3</span>
-              <h2>Datos del gerente territorial</h2>
+              <h2>Datos del gerente correspondiente</h2>
             </header>
             <p class="section-note">
-              Captura primero la clave YAAVSER para asignar automáticamente el gerente territorial.
+              Se completa automáticamente al capturar la clave YAAVSER en la sección 5. Si no aparece,
+              captúralo manualmente.
             </p>
             <div class="grid-2">
-              <label class="field">
-                <span>Clave de YAAVSER <span class="req">*</span></span>
-                <input
-                  type="text"
-                  name="claveYaavser"
-                  id="claveYaavser"
-                  required
-                  autocomplete="off"
-                  placeholder="Ej. 22CL05843"
-                />
-                <small class="help">Captura la clave completa y verifica que sea correcta.</small>
-              </label>
-              <label class="field">
-                <span>Nombre completo del gerente territorial <span class="req">*</span></span>
+              <label class="field grid-span-2">
+                <span>Nombre completo del gerente correspondiente <span class="req">*</span></span>
                 <input
                   type="text"
                   name="gerenteTerritorial"
                   id="gerenteTerritorial"
                   required
                   autocomplete="off"
-                  placeholder="Se completa con la clave"
+                  placeholder="Se completa con la clave YAAVSER"
                 />
-                <small class="help" id="gerenteHint">Al escribir la clave se asigna automáticamente.</small>
+                <small class="help" id="gerenteHint">Al escribir la clave YAAVSER se asigna automáticamente.</small>
               </label>
               <label class="field">
                 <span>Coordinador</span>
@@ -171,6 +164,18 @@
               <label class="field">
                 <span>Nombre completo del YAAVSER <span class="req">*</span></span>
                 <input type="text" name="yaavserNombre" id="yaavserNombre" required autocomplete="off" />
+              </label>
+              <label class="field">
+                <span>Clave de YAAVSER <span class="req">*</span></span>
+                <input
+                  type="text"
+                  name="claveYaavser"
+                  id="claveYaavser"
+                  required
+                  autocomplete="off"
+                  placeholder="Ej. 22CL05843"
+                />
+                <small class="help">Captura la clave completa. Con ella se completa el gerente correspondiente.</small>
               </label>
               <label class="field">
                 <span>Número telefónico de contacto <span class="req">*</span></span>
@@ -247,17 +252,14 @@
               <span>8</span>
               <h2>Especificaciones de la lona</h2>
             </header>
-            <div class="grid-2">
-              <label class="field">
-                <span>Cantidad de lonas solicitadas <span class="req">*</span></span>
-                <input type="number" name="cantidadLonas" id="cantidadLonas" min="1" max="10" step="1" value="1" />
-              </label>
-              <fieldset class="choice-group compact">
-                <legend>¿Todas usarán el mismo diseño y medidas? <span class="req">*</span></legend>
-                <label class="choice"><input type="radio" name="mismoDiseno" value="Sí" checked /><span>Sí</span></label>
-                <label class="choice"><input type="radio" name="mismoDiseno" value="No" /><span>No</span></label>
-              </fieldset>
-            </div>
+            <fieldset class="choice-group compact" data-required="true">
+              <legend>¿Cuántas lonas solicitas? <span class="req">*</span></legend>
+              <label class="choice"><input type="radio" name="cantidadLonas" value="1" checked /><span>1 lona</span></label>
+              <label class="choice"><input type="radio" name="cantidadLonas" value="2" /><span>2 lonas</span></label>
+            </fieldset>
+            <p class="section-note" id="lonaQtyNote" hidden>
+              Como pediste 2 lonas, completa las especificaciones de cada una por separado.
+            </p>
             <div id="lonasSpecs" class="lonas-specs"></div>
           </section>
           </div>
@@ -268,63 +270,14 @@
               <span>8</span>
               <h2>Especificaciones del toldo</h2>
             </header>
-            <div class="grid-2">
-              <label class="field">
-                <span>Cantidad de toldos solicitados <span class="req">*</span></span>
-                <input type="number" name="cantidadToldos" id="cantidadToldos" min="1" max="10" step="1" value="1" />
-              </label>
-              <fieldset class="choice-group compact">
-                <legend>¿Todos usarán el mismo diseño y medidas? <span class="req">*</span></legend>
-                <label class="choice"><input type="radio" name="mismoDisenoToldo" value="Sí" checked /><span>Sí</span></label>
-                <label class="choice"><input type="radio" name="mismoDisenoToldo" value="No" /><span>No</span></label>
-              </fieldset>
-            </div>
-            <fieldset class="choice-group" data-required="true">
-              <legend>Tipo de toldo <span class="req">*</span></legend>
-              <label class="choice"><input type="radio" name="tipoToldo" value="Toldo" /><span>Toldo</span></label>
-              <label class="choice"><input type="radio" name="tipoToldo" value="Columna desplegable" /><span>Columna desplegable</span></label>
-              <label class="choice"><input type="radio" name="tipoToldo" value="Toldo de fachada" /><span>Toldo de fachada</span></label>
-              <label class="choice"><input type="radio" name="tipoToldo" value="Toldo lateral / de pasillo" /><span>Toldo lateral / de pasillo</span></label>
-              <label class="choice"><input type="radio" name="tipoToldo" value="Otro" id="tipoToldoOtroChk" /><span>Otro</span></label>
+            <fieldset class="choice-group compact" data-required="true">
+              <legend>¿Cuántos toldos solicitas? <span class="req">*</span></legend>
+              <label class="choice"><input type="radio" name="cantidadToldos" value="1" checked /><span>1 toldo</span></label>
+              <label class="choice"><input type="radio" name="cantidadToldos" value="2" /><span>2 toldos</span></label>
             </fieldset>
-            <label class="field" id="tipoToldoOtroWrap" hidden>
-              <span>Especifica el tipo de toldo <span class="req">*</span></span>
-              <input type="text" name="tipoToldoOtro" />
-            </label>
-            <div class="grid-2">
-              <label class="field">
-                <span>Ancho (cm) <span class="req">*</span></span>
-                <input type="number" name="toldoAncho" id="toldoAncho" min="1" step="1" inputmode="numeric" />
-              </label>
-              <label class="field">
-                <span>Profundidad / largo (cm) <span class="req">*</span></span>
-                <input type="number" name="toldoLargo" id="toldoLargo" min="1" step="1" inputmode="numeric" />
-              </label>
-              <label class="field">
-                <span>Alto (cm) <span class="req">*</span></span>
-                <input type="number" name="toldoAlto" id="toldoAlto" min="1" step="1" inputmode="numeric" />
-              </label>
-              <fieldset class="choice-group compact">
-                <legend>¿Incluye estructura? <span class="req">*</span></legend>
-                <label class="choice"><input type="radio" name="incluyeEstructura" value="Sí" /><span>Sí</span></label>
-                <label class="choice"><input type="radio" name="incluyeEstructura" value="No" checked /><span>No</span></label>
-              </fieldset>
-            </div>
-            <fieldset class="choice-group" data-multi="true" data-required="true">
-              <legend>Partes a imprimir / diseñar <span class="req">*</span></legend>
-              <label class="choice"><input type="checkbox" name="partesToldo" value="Techo" /><span>Techo</span></label>
-              <label class="choice"><input type="checkbox" name="partesToldo" value="4 paredes" /><span>4 paredes</span></label>
-              <label class="choice"><input type="checkbox" name="partesToldo" value="3 paredes" /><span>3 paredes</span></label>
-              <label class="choice"><input type="checkbox" name="partesToldo" value="2 paredes" /><span>2 paredes</span></label>
-              <label class="choice"><input type="checkbox" name="partesToldo" value="Valance / faldón" /><span>Valance / faldón</span></label>
-              <label class="choice"><input type="checkbox" name="partesToldo" value="Solo frente" /><span>Solo frente</span></label>
-            </fieldset>
-            <fieldset class="choice-group">
-              <legend>Material del toldo <span class="req">*</span></legend>
-              <label class="choice"><input type="radio" name="materialToldo" value="Lona PVC" checked /><span>Lona PVC</span></label>
-              <label class="choice"><input type="radio" name="materialToldo" value="Poliéster" /><span>Poliéster</span></label>
-              <label class="choice"><input type="radio" name="materialToldo" value="Por definir con Mercadotecnia" /><span>Por definir con Mercadotecnia</span></label>
-            </fieldset>
+            <p class="section-note" id="toldoQtyNote" hidden>
+              Como pediste 2 toldos, completa las especificaciones de cada uno por separado.
+            </p>
             <div id="toldosSpecs" class="lonas-specs"></div>
           </section>
           </div>
@@ -417,6 +370,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260811l4" defer></script>
+    <script src="./app.js?v=20260811l5" defer></script>
   </body>
 </html>
