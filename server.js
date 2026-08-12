@@ -66,6 +66,7 @@ const upload = multer({
 const FIELD_ORDER = [
   ["folio", "Folio"],
   ["receivedAt", "Fecha y hora"],
+  ["material", "Material"],
   ["autorizada", "Autorizada por gerente"],
   ["gerenteTerritorial", "Gerente territorial"],
   ["coordinador", "Coordinador"],
@@ -79,12 +80,22 @@ const FIELD_ORDER = [
   ["puntoVenta", "Punto de venta"],
   ["tipoEstablecimiento", "Tipo de establecimiento"],
   ["tipoEstablecimientoOtro", "Tipo (otro)"],
-  ["objetivoLona", "Objetivo de la lona"],
+  ["objetivoLona", "Objetivo"],
   ["resultadoEsperado", "Resultado esperado"],
   ["serviciosActuales", "Servicios actuales"],
   ["cantidadLonas", "Cantidad de lonas"],
   ["mismoDiseno", "¿Mismo diseño y medidas?"],
   ["lonas", "Especificaciones por lona"],
+  ["cantidadToldos", "Cantidad de toldos"],
+  ["mismoDisenoToldo", "¿Mismo diseño toldo?"],
+  ["tipoToldo", "Tipo de toldo"],
+  ["tipoToldoOtro", "Tipo toldo (otro)"],
+  ["toldoAncho", "Toldo ancho cm"],
+  ["toldoLargo", "Toldo largo cm"],
+  ["toldoAlto", "Toldo alto cm"],
+  ["incluyeEstructura", "¿Incluye estructura?"],
+  ["partesToldo", "Partes del toldo"],
+  ["materialToldo", "Material del toldo"],
   ["marcas", "Marcas"],
   ["textoPrincipal", "Texto principal"],
   ["datosContactoOpciones", "Datos de contacto (opciones)"],
@@ -192,10 +203,11 @@ function writeResponses(list) {
   fs.writeFileSync(dataFile, JSON.stringify(list, null, 2), "utf8");
 }
 
-function nextFolio() {
+function nextFolio(material) {
   const n = readResponses().length + 1;
   const y = new Date().getFullYear().toString().slice(-2);
-  return `LONA-${y}-${String(n).padStart(4, "0")}`;
+  const prefix = String(material || "").toLowerCase().startsWith("toldo") ? "TOLDO" : "LONA";
+  return `${prefix}-${y}-${String(n).padStart(4, "0")}`;
 }
 
 function parseSubmitBody(req) {
@@ -281,7 +293,7 @@ function normalize(body) {
   const clean = { ...answers };
   delete clean.website;
   const id = body?.id || `lona_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const folio = body?.folio || clean.folio || nextFolio();
+  const folio = body?.folio || clean.folio || nextFolio(clean.material);
   clean.folio = folio;
   return {
     id,

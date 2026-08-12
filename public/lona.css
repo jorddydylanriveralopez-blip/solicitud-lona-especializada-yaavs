@@ -76,6 +76,36 @@
   color: var(--navy);
 }
 
+.req {
+  color: var(--bad);
+  font-weight: 800;
+}
+
+.material-pick {
+  gap: 0.65rem;
+}
+
+.material-choice {
+  align-items: center;
+  padding: 0.95rem 1rem;
+}
+
+.material-choice span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.material-choice strong {
+  font-size: 1.02rem;
+  color: var(--navy);
+}
+
+.material-choice small {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
 .report-form {
   display: grid;
   gap: 1rem;
