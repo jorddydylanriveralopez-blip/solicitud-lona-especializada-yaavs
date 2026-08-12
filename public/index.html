@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260812b1" />
-    <link rel="stylesheet" href="./lona.css?v=20260812b4" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260812c1" />
+    <link rel="stylesheet" href="./lona.css?v=20260812c1" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -68,7 +68,7 @@
               <input type="radio" name="material" value="Toldo" />
               <span>
                 <strong>Toldo</strong>
-                <small>Diseño y producción de toldo y columna desplegable</small>
+                <small>Diseño y producción de toldo y cortina desplegable</small>
               </span>
             </label>
           </fieldset>
@@ -105,38 +105,41 @@
           <section class="card-section" id="secGerente">
             <header class="section-head">
               <span>3</span>
-              <h2>Datos del gerente correspondiente</h2>
+              <h2>Datos del gerente que autorizó</h2>
             </header>
             <div class="grid-2">
-              <label class="field grid-span-2">
-                <span>Nombre completo del gerente correspondiente <span class="req">*</span></span>
+              <label class="field">
+                <span>Nombre <span class="req">*</span></span>
                 <input
                   type="text"
                   name="gerenteTerritorial"
                   id="gerenteTerritorial"
                   required
                   autocomplete="name"
-                  placeholder="Nombre completo del gerente"
+                  placeholder="Nombre completo"
                 />
               </label>
               <label class="field">
-                <span>Coordinador</span>
+                <span>Número telefónico <span class="req">*</span></span>
                 <input
-                  type="text"
-                  name="coordinador"
-                  id="coordinador"
-                  autocomplete="off"
-                  placeholder="Opcional"
+                  type="tel"
+                  name="gerenteTelefono"
+                  id="gerenteTelefono"
+                  required
+                  inputmode="tel"
+                  autocomplete="tel"
+                  placeholder="10 dígitos"
                 />
               </label>
-              <label class="field">
-                <span>Territorio / estado</span>
+              <label class="field grid-span-2">
+                <span>Territorio <span class="req">*</span></span>
                 <input
                   type="text"
                   name="territorioGerente"
                   id="territorioGerente"
+                  required
                   autocomplete="off"
-                  placeholder="Opcional"
+                  placeholder="Territorio o estado"
                 />
               </label>
             </div>
@@ -205,6 +208,7 @@
             </div>
             <fieldset class="choice-group" data-name="tipoEstablecimiento" data-multi="true" data-required="true">
               <legend>Tipo de establecimiento <span class="req">*</span></legend>
+              <p class="multi-hint">Puedes elegir más de una respuesta.</p>
               <label class="choice"><input type="checkbox" name="tipoEstablecimiento" value="Tienda de telefonía" /><span>Tienda de telefonía</span></label>
               <label class="choice"><input type="checkbox" name="tipoEstablecimiento" value="Tienda de accesorios" /><span>Tienda de accesorios</span></label>
               <label class="choice"><input type="checkbox" name="tipoEstablecimiento" value="Centro de reparación" /><span>Centro de reparación</span></label>
@@ -226,6 +230,7 @@
             </header>
             <fieldset class="choice-group" data-multi="true" data-required="true">
               <legend id="objetivoLegend">¿Cuál es el objetivo principal del material? <span class="req">*</span></legend>
+              <p class="multi-hint">Puedes elegir más de una respuesta.</p>
               <label class="choice"><input type="checkbox" name="objetivoLona" value="Multiservicio" /><span>Multiservicio</span></label>
               <label class="choice"><input type="checkbox" name="objetivoLona" value="Multimarca" /><span>Multimarca</span></label>
               <label class="choice"><input type="checkbox" name="objetivoLona" value="Promocionar una marca o servicio específico" /><span>Promocionar una marca o servicio específico</span></label>
@@ -233,6 +238,7 @@
             </fieldset>
             <fieldset class="choice-group" data-multi="true" data-required="true">
               <legend>¿Qué resultado se espera obtener? <span class="req">*</span></legend>
+              <p class="multi-hint">Puedes elegir más de una respuesta.</p>
               <label class="choice"><input type="checkbox" name="resultadoEsperado" value="Incrementar la visibilidad del negocio" /><span>Incrementar la visibilidad del negocio</span></label>
               <label class="choice"><input type="checkbox" name="resultadoEsperado" value="Atraer nuevos clientes" /><span>Atraer nuevos clientes</span></label>
               <label class="choice"><input type="checkbox" name="resultadoEsperado" value="Incrementar activaciones" /><span>Incrementar activaciones</span></label>
@@ -243,6 +249,7 @@
             </fieldset>
             <fieldset class="choice-group" data-multi="true" data-required="true">
               <legend>Servicios que actualmente ofrece el punto de venta <span class="req">*</span></legend>
+              <p class="multi-hint">Puedes elegir más de una respuesta.</p>
               <label class="choice"><input type="checkbox" name="serviciosActuales" value="Activación de líneas nuevas (venta de chips)" /><span>Activación de líneas nuevas (venta de chips)</span></label>
               <label class="choice"><input type="checkbox" name="serviciosActuales" value="Portabilidades" /><span>Portabilidades</span></label>
               <label class="choice"><input type="checkbox" name="serviciosActuales" value="eSIMs" /><span>eSIMs</span></label>
@@ -326,6 +333,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260812b6" defer></script>
+    <script src="./app.js?v=20260812c1" defer></script>
   </body>
 </html>

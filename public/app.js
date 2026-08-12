@@ -19,7 +19,7 @@
   const ORIENTACIONES = ["Horizontal", "Vertical", "Cuadrada"];
   const TIPOS_TOLDO = [
     "Toldo",
-    "Columna desplegable",
+    "Cortina desplegable",
     "Toldo de fachada",
     "Toldo lateral / de pasillo",
     "Otro",
@@ -143,17 +143,36 @@
     "Ninguno",
   ];
 
+  function fileFieldHtml(label, name, required = false) {
+    return `
+      <label class="field file-field">
+        <span>${label}${required ? ' <span class="req">*</span>' : ""}</span>
+        <div class="file-drop">
+          <input type="file" name="${name}" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" data-preview />
+          <div class="file-drop-copy">
+            <strong>Sube o selecciona un archivo</strong>
+            <small>JPG, PNG o PDF</small>
+          </div>
+          <div class="file-preview" hidden>
+            <div class="file-preview-media"></div>
+            <div class="file-preview-meta">
+              <strong class="file-preview-name"></strong>
+              <small class="file-preview-size"></small>
+            </div>
+          </div>
+        </div>
+      </label>
+    `;
+  }
+
   function designFieldsHtml(prefix, i) {
     return `
       <div class="design-block">
         <h4>Contenido y diseño</h4>
-        <label class="field">
-          <span>Logotipo del punto de venta <span class="req">*</span></span>
-          <input type="file" name="logo_${prefix}_${i}" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" />
-          <small class="help">JPG, PNG o PDF.</small>
-        </label>
+        ${fileFieldHtml("Logotipo del punto de venta", `logo_${prefix}_${i}`, true)}
         <fieldset class="choice-group" data-multi="true">
           <legend>Marcas principales que deberán aparecer <span class="req">*</span></legend>
+          <p class="multi-hint">Puedes elegir más de una respuesta.</p>
           ${MARCAS.map(
             (m) =>
               `<label class="choice"><input type="checkbox" name="marcas_${prefix}_${i}" value="${escapeHtml(m)}" /><span>${escapeHtml(m)}</span></label>`,
@@ -165,6 +184,7 @@
         </label>
         <fieldset class="choice-group" data-multi="true">
           <legend>Datos de contacto que deberán aparecer <span class="req">*</span></legend>
+          <p class="multi-hint">Puedes elegir más de una respuesta.</p>
           ${CONTACTO_OPTS.map(
             (c) =>
               `<label class="choice"><input type="checkbox" name="contacto_${prefix}_${i}" value="${escapeHtml(c)}" data-contacto="${prefix}_${i}" /><span>${escapeHtml(c)}</span></label>`,
@@ -179,12 +199,64 @@
           <label class="choice"><input type="radio" name="referencia_${prefix}_${i}" value="Sí" data-ref="${prefix}_${i}" /><span>Sí</span></label>
           <label class="choice"><input type="radio" name="referencia_${prefix}_${i}" value="No" checked data-ref="${prefix}_${i}" /><span>No</span></label>
         </fieldset>
-        <label class="field" data-ref-wrap="${prefix}_${i}" hidden>
-          <span>Adjunta el diseño o referencia anterior <span class="req">*</span></span>
-          <input type="file" name="referenciaFile_${prefix}_${i}" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" />
-        </label>
+        <div data-ref-wrap="${prefix}_${i}" hidden>
+          ${fileFieldHtml("Adjunta el diseño o referencia anterior", `referenciaFile_${prefix}_${i}`, true)}
+        </div>
       </div>
     `;
+  }
+
+  function formatBytes(n) {
+    if (!n && n !== 0) return "";
+    if (n < 1024) return `${n} B`;
+    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+    return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function bindFilePreviews(root = form) {
+    root.querySelectorAll('input[type="file"][data-preview]').forEach((input) => {
+      if (input.dataset.previewBound === "1") return;
+      input.dataset.previewBound = "1";
+      const drop = input.closest(".file-drop");
+      const preview = drop?.querySelector(".file-preview");
+      const copy = drop?.querySelector(".file-drop-copy");
+      const media = preview?.querySelector(".file-preview-media");
+      const nameEl = preview?.querySelector(".file-preview-name");
+      const sizeEl = preview?.querySelector(".file-preview-size");
+      let objectUrl = "";
+
+      const clearPreview = () => {
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+          objectUrl = "";
+        }
+        if (media) media.innerHTML = "";
+        if (preview) preview.hidden = true;
+        if (copy) copy.hidden = false;
+        drop?.classList.remove("has-file");
+      };
+
+      input.addEventListener("change", () => {
+        clearPreview();
+        const file = input.files?.[0];
+        if (!file || !preview || !media || !nameEl || !sizeEl) return;
+        nameEl.textContent = file.name;
+        sizeEl.textContent = formatBytes(file.size);
+        const isImage = /^image\//.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+        const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+        if (isImage) {
+          objectUrl = URL.createObjectURL(file);
+          media.innerHTML = `<img src="${objectUrl}" alt="Vista previa" />`;
+        } else if (isPdf) {
+          media.innerHTML = `<div class="file-doc-badge" aria-hidden="true">PDF</div>`;
+        } else {
+          media.innerHTML = `<div class="file-doc-badge" aria-hidden="true">DOC</div>`;
+        }
+        preview.hidden = false;
+        if (copy) copy.hidden = true;
+        drop?.classList.add("has-file");
+      });
+    });
   }
 
   function renderLonas() {
@@ -215,6 +287,7 @@
           </fieldset>
           <fieldset class="choice-group" data-multi="true">
             <legend>Acabados requeridos <span class="req">*</span></legend>
+            <p class="multi-hint">Puedes elegir más de una respuesta.</p>
             ${ACABADOS.map(
               (a) =>
                 `<label class="choice"><input type="checkbox" name="acabados_${i}" value="${escapeHtml(a)}" /><span>${escapeHtml(a)}</span></label>`,
@@ -225,6 +298,7 @@
       `);
     }
     lonasSpecs.innerHTML = blocks.join("");
+    bindFilePreviews(lonasSpecs);
   }
 
   function renderToldos() {
@@ -268,6 +342,7 @@
           </div>
           <fieldset class="choice-group" data-multi="true">
             <legend>Partes a imprimir / diseñar <span class="req">*</span></legend>
+            <p class="multi-hint">Puedes elegir más de una respuesta.</p>
             ${PARTES_TOLDO.map(
               (p) =>
                 `<label class="choice"><input type="checkbox" name="partes_${i}" value="${escapeHtml(p)}" /><span>${escapeHtml(p)}</span></label>`,
@@ -285,6 +360,7 @@
       `);
     }
     toldosSpecs.innerHTML = blocks.join("");
+    bindFilePreviews(toldosSpecs);
   }
 
   function collectDesign(prefix, i) {
@@ -472,7 +548,9 @@
       ["ejecutivoCorreo", "Captura el correo del ejecutivo."],
       ["yaavserNombre", "Captura el nombre del YAAVSER."],
       ["claveYaavser", "Captura la clave YAAVSER."],
-      ["gerenteTerritorial", "Captura o confirma el gerente territorial."],
+      ["gerenteTerritorial", "Captura el nombre del gerente que autorizó."],
+      ["gerenteTelefono", "Captura el teléfono del gerente que autorizó."],
+      ["territorioGerente", "Captura el territorio del gerente que autorizó."],
       ["yaavserTelefono", "Captura el teléfono del YAAVSER."],
       ["puntoVenta", "Captura el nombre del punto de venta."],
     ];
@@ -589,7 +667,7 @@
       material: mat,
       autorizada: form.querySelector('input[name="autorizada"]:checked')?.value || "",
       gerenteTerritorial: String(form.gerenteTerritorial.value || "").trim(),
-      coordinador: String(form.coordinador?.value || "").trim(),
+      gerenteTelefono: String(form.gerenteTelefono?.value || "").trim(),
       territorioGerente: String(form.territorioGerente?.value || "").trim(),
       ejecutivoNombre: String(form.ejecutivoNombre.value || "").trim(),
       ejecutivoTelefono: String(form.ejecutivoTelefono.value || "").trim(),
