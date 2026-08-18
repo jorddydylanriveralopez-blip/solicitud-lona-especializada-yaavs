@@ -35,10 +35,9 @@ body {
 .scene-photo {
   position: absolute;
   inset: 0;
-  background: url("./assets/bg-yaavs-telecom.jpg") center / cover no-repeat;
-  transform: scale(1.06);
-  filter: saturate(1.12) contrast(1.05);
-  animation: photo-drift 34s ease-in-out infinite alternate;
+  background: url("./assets/bg-telecom-signals.svg") center / cover no-repeat;
+  transform: scale(1.04);
+  animation: photo-drift 28s ease-in-out infinite alternate;
 }
 
 .scene-overlay {
@@ -47,12 +46,11 @@ body {
   background:
     linear-gradient(
       180deg,
-      rgba(5, 11, 20, 0.62) 0%,
-      rgba(5, 11, 20, 0.42) 36%,
-      rgba(5, 11, 20, 0.72) 100%
+      rgba(5, 11, 20, 0.28) 0%,
+      rgba(5, 11, 20, 0.18) 38%,
+      rgba(5, 11, 20, 0.55) 100%
     ),
-    radial-gradient(ellipse 68% 52% at 50% 42%, rgba(5, 11, 20, 0.55), transparent 70%),
-    radial-gradient(ellipse 72% 48% at 50% 0%, rgba(0, 151, 178, 0.18), transparent 62%);
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0, 151, 178, 0.16), transparent 62%);
 }
 
 @keyframes photo-drift {
