@@ -494,7 +494,7 @@
     const errors = [];
 
     if (!selectedMaterial()) {
-      errors.push("Selecciona qué material gustas pedir.");
+      errors.push("Selecciona el material a solicitar.");
       markInvalid(form.querySelector('input[name="material"]'));
       return errors;
     }
