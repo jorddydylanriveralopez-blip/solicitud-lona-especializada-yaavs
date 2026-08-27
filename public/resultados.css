@@ -646,11 +646,21 @@ body.lightbox-open {
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: rgba(5, 11, 20, 0.92);
-  backdrop-filter: blur(8px);
+  display: none;
+  pointer-events: none;
+}
+
+.lightbox.is-open {
   display: grid;
   place-items: center;
   padding: 20px;
+  pointer-events: auto;
+  background: rgba(5, 11, 20, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+.lightbox[hidden] {
+  display: none !important;
 }
 
 .lightbox-frame {

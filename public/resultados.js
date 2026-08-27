@@ -502,17 +502,21 @@
 
   function openLightbox(media, startIndex) {
     lightboxMedia = media.filter((f) => isImageMime(f.mime, f.name) && f.url);
-    lightboxIndex = Math.max(0, lightboxMedia.findIndex((f) => f === media[startIndex]));
+    if (!lightboxMedia.length) return;
+    lightboxIndex = lightboxMedia.findIndex((f) => f === media[startIndex]);
     if (lightboxIndex < 0) lightboxIndex = 0;
     updateLightbox();
     lightbox.hidden = false;
+    lightbox.classList.add("is-open");
     document.body.classList.add("lightbox-open");
   }
 
   function closeLightbox() {
     lightbox.hidden = true;
+    lightbox.classList.remove("is-open");
     document.body.classList.remove("lightbox-open");
     lightboxImg.removeAttribute("src");
+    lightboxCaption.textContent = "";
   }
 
   function updateLightbox() {
@@ -540,7 +544,7 @@
     updateLightbox();
   };
   document.addEventListener("keydown", (e) => {
-    if (lightbox.hidden) return;
+    if (!lightbox.classList.contains("is-open")) return;
     if (e.key === "Escape") closeLightbox();
     if (e.key === "ArrowLeft") lightboxPrev.click();
     if (e.key === "ArrowRight") lightboxNext.click();
