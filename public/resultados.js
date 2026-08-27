@@ -83,11 +83,10 @@
     if (!items.length) {
       detailEl.innerHTML = `
         <section class="card">
-          <p class="empty">Aún no hay solicitudes en este servidor.</p>
+          <p class="empty">Aún no hay solicitudes en el tablero.</p>
           <p class="empty-note">
-            Este panel se actualiza solo cada 2 segundos. Si acabas de enviar una solicitud y no aparece,
-            recarga la página. En Render el disco se reinicia al redeploy: para un tablero permanente
-            configura <code>SHEETS_WEBHOOK_URL</code>.
+            Este panel se actualiza solo cada 2 segundos y lee Google Sheets + respuestas locales.
+            Si acabas de enviar una solicitud y no aparece, espera unos segundos o recarga.
           </p>
         </section>`;
       return;
@@ -137,10 +136,17 @@
       items = next;
       if (index >= items.length) index = 0;
 
-      const sheetsLabel = sheetsConfigured ? " · Sheets OK" : "";
+      const source = data.source || (sheetsConfigured ? "sheets" : "local");
+      const sourceLabel =
+        source === "sheets+local"
+          ? " · Tablero + Sheets"
+          : sheetsConfigured
+            ? " · Solo local"
+            : "";
+      const errLabel = data.sheetsError ? " · Sync Sheets pendiente" : "";
       liveStatus.textContent = `En vivo · ${items.length} solicitud${
         items.length === 1 ? "" : "es"
-      } · ${formatTime(data.updatedAt)}${sheetsLabel}`;
+      } · ${formatTime(data.updatedAt)}${sourceLabel}${errLabel}`;
       renderStats();
       renderDetail();
     } catch (_) {

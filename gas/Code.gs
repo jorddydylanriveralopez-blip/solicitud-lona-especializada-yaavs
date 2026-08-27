@@ -13,6 +13,9 @@
  * 6. En Render → Environment:
  *    SHEETS_WEBHOOK_URL=<esa URL>
  * 7. Redeploy / Manual Deploy
+ *
+ * Si actualizas este código: Implementar → Administrar implementaciones
+ * → Editar (lápiz) → Versión: Nueva versión → Implementar
  */
 
 var SHEET_NAME = "Respuestas Lona Toldo";
@@ -45,14 +48,54 @@ var HEADERS = [
   "ID interno",
 ];
 
-function doGet() {
-  return ContentService.createTextOutput(
-    JSON.stringify({
+var KEYS = [
+  "receivedAt",
+  "folio",
+  "material",
+  "autorizada",
+  "gerenteTerritorial",
+  "gerenteTelefono",
+  "territorioGerente",
+  "ejecutivoNombre",
+  "ejecutivoTelefono",
+  "ejecutivoCorreo",
+  "yaavserNombre",
+  "claveYaavser",
+  "yaavserTelefono",
+  "puntoVenta",
+  "tipoEstablecimiento",
+  "tipoEstablecimientoOtro",
+  "objetivoLona",
+  "resultadoEsperado",
+  "serviciosActuales",
+  "cantidadLonas",
+  "lonas",
+  "cantidadToldos",
+  "toldos",
+  "confirmaciones",
+  "id",
+];
+
+function doGet(e) {
+  try {
+    var action = (e && e.parameter && e.parameter.action) || "";
+    if (action === "list") {
+      return jsonOut_({
+        ok: true,
+        source: "sheets",
+        items: listItems_(),
+        sheet: SHEET_NAME,
+      });
+    }
+    return jsonOut_({
       ok: true,
       service: "Lona / Toldo especializada YAAVS",
       sheet: SHEET_NAME,
-    }),
-  ).setMimeType(ContentService.MimeType.JSON);
+      list: "?action=list",
+    });
+  } catch (err) {
+    return jsonOut_({ ok: false, error: String(err) });
+  }
 }
 
 function doPost(e) {
@@ -61,18 +104,20 @@ function doPost(e) {
     var data = JSON.parse(raw);
     var sheet = ensureSheet_();
     sheet.appendRow(rowFromPayload_(data));
-    return ContentService.createTextOutput(
-      JSON.stringify({ ok: true, appended: true }),
-    ).setMimeType(ContentService.MimeType.JSON);
+    return jsonOut_({ ok: true, appended: true });
   } catch (err) {
-    return ContentService.createTextOutput(
-      JSON.stringify({ ok: false, error: String(err) }),
-    ).setMimeType(ContentService.MimeType.JSON);
+    return jsonOut_({ ok: false, error: String(err) });
   }
 }
 
 function setupSheet() {
   ensureSheet_();
+}
+
+function jsonOut_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(
+    ContentService.MimeType.JSON,
+  );
 }
 
 function ensureSheet_() {
@@ -88,6 +133,31 @@ function ensureSheet_() {
     sheet.autoResizeColumns(1, Math.min(12, HEADERS.length));
   }
   return sheet;
+}
+
+function listItems_() {
+  var sheet = ensureSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+  var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getDisplayValues();
+  var items = [];
+  for (var r = 0; r < values.length; r++) {
+    var row = values[r];
+    var item = {};
+    var empty = true;
+    for (var c = 0; c < KEYS.length; c++) {
+      var val = row[c];
+      if (val != null && String(val).trim() !== "") empty = false;
+      item[KEYS[c]] = val == null ? "" : String(val);
+    }
+    if (empty) continue;
+    if (!item.id) item.id = item.folio || "sheet_" + (r + 2);
+    items.push(item);
+  }
+  items.sort(function (a, b) {
+    return String(b.receivedAt || "").localeCompare(String(a.receivedAt || ""));
+  });
+  return items;
 }
 
 function asText_(v) {

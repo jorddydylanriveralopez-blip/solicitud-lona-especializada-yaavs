@@ -12,6 +12,8 @@ npm start
 
 - Formulario: http://localhost:3000  
 - Resultados (tablero en vivo): http://localhost:3000/resultados  
+  El tablero lee Google Sheets (`?action=list`) + respuestas locales, así sobrevive
+  reinicios de Render. Sheets sigue siendo el archivo permanente.
 - Export Excel: http://localhost:3000/api/export.xlsx  
 
 ## Tablero en tiempo real

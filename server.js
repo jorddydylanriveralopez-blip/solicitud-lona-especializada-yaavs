@@ -325,7 +325,8 @@ async function forwardToSheets(entry) {
   });
 
   try {
-    // Apps Script suele responder 302; hay que reenviar el POST a Location
+    // Apps Script ejecuta doPost en el 1er hop y responde 302.
+    // El cuerpo de respuesta se lee con GET en Location (POST ahí da 405).
     let res = await fetch(SHEETS_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -333,19 +334,22 @@ async function forwardToSheets(entry) {
       redirect: "manual",
     });
 
-    if (res.status >= 300 && res.status < 400) {
+    let text = "";
+    let status = res.status;
+    if (status >= 300 && status < 400) {
       const loc = res.headers.get("location");
       if (loc) {
-        res = await fetch(loc, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: payload,
-          redirect: "follow",
-        });
+        const follow = await fetch(loc, { method: "GET", redirect: "follow" });
+        text = await follow.text().catch(() => "");
+        status = follow.ok ? 200 : follow.status;
+      } else {
+        // Redirect sin Location: doPost ya corrió
+        status = 200;
       }
+    } else {
+      text = await res.text().catch(() => "");
     }
 
-    const text = await res.text().catch(() => "");
     let body = null;
     try {
       body = text ? JSON.parse(text) : null;
@@ -353,10 +357,11 @@ async function forwardToSheets(entry) {
       body = text ? { raw: text.slice(0, 200) } : null;
     }
 
-    if (!res.ok) {
-      console.error("Sheets webhook HTTP", res.status, text.slice(0, 300));
+    const ok = status >= 200 && status < 300;
+    if (!ok) {
+      console.error("Sheets webhook HTTP", status, text.slice(0, 300));
     }
-    return { ok: res.ok, status: res.status, body };
+    return { ok, status, body };
   } catch (err) {
     console.error("Sheets webhook error:", err.message);
     return { ok: false, error: err.message };
@@ -386,6 +391,86 @@ function sortedItems() {
       const tb = new Date(b.receivedAt || b.timestamp || 0).getTime();
       return tb - ta;
     });
+}
+
+let sheetsListCache = { at: 0, items: null, error: null };
+const SHEETS_LIST_CACHE_MS = 2500;
+
+function sheetsListUrl() {
+  if (!SHEETS_WEBHOOK_URL) return "";
+  const sep = SHEETS_WEBHOOK_URL.includes("?") ? "&" : "?";
+  return `${SHEETS_WEBHOOK_URL}${sep}action=list`;
+}
+
+async function fetchSheetsItems() {
+  if (!SHEETS_WEBHOOK_URL) return null;
+  const now = Date.now();
+  if (sheetsListCache.items && now - sheetsListCache.at < SHEETS_LIST_CACHE_MS) {
+    return sheetsListCache.items;
+  }
+  try {
+    const res = await fetch(sheetsListUrl(), { redirect: "follow" });
+    const text = await res.text();
+    let data = null;
+    try {
+      data = JSON.parse(text);
+    } catch (_) {
+      throw new Error(`Sheets list no-JSON (${res.status})`);
+    }
+    if (!data?.ok || !Array.isArray(data.items)) {
+      throw new Error(data?.error || "Sheets list inválido");
+    }
+    sheetsListCache = { at: now, items: data.items, error: null };
+    return data.items;
+  } catch (err) {
+    console.error("Sheets list error:", err.message);
+    sheetsListCache = {
+      at: now,
+      items: sheetsListCache.items,
+      error: err.message,
+    };
+    return sheetsListCache.items;
+  }
+}
+
+function mergeBoardItems(localItems, sheetsItems) {
+  const map = new Map();
+  const keyOf = (item) => {
+    const id = String(item?.id || "").trim();
+    const folio = String(item?.folio || "").trim();
+    if (id) return `id:${id}`;
+    if (folio) return `folio:${folio}`;
+    return `row:${item?.receivedAt || ""}|${item?.claveYaavser || ""}|${item?.material || ""}`;
+  };
+  for (const item of sheetsItems || []) {
+    map.set(keyOf(item), item);
+  }
+  for (const item of localItems || []) {
+    const k = keyOf(item);
+    map.set(k, { ...(map.get(k) || {}), ...item });
+  }
+  return [...map.values()].sort((a, b) => {
+    const ta = new Date(a.receivedAt || a.timestamp || 0).getTime();
+    const tb = new Date(b.receivedAt || b.timestamp || 0).getTime();
+    return tb - ta;
+  });
+}
+
+async function boardItems() {
+  const local = sortedItems();
+  const sheets = await fetchSheetsItems();
+  if (!sheets) {
+    return {
+      items: local,
+      source: "local",
+      sheetsError: sheetsListCache.error || null,
+    };
+  }
+  return {
+    items: mergeBoardItems(local, sheets),
+    source: "sheets+local",
+    sheetsError: sheetsListCache.error || null,
+  };
 }
 
 async function buildWorkbook(items) {
@@ -427,13 +512,16 @@ async function buildWorkbook(items) {
   return workbook;
 }
 
-app.get("/api/health", (_req, res) => {
+app.get("/api/health", async (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
+  const board = await boardItems();
   res.json({
     ok: true,
     yaavsers: loadYaavsers().size,
-    responses: readResponses().length,
+    responses: board.items.length,
+    localResponses: readResponses().length,
     sheetsConfigured: Boolean(SHEETS_WEBHOOK_URL),
+    source: board.source,
     dataDir,
   });
 });
@@ -458,21 +546,23 @@ app.get("/api/yaavser/:clave", (req, res) => {
   });
 });
 
-app.get("/api/responses", (_req, res) => {
+app.get("/api/responses", async (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  const items = sortedItems();
+  const board = await boardItems();
   res.json({
     ok: true,
-    items,
-    total: items.length,
+    items: board.items,
+    total: board.items.length,
+    source: board.source,
     sheetsConfigured: Boolean(SHEETS_WEBHOOK_URL),
+    sheetsError: board.sheetsError || null,
     updatedAt: new Date().toISOString(),
   });
 });
 
 app.get("/api/export.xlsx", async (_req, res) => {
   try {
-    const items = sortedItems();
+    const { items } = await boardItems();
     const wb = await buildWorkbook(items);
     res.setHeader(
       "Content-Type",
@@ -490,8 +580,8 @@ app.get("/api/export.xlsx", async (_req, res) => {
   }
 });
 
-app.get("/api/export.csv", (_req, res) => {
-  const items = sortedItems();
+app.get("/api/export.csv", async (_req, res) => {
+  const { items } = await boardItems();
   const headers = ["#", ...FIELD_ORDER.map(([, label]) => label)];
   const keys = FIELD_ORDER.map(([key]) => key);
   const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
