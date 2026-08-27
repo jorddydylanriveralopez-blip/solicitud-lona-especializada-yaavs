@@ -4,6 +4,8 @@
   const liveStatus = document.getElementById("liveStatus");
   let items = [];
   let index = 0;
+  let lastTotal = -1;
+  let sheetsConfigured = false;
 
   const LABELS = [
     ["folio", "Folio"],
@@ -50,6 +52,18 @@
     }).format(d);
   }
 
+  function formatTime(iso) {
+    const d = new Date(iso || Date.now());
+    if (Number.isNaN(d.getTime())) return "";
+    return new Intl.DateTimeFormat("es-MX", {
+      timeZone: "America/Mexico_City",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(d);
+  }
+
   function renderStats() {
     statsEl.innerHTML = `
       <div class="stat"><span>Solicitudes</span><strong>${items.length}</strong></div>
@@ -67,7 +81,15 @@
 
   function renderDetail() {
     if (!items.length) {
-      detailEl.innerHTML = `<section class="card"><p class="empty">Aún no hay solicitudes.</p></section>`;
+      detailEl.innerHTML = `
+        <section class="card">
+          <p class="empty">Aún no hay solicitudes en este servidor.</p>
+          <p class="empty-note">
+            Este panel se actualiza solo cada 2 segundos. Si acabas de enviar una solicitud y no aparece,
+            recarga la página. En Render el disco se reinicia al redeploy: para un tablero permanente
+            configura <code>SHEETS_WEBHOOK_URL</code>.
+          </p>
+        </section>`;
       return;
     }
     const item = items[index] || items[0];
@@ -102,18 +124,33 @@
 
   async function refresh() {
     try {
-      const res = await fetch("/api/responses", { cache: "no-store" });
+      const res = await fetch(`/api/responses?ts=${Date.now()}`, { cache: "no-store" });
       const data = await res.json();
-      items = Array.isArray(data.items) ? data.items : [];
+      const next = Array.isArray(data.items) ? data.items : [];
+      sheetsConfigured = Boolean(data.sheetsConfigured);
+
+      // Si llegó una nueva solicitud, saltar a la más reciente
+      if (next.length > lastTotal && lastTotal >= 0) {
+        index = 0;
+      }
+      lastTotal = next.length;
+      items = next;
       if (index >= items.length) index = 0;
-      liveStatus.textContent = `En vivo · ${items.length} solicitud${items.length === 1 ? "" : "es"}`;
+
+      const sheetsLabel = sheetsConfigured ? " · Sheets OK" : "";
+      liveStatus.textContent = `En vivo · ${items.length} solicitud${
+        items.length === 1 ? "" : "es"
+      } · ${formatTime(data.updatedAt)}${sheetsLabel}`;
       renderStats();
       renderDetail();
     } catch (_) {
-      liveStatus.textContent = "Sin conexión";
+      liveStatus.textContent = "Sin conexión · reintentando…";
     }
   }
 
   refresh();
-  setInterval(refresh, 4000);
+  setInterval(refresh, 2000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refresh();
+  });
 })();

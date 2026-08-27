@@ -232,6 +232,17 @@ body {
   color: var(--muted);
 }
 
+.empty-note {
+  margin: 0.75rem 0 0;
+  color: rgba(90, 115, 140, 0.95);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.empty-note code {
+  font-size: 0.82em;
+}
+
 @media (max-width: 640px) {
   .topbar {
     padding: max(16px, env(safe-area-inset-top)) 16px 8px;

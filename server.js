@@ -29,10 +29,17 @@ const ExcelJS = require("exceljs");
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const publicDir = path.join(__dirname, "public");
-const dataDir = path.join(__dirname, "data");
+const dataDir = process.env.DATA_DIR
+  ? path.resolve(String(process.env.DATA_DIR))
+  : path.join(__dirname, "data");
 const dataFile = path.join(dataDir, "responses.json");
 const uploadsRoot = path.join(dataDir, "uploads");
-const yaavsersFile = path.join(dataDir, "yaavsers.json");
+const yaavsersFile = path.join(
+  fs.existsSync(path.join(dataDir, "yaavsers.json"))
+    ? dataDir
+    : path.join(__dirname, "data"),
+  "yaavsers.json",
+);
 const SHEETS_WEBHOOK_URL = String(process.env.SHEETS_WEBHOOK_URL || "").trim();
 const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
 const MAX_FILES = 20;
@@ -307,14 +314,49 @@ function normalize(body) {
 
 async function forwardToSheets(entry) {
   if (!SHEETS_WEBHOOK_URL) return { skipped: true };
+  const flat = flatten(entry);
+  const payload = JSON.stringify({
+    ...flat,
+    receivedAt: flat.receivedAt || entry.receivedAt,
+    timestamp: entry.timestamp || flat.receivedAt,
+    id: entry.id,
+    folio: entry.folio,
+    answers: entry.answers,
+  });
+
   try {
-    const flat = flatten(entry);
-    const res = await fetch(SHEETS_WEBHOOK_URL, {
+    // Apps Script suele responder 302; hay que reenviar el POST a Location
+    let res = await fetch(SHEETS_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...flat, answers: entry.answers }),
+      body: payload,
+      redirect: "manual",
     });
-    return { ok: res.ok, status: res.status };
+
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get("location");
+      if (loc) {
+        res = await fetch(loc, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+          redirect: "follow",
+        });
+      }
+    }
+
+    const text = await res.text().catch(() => "");
+    let body = null;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch (_) {
+      body = text ? { raw: text.slice(0, 200) } : null;
+    }
+
+    if (!res.ok) {
+      console.error("Sheets webhook HTTP", res.status, text.slice(0, 300));
+    }
+    return { ok: res.ok, status: res.status, body };
   } catch (err) {
     console.error("Sheets webhook error:", err.message);
     return { ok: false, error: err.message };
@@ -386,7 +428,14 @@ async function buildWorkbook(items) {
 }
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, yaavsers: loadYaavsers().size });
+  res.setHeader("Cache-Control", "no-store");
+  res.json({
+    ok: true,
+    yaavsers: loadYaavsers().size,
+    responses: readResponses().length,
+    sheetsConfigured: Boolean(SHEETS_WEBHOOK_URL),
+    dataDir,
+  });
 });
 
 app.get("/api/yaavser/:clave", (req, res) => {
@@ -410,7 +459,15 @@ app.get("/api/yaavser/:clave", (req, res) => {
 });
 
 app.get("/api/responses", (_req, res) => {
-  res.json({ items: sortedItems(), total: readResponses().length });
+  res.setHeader("Cache-Control", "no-store");
+  const items = sortedItems();
+  res.json({
+    ok: true,
+    items,
+    total: items.length,
+    sheetsConfigured: Boolean(SHEETS_WEBHOOK_URL),
+    updatedAt: new Date().toISOString(),
+  });
 });
 
 app.get("/api/export.xlsx", async (_req, res) => {
@@ -476,13 +533,20 @@ app.post("/api/submit", (req, res) => {
       const list = readResponses();
       list.push(entry);
       writeResponses(list);
-      const sheets = await forwardToSheets(entry);
+
+      // Responder ya al formulario; el tablero (Sheets) se actualiza en paralelo
       res.json({
         ok: true,
         id: entry.id,
         folio: entry.folio,
-        sheets,
+        sheets: { queued: Boolean(SHEETS_WEBHOOK_URL) },
       });
+
+      if (SHEETS_WEBHOOK_URL) {
+        forwardToSheets(entry).catch((err) =>
+          console.error("Sheets webhook error:", err?.message || err),
+        );
+      }
     } catch (e) {
       console.error(e);
       res.status(500).json({ ok: false, error: "No se pudo guardar la solicitud" });
@@ -531,4 +595,10 @@ loadYaavsers();
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Lona especializada YAAVS on http://0.0.0.0:${PORT}`);
   console.log(`Catálogo YAAVSER: ${loadYaavsers().size} claves`);
+  console.log(`Data dir: ${dataDir}`);
+  console.log(
+    SHEETS_WEBHOOK_URL
+      ? "Google Sheets webhook: configurado"
+      : "Google Sheets webhook: pendiente (SHEETS_WEBHOOK_URL)",
+  );
 });

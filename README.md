@@ -2,10 +2,6 @@
 
 Formulario web a partir del brief de diseño y producción de lona especializada.
 
-- Al capturar la **clave YAAVSER**, se completa automáticamente el **gerente territorial** (catálogo en `data/yaavsers.json`).
-- Si la clave no existe en el catálogo, el gerente se puede capturar a mano.
-- Si responde que **no** hay autorización gerencial, el formulario se detiene.
-
 ## Arrancar
 
 ```bash
@@ -15,10 +11,19 @@ npm start
 ```
 
 - Formulario: http://localhost:3000  
-- Resultados: http://localhost:3000/resultados  
+- Resultados (tablero en vivo): http://localhost:3000/resultados  
 - Export Excel: http://localhost:3000/api/export.xlsx  
 
-## Catálogo clave → gerente
+## Tablero en tiempo real
 
-El archivo `data/yaavsers.json` se generó desde `Libro1_unificado.xlsx`.
-Para actualizarlo, vuelve a exportar la base con columnas `ClaveUnica` y `Gerente` y regenera el JSON.
+1. Panel web: `/resultados` se refresca solo cada 2 segundos.
+2. Google Sheets (recomendado en Render):
+   - Copia `gas/Code.gs` a Apps Script de una hoja nueva
+   - Ejecuta `setupSheet()`
+   - Publica como aplicación web (acceso: Cualquiera)
+   - En Render → Environment agrega `SHEETS_WEBHOOK_URL` con la URL `/exec`
+   - Redeploy
+
+En el plan free de Render el disco se reinicia al redeploy/sleep. Para no perder datos:
+- configura Sheets, o
+- monta un disco y define `DATA_DIR=/var/data`
