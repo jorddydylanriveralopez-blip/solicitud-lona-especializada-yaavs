@@ -46,6 +46,7 @@ var HEADERS = [
   "Especificaciones por toldo",
   "Confirmaciones",
   "ID interno",
+  "Archivos adjuntos",
 ];
 
 var KEYS = [
@@ -74,6 +75,7 @@ var KEYS = [
   "toldos",
   "confirmaciones",
   "id",
+  "media",
 ];
 
 function doGet(e) {
@@ -102,9 +104,11 @@ function doPost(e) {
   try {
     var raw = (e && e.postData && e.postData.contents) || "{}";
     var data = JSON.parse(raw);
+    var media = saveAttachments_(data.attachments || [], data.folio || data.id || "");
+    data.media = media;
     var sheet = ensureSheet_();
     sheet.appendRow(rowFromPayload_(data));
-    return jsonOut_({ ok: true, appended: true });
+    return jsonOut_({ ok: true, appended: true, mediaCount: media.length });
   } catch (err) {
     return jsonOut_({ ok: false, error: String(err) });
   }
@@ -152,6 +156,7 @@ function listItems_() {
     }
     if (empty) continue;
     if (!item.id) item.id = item.folio || "sheet_" + (r + 2);
+    item.media = parseMedia_(item.media);
     items.push(item);
   }
   items.sort(function (a, b) {
@@ -181,7 +186,58 @@ function pick_(data, key) {
   return "";
 }
 
+function parseMedia_(raw) {
+  if (!raw) return [];
+  if (Object.prototype.toString.call(raw) === "[object Array]") return raw;
+  try {
+    var parsed = JSON.parse(String(raw));
+    return Object.prototype.toString.call(parsed) === "[object Array]" ? parsed : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function attachmentsFolder_() {
+  var name = "YAAVS Lona Toldo Archivos";
+  var folders = DriveApp.getFoldersByName(name);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(name);
+}
+
+function saveAttachments_(attachments, label) {
+  if (!attachments || !attachments.length) return [];
+  var folder = attachmentsFolder_();
+  var out = [];
+  for (var i = 0; i < attachments.length; i++) {
+    var att = attachments[i];
+    if (!att || !att.data) continue;
+    try {
+      var blob = Utilities.newBlob(
+        Utilities.base64Decode(att.data),
+        att.mime || "application/octet-stream",
+        att.name || "archivo",
+      );
+      var safeLabel = String(label || "solicitud").replace(/[^\w\-]+/g, "_").slice(0, 40);
+      var file = folder.createFile(blob);
+      file.setName(safeLabel + "_" + (att.name || file.getName()));
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      out.push({
+        name: att.name || file.getName(),
+        mime: att.mime || blob.getContentType(),
+        url: "https://drive.google.com/uc?export=view&id=" + file.getId(),
+        kind: att.kind || "archivo",
+        group: att.group || "",
+        label: att.kind === "logo" ? "Logotipo" : att.kind === "referencia" ? "Referencia" : "Archivo",
+      });
+    } catch (err) {
+      // omitir adjunto fallido
+    }
+  }
+  return out;
+}
+
 function rowFromPayload_(data) {
+  var media = data.media || [];
   return [
     pick_(data, "receivedAt") || pick_(data, "timestamp") || new Date().toISOString(),
     pick_(data, "folio"),
@@ -208,5 +264,6 @@ function rowFromPayload_(data) {
     asText_(pick_(data, "toldos")),
     asText_(pick_(data, "confirmaciones")),
     pick_(data, "id"),
+    media.length ? JSON.stringify(media) : "",
   ];
 }

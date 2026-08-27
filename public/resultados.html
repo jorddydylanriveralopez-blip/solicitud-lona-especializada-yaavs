@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./resultados.css?v=20260827a1" />
+    <link rel="stylesheet" href="./resultados.css?v=20260827c1" />
   </head>
   <body>
     <div class="atmosphere" aria-hidden="true">
@@ -40,15 +40,28 @@
       <div class="top-actions">
         <a class="ghost-link" href="./api/export.xlsx">Exportar Excel</a>
         <a class="ghost-link" href="./api/export.csv">CSV</a>
-        <a class="ghost-link" href="./">Nueva solicitud</a>
+        <a class="ghost-link primary-link" href="./">Nueva solicitud</a>
       </div>
     </header>
 
     <main class="layout">
-      <section class="stats" id="stats"></section>
-      <section class="detail" id="detail"></section>
+      <section class="stats" id="stats" aria-label="Resumen"></section>
+      <div class="board-shell">
+        <aside class="request-list" id="requestList" aria-label="Lista de solicitudes"></aside>
+        <section class="detail" id="detail" aria-live="polite"></section>
+      </div>
     </main>
 
-    <script src="./resultados.js?v=20260827b1" defer></script>
+    <div class="lightbox" id="lightbox" hidden>
+      <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Cerrar">×</button>
+      <button type="button" class="lightbox-nav prev" id="lightboxPrev" aria-label="Anterior">‹</button>
+      <figure class="lightbox-frame">
+        <img id="lightboxImg" alt="" />
+        <figcaption id="lightboxCaption"></figcaption>
+      </figure>
+      <button type="button" class="lightbox-nav next" id="lightboxNext" aria-label="Siguiente">›</button>
+    </div>
+
+    <script src="./resultados.js?v=20260827c1" defer></script>
   </body>
 </html>

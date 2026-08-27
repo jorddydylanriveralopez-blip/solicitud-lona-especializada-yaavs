@@ -244,6 +244,105 @@ function attachItemFiles(entryId, items, prefix, files) {
   });
 }
 
+function extractMediaFromItems(items, labelKey) {
+  const media = [];
+  if (!Array.isArray(items)) return media;
+  items.forEach((item, idx) => {
+    const group = item[labelKey] || item.lona || item.toldo || `Item ${idx + 1}`;
+    for (const f of item.logoFiles || []) {
+      media.push({ ...f, kind: "logo", group, label: "Logotipo" });
+    }
+    for (const f of item.referenciaFiles || []) {
+      media.push({ ...f, kind: "referencia", group, label: "Referencia de diseño" });
+    }
+  });
+  return media;
+}
+
+function extractMedia(entry) {
+  const answers = entry?.answers && typeof entry.answers === "object" ? entry.answers : {};
+  return [
+    ...extractMediaFromItems(answers.lonas, "lona"),
+    ...extractMediaFromItems(answers.toldos, "toldo"),
+  ];
+}
+
+function parseMediaField(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (raw == null || raw === "") return [];
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+  return [];
+}
+
+function buildAttachments(entry) {
+  const entryId = entry?.id;
+  if (!entryId) return [];
+  const answers = entry.answers && typeof entry.answers === "object" ? entry.answers : {};
+  const attachments = [];
+  let totalBytes = 0;
+  const maxTotal = 18 * 1024 * 1024;
+  const maxFile = 8 * 1024 * 1024;
+
+  const pushFiles = (files, kind, group) => {
+    for (const f of files || []) {
+      const storedAs = f.storedAs || path.basename(String(f.url || ""));
+      if (!storedAs) continue;
+      const diskPath = path.join(uploadsRoot, entryId, storedAs);
+      if (!fs.existsSync(diskPath)) continue;
+      const stat = fs.statSync(diskPath);
+      if (stat.size > maxFile || totalBytes + stat.size > maxTotal) continue;
+      totalBytes += stat.size;
+      attachments.push({
+        name: f.name || storedAs,
+        mime: f.mime || "application/octet-stream",
+        kind,
+        group,
+        data: fs.readFileSync(diskPath).toString("base64"),
+      });
+    }
+  };
+
+  for (const item of answers.lonas || []) {
+    const group = item.lona || "Lona";
+    pushFiles(item.logoFiles, "logo", group);
+    pushFiles(item.referenciaFiles, "referencia", group);
+  }
+  for (const item of answers.toldos || []) {
+    const group = item.toldo || "Toldo";
+    pushFiles(item.logoFiles, "logo", group);
+    pushFiles(item.referenciaFiles, "referencia", group);
+  }
+  return attachments;
+}
+
+function boardItemFromEntry(entry) {
+  const flat = flatten(entry);
+  const answers = entry.answers && typeof entry.answers === "object" ? entry.answers : {};
+  return {
+    ...flat,
+    media: extractMedia(entry),
+    lonasDetail: Array.isArray(answers.lonas) ? answers.lonas : null,
+    toldosDetail: Array.isArray(answers.toldos) ? answers.toldos : null,
+  };
+}
+
+function enrichSheetItem(item) {
+  const media = parseMediaField(item.media);
+  return {
+    ...item,
+    media,
+    lonasDetail: null,
+    toldosDetail: null,
+  };
+}
+
 function stringifyComplex(v) {
   if (v == null) return "";
   if (Array.isArray(v)) {
@@ -315,6 +414,7 @@ function normalize(body) {
 async function forwardToSheets(entry) {
   if (!SHEETS_WEBHOOK_URL) return { skipped: true };
   const flat = flatten(entry);
+  const attachments = buildAttachments(entry);
   const payload = JSON.stringify({
     ...flat,
     receivedAt: flat.receivedAt || entry.receivedAt,
@@ -322,6 +422,7 @@ async function forwardToSheets(entry) {
     id: entry.id,
     folio: entry.folio,
     answers: entry.answers,
+    attachments,
   });
 
   try {
@@ -385,7 +486,7 @@ function formatDateMx(iso) {
 
 function sortedItems() {
   return readResponses()
-    .map(flatten)
+    .map(boardItemFromEntry)
     .sort((a, b) => {
       const ta = new Date(a.receivedAt || a.timestamp || 0).getTime();
       const tb = new Date(b.receivedAt || b.timestamp || 0).getTime();
@@ -443,11 +544,21 @@ function mergeBoardItems(localItems, sheetsItems) {
     return `row:${item?.receivedAt || ""}|${item?.claveYaavser || ""}|${item?.material || ""}`;
   };
   for (const item of sheetsItems || []) {
-    map.set(keyOf(item), item);
+    map.set(keyOf(item), enrichSheetItem(item));
   }
   for (const item of localItems || []) {
     const k = keyOf(item);
-    map.set(k, { ...(map.get(k) || {}), ...item });
+    const prev = map.get(k) || {};
+    const localMedia = Array.isArray(item.media) ? item.media : [];
+    const sheetMedia = Array.isArray(prev.media) ? prev.media : [];
+    const media = localMedia.length ? localMedia : sheetMedia;
+    map.set(k, {
+      ...prev,
+      ...item,
+      media,
+      lonasDetail: item.lonasDetail || prev.lonasDetail || null,
+      toldosDetail: item.toldosDetail || prev.toldosDetail || null,
+    });
   }
   return [...map.values()].sort((a, b) => {
     const ta = new Date(a.receivedAt || a.timestamp || 0).getTime();
