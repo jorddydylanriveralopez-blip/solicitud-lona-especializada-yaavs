@@ -235,7 +235,7 @@ function saveAttachments_(attachments, label) {
         url: "https://drive.google.com/uc?export=view&id=" + file.getId(),
         kind: att.kind || "archivo",
         group: att.group || "",
-        label: att.kind === "logo" ? "Logotipo" : att.kind === "referencia" ? "Referencia" : "Archivo",
+        label: att.kind === "logo" ? "Logotipo" : att.kind === "referencia" ? "Referencia" : att.kind === "ubicacion" ? "Foto de ubicación" : "Archivo",
       });
     } catch (err) {
       // omitir adjunto fallido

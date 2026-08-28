@@ -388,7 +388,14 @@
           .map((file, i) => {
             const globalIdx = media.indexOf(file);
             const kindLabel =
-              file.label || (file.kind === "logo" ? "Logotipo" : file.kind === "referencia" ? "Referencia" : "Archivo");
+              file.label ||
+              (file.kind === "logo"
+                ? "Logotipo"
+                : file.kind === "referencia"
+                  ? "Referencia"
+                  : file.kind === "ubicacion"
+                    ? "Foto de ubicación"
+                    : "Archivo");
             if (isImageMime(file.mime, file.name)) {
               return `
                 <button type="button" class="evidence-item image-tile" data-media-index="${globalIdx}">
@@ -570,7 +577,14 @@
     lightboxImg.src = file.url;
     lightboxImg.alt = file.name || "Imagen adjunta";
     const kind =
-      file.label || (file.kind === "logo" ? "Logotipo" : file.kind === "referencia" ? "Referencia" : "Archivo");
+      file.label ||
+      (file.kind === "logo"
+        ? "Logotipo"
+        : file.kind === "referencia"
+          ? "Referencia"
+          : file.kind === "ubicacion"
+            ? "Foto de ubicación"
+            : "Archivo");
     lightboxCaption.textContent = `${kind}${file.group ? ` · ${file.group}` : ""}${file.name ? ` · ${file.name}` : ""}`;
     lightboxPrev.disabled = lightboxMedia.length <= 1;
     lightboxNext.disabled = lightboxMedia.length <= 1;

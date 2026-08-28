@@ -243,10 +243,12 @@ function attachItemFiles(entryId, items, prefix, files) {
     const i = idx + 1;
     const logoFiles = saveNamedFiles(entryId, `logo_${prefix}_${i}`, files);
     const referenciaFiles = saveNamedFiles(entryId, `referenciaFile_${prefix}_${i}`, files);
+    const fotoUbicacionFiles = saveNamedFiles(entryId, `fotoUbicacion_${prefix}_${i}`, files);
     return {
       ...item,
       logoFiles,
       referenciaFiles,
+      fotoUbicacionFiles,
     };
   });
 }
@@ -261,6 +263,9 @@ function extractMediaFromItems(items, labelKey) {
     }
     for (const f of item.referenciaFiles || []) {
       media.push({ ...f, kind: "referencia", group, label: "Referencia de diseño" });
+    }
+    for (const f of item.fotoUbicacionFiles || []) {
+      media.push({ ...f, kind: "ubicacion", group, label: "Foto de ubicación" });
     }
   });
   return media;
@@ -326,6 +331,7 @@ function buildAttachments(entry) {
     const group = item.toldo || "Toldo";
     pushFiles(item.logoFiles, "logo", group);
     pushFiles(item.referenciaFiles, "referencia", group);
+    pushFiles(item.fotoUbicacionFiles, "ubicacion", group);
   }
   for (const item of answers.caballetes || []) {
     const group = item.caballete || "Caballete";

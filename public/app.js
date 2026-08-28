@@ -152,12 +152,12 @@
     "Ninguno",
   ];
 
-  function fileFieldHtml(label, name, required = false) {
+  function fileFieldHtml(label, name, required = false, accept = ".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf") {
     return `
       <label class="field file-field">
         <span>${label}${required ? ' <span class="req">*</span>' : ""}</span>
         <div class="file-drop">
-          <input type="file" name="${name}" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" data-preview />
+          <input type="file" name="${name}" accept="${accept}" data-preview />
           <div class="file-drop-copy">
             <strong>Sube o selecciona un archivo</strong>
             <small>JPG, PNG o PDF</small>
@@ -319,6 +319,26 @@
       blocks.push(`
         <div class="lona-block" data-toldo="${i}">
           <h3>${escapeHtml(title)}</h3>
+          <div class="design-block">
+            <h4>Ubicación del toldo</h4>
+            <label class="field">
+              <span>Enlace de Google Maps <span class="req">*</span></span>
+              <input
+                type="url"
+                name="ubicacionMaps_${i}"
+                data-k="ubicacionMaps"
+                inputmode="url"
+                placeholder="Pega aquí el link de Google Maps"
+              />
+              <small class="help">Abre Google Maps, comparte la ubicación del punto de venta y pega el enlace.</small>
+            </label>
+            ${fileFieldHtml(
+              "Foto del punto de venta o ubicación del toldo",
+              `fotoUbicacion_toldo_${i}`,
+              true,
+              ".jpg,.jpeg,.png,image/jpeg,image/png",
+            )}
+          </div>
           <fieldset class="choice-group compact">
             <legend>Tipo <span class="req">*</span></legend>
             ${TIPOS_TOLDO.map(
@@ -326,17 +346,6 @@
                 `<label class="choice"><input type="radio" name="tipoToldo_${i}" value="${escapeHtml(t)}" /><span>${escapeHtml(t)}</span></label>`,
             ).join("")}
           </fieldset>
-          <label class="field">
-            <span>Ubicación del punto de venta (Google Maps) <span class="req">*</span></span>
-            <input
-              type="url"
-              name="ubicacionMaps_${i}"
-              data-k="ubicacionMaps"
-              inputmode="url"
-              placeholder="Pega aquí el link de Google Maps"
-            />
-            <small class="help">Abre Google Maps, comparte la ubicación y pega el enlace.</small>
-          </label>
           <div class="grid-2">
             <label class="field">
               <span>Ancho (cm) <span class="req">*</span></span>
@@ -689,6 +698,11 @@
           errors.push(`Captura la ubicación de Google Maps de ${t.toldo}.`);
           markInvalid(block?.querySelector('[data-k="ubicacionMaps"]'));
         }
+        const fotoUbicacion = form.querySelector(`input[name="fotoUbicacion_toldo_${i}"]`);
+        if (!fotoUbicacion?.files?.length) {
+          errors.push(`Adjunta la foto de ubicación de ${t.toldo}.`);
+          markInvalid(fotoUbicacion);
+        }
         if (!t.ancho || !t.largo || !t.alto) {
           errors.push(`Captura medidas de ${t.toldo}.`);
           markInvalid(block);
@@ -784,6 +798,10 @@
       const refFile = form.querySelector(`input[name="referenciaFile_${prefix}_${i}"]`);
       if (refYes && refFile?.files?.[0]) {
         fd.append(`referenciaFile_${prefix}_${i}`, refFile.files[0]);
+      }
+      const fotoUbicacion = form.querySelector(`input[name="fotoUbicacion_${prefix}_${i}"]`);
+      if (fotoUbicacion?.files?.[0]) {
+        fd.append(`fotoUbicacion_${prefix}_${i}`, fotoUbicacion.files[0]);
       }
     }
   }
