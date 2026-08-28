@@ -24,7 +24,7 @@ body {
   min-height: 100vh;
   font-family: var(--font);
   color: var(--ink);
-  background: #eef4fa;
+  background: #f7fbff;
 }
 
 body.lightbox-open {
@@ -37,13 +37,42 @@ body.lightbox-open {
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background: linear-gradient(165deg, #f8fbff 0%, #eef4fa 45%, #e4edf6 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 38%, #edf6fa 100%);
+}
+
+.atmosphere::before,
+.atmosphere::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.55;
+}
+
+.atmosphere::before {
+  width: min(520px, 70vw);
+  height: min(520px, 70vw);
+  top: -160px;
+  right: -120px;
+  background: rgba(0, 151, 178, 0.22);
+}
+
+.atmosphere::after {
+  width: min(460px, 65vw);
+  height: min(460px, 65vw);
+  bottom: -140px;
+  left: -100px;
+  background: rgba(37, 99, 181, 0.18);
 }
 
 .scene-photo {
   position: absolute;
   inset: 0;
-  background: none;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(0, 151, 178, 0.08) 0 2px, transparent 2px),
+    radial-gradient(circle at 88% 24%, rgba(37, 99, 181, 0.07) 0 2px, transparent 2px);
+  background-size: 28px 28px;
+  opacity: 0.35;
   transform: none;
   animation: none;
 }
@@ -52,9 +81,9 @@ body.lightbox-open {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 75% 55% at 8% -5%, rgba(37, 99, 181, 0.1), transparent 58%),
-    radial-gradient(ellipse 60% 45% at 96% 8%, rgba(0, 151, 178, 0.12), transparent 52%),
-    radial-gradient(ellipse 70% 40% at 50% 100%, rgba(15, 36, 64, 0.05), transparent 62%);
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(255, 255, 255, 0.95), transparent 70%),
+    radial-gradient(ellipse 55% 40% at 100% 50%, rgba(0, 151, 178, 0.1), transparent 62%),
+    radial-gradient(ellipse 50% 38% at 0% 78%, rgba(37, 99, 181, 0.08), transparent 60%);
 }
 
 .topbar,
