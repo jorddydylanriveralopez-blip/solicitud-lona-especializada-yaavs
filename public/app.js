@@ -344,7 +344,7 @@
           ).join("")}
         </fieldset>
         <label class="field">
-          <span>Texto principal o mensaje que se desea comunicar</span>
+          <span>Ingresa el texto que quieres comunicar en tu ${mat}</span>
           <textarea name="texto_${prefix}_${i}" rows="3" placeholder="Opcional. Mercadotecnia podrá ajustar el texto."></textarea>
         </label>
         <fieldset class="choice-group" data-multi="true">
