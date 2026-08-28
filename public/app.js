@@ -765,7 +765,7 @@
     const multiRequired = [
       ["tipoEstablecimiento", "Selecciona el tipo de establecimiento."],
       ["objetivoLona", "Selecciona el objetivo del material."],
-      ["confirmaciones", "Debes aceptar las tres confirmaciones."],
+      ["confirmaciones", "Debes aceptar las dos confirmaciones."],
     ];
     for (const [name, msg] of multiRequired) {
       const vals = checkedValues(name);
