@@ -359,7 +359,7 @@
           <textarea name="contactoDetalle_${prefix}_${i}" rows="3" placeholder="Teléfono, WhatsApp, redes…"></textarea>
         </label>
         <fieldset class="choice-group compact">
-          <legend>¿Existe un diseño anterior como referencia? <span class="req">*</span></legend>
+          <legend>¿Existe un diseño anterior como referencia para tu ${mat}? <span class="req">*</span></legend>
           <label class="choice"><input type="radio" name="referencia_${prefix}_${i}" value="Sí" data-ref="${prefix}_${i}" /><span>Sí</span></label>
           <label class="choice"><input type="radio" name="referencia_${prefix}_${i}" value="No" checked data-ref="${prefix}_${i}" /><span>No</span></label>
         </fieldset>
