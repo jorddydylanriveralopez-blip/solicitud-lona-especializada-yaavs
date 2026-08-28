@@ -93,6 +93,7 @@
   function materialKind(item) {
     const m = String(item?.material || "").toLowerCase();
     if (m.includes("toldo")) return "toldo";
+    if (m.includes("caballete")) return "caballete";
     return "lona";
   }
 
@@ -193,6 +194,27 @@
     return parseSpecsText(item.toldos, "toldo");
   }
 
+  function specsCaballetes(item) {
+    if (Array.isArray(item.caballetesDetail) && item.caballetesDetail.length) {
+      return item.caballetesDetail.map((c) => ({
+        title: c.caballete || "Caballete",
+        ancho: c.ancho,
+        alto: c.alto,
+        caras: c.caras,
+        orientacion: c.orientacion,
+        acabados: Array.isArray(c.acabados) ? c.acabados.join(", ") : c.acabados,
+        marcas: Array.isArray(c.marcas) ? c.marcas.join(", ") : c.marcas,
+        textoPrincipal: c.textoPrincipal,
+        datosContactoOpciones: Array.isArray(c.datosContactoOpciones)
+          ? c.datosContactoOpciones.join(", ")
+          : c.datosContactoOpciones,
+        datosContactoDetalle: c.datosContactoDetalle,
+        tieneReferencia: c.tieneReferencia,
+      }));
+    }
+    return parseSpecsText(item.caballetes, "caballete");
+  }
+
   function renderStats() {
     const latest = items[0];
     const withMedia = items.filter((it) => mediaOf(it).length).length;
@@ -233,7 +255,7 @@
               ${
                 thumb
                   ? `<img src="${escapeAttr(thumb)}" alt="" loading="lazy" />`
-                  : `<span class="request-card-placeholder ${kind}">${kind === "toldo" ? "T" : "L"}</span>`
+                  : `<span class="request-card-placeholder ${kind}">${kind === "toldo" ? "T" : kind === "caballete" ? "C" : "L"}</span>`
               }
             </div>
             <div class="request-card-body">
@@ -290,6 +312,19 @@
             ["datosContactoDetalle", "Detalle contacto"],
             ["tieneReferencia", "Referencia previa"],
           ]
+        : type === "caballete"
+          ? [
+              ["ancho", "Ancho (cm)"],
+              ["alto", "Alto (cm)"],
+              ["caras", "Caras"],
+              ["orientacion", "Orientación"],
+              ["acabados", "Acabados"],
+              ["marcas", "Marcas"],
+              ["textoPrincipal", "Texto principal"],
+              ["datosContactoOpciones", "Contacto"],
+              ["datosContactoDetalle", "Detalle contacto"],
+              ["tieneReferencia", "Referencia previa"],
+            ]
         : [
             ["ancho", "Ancho (cm)"],
             ["alto", "Alto (cm)"],
@@ -308,7 +343,7 @@
           .map(
             (spec) => `
           <article class="spec-card">
-            <h4>${escapeHtml(spec.title || (type === "toldo" ? "Toldo" : "Lona"))}</h4>
+            <h4>${escapeHtml(spec.title || (type === "toldo" ? "Toldo" : type === "caballete" ? "Caballete" : "Lona"))}</h4>
             <div class="field-grid compact">
               ${labels
                 .map(([key, label]) => {
@@ -413,6 +448,7 @@
     const media = mediaOf(item);
     const lonas = specsLonas(item);
     const toldos = specsToldos(item);
+    const caballetes = specsCaballetes(item);
     const confirmaciones = String(item.confirmaciones || "")
       .split(",")
       .map((c) => c.trim())
@@ -467,6 +503,15 @@
             ? `<section class="panel">
                 <div class="panel-head"><h3>Toldos (${toldos.length})</h3></div>
                 ${renderSpecCards(toldos, "toldo")}
+              </section>`
+            : ""
+        }
+
+        ${
+          caballetes.length
+            ? `<section class="panel">
+                <div class="panel-head"><h3>Caballetes (${caballetes.length})</h3></div>
+                ${renderSpecCards(caballetes, "caballete")}
               </section>`
             : ""
         }

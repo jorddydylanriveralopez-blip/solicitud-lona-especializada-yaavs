@@ -1,0 +1,30 @@
+---
+description: Mantener Render y Apps Script sincronizados en cada cambio
+alwaysApply: true
+---
+
+# Render + Apps Script en sync
+
+Este proyecto tiene **dos destinos de deploy**:
+
+1. **Render** — auto-deploy desde `main` en GitHub (`solicitud-lona-especializada-yaavs`).
+2. **Apps Script** — proyecto `Lonas y toldos`, implementación web **Untitled** (URL en `SHEETS_WEBHOOK_URL`).
+
+## Al terminar cambios funcionales
+
+1. Actualiza **ambos lados** si el cambio aplica:
+   - `public/`, `server.js` → Render
+   - `gas/Code.gs` → Apps Script
+2. Si tocas formulario o tablero, sube versión de cache (`?v=...`) en HTML.
+3. Si cambias columnas de Sheets, actualiza `HEADERS`/`KEYS` en `gas/Code.gs` y `FIELD_ORDER` en `server.js`.
+4. Haz commit y `git push origin main` (Render).
+5. Despliega Apps Script: `npm run deploy:gas` (requiere `npx clasp login` una vez).
+
+## Materiales soportados
+
+Lona, Toldo y Caballete deben estar reflejados en: `index.html`, `app.js`, `server.js`, `resultados.js`, `gas/Code.gs`.
+
+## Verificación rápida
+
+- Render: `/resultados` carga y `/api/health` responde `ok`.
+- Sheets: `SHEETS_WEBHOOK_URL?action=list` devuelve JSON con campos esperados (p. ej. `media`, `caballetes`).

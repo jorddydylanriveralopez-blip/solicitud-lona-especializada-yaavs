@@ -94,6 +94,8 @@ const FIELD_ORDER = [
   ["lonas", "Especificaciones por lona"],
   ["cantidadToldos", "Cantidad de toldos"],
   ["toldos", "Especificaciones por toldo"],
+  ["cantidadCaballetes", "Cantidad de caballetes"],
+  ["caballetes", "Especificaciones por caballete"],
   ["confirmaciones", "Confirmaciones"],
   ["id", "ID interno"],
 ];
@@ -122,6 +124,8 @@ const COLUMN_WIDTHS = {
   lonas: 56,
   cantidadToldos: 12,
   toldos: 56,
+  cantidadCaballetes: 14,
+  caballetes: 56,
   confirmaciones: 40,
   id: 28,
 };
@@ -192,7 +196,10 @@ function writeResponses(list) {
 function nextFolio(material) {
   const n = readResponses().length + 1;
   const y = new Date().getFullYear().toString().slice(-2);
-  const prefix = String(material || "").toLowerCase().startsWith("toldo") ? "TOLDO" : "LONA";
+  const m = String(material || "").toLowerCase();
+  let prefix = "LONA";
+  if (m.startsWith("toldo")) prefix = "TOLDO";
+  else if (m.includes("caballete")) prefix = "CABAL";
   return `${prefix}-${y}-${String(n).padStart(4, "0")}`;
 }
 
@@ -248,7 +255,7 @@ function extractMediaFromItems(items, labelKey) {
   const media = [];
   if (!Array.isArray(items)) return media;
   items.forEach((item, idx) => {
-    const group = item[labelKey] || item.lona || item.toldo || `Item ${idx + 1}`;
+    const group = item[labelKey] || item.lona || item.toldo || item.caballete || `Item ${idx + 1}`;
     for (const f of item.logoFiles || []) {
       media.push({ ...f, kind: "logo", group, label: "Logotipo" });
     }
@@ -264,6 +271,7 @@ function extractMedia(entry) {
   return [
     ...extractMediaFromItems(answers.lonas, "lona"),
     ...extractMediaFromItems(answers.toldos, "toldo"),
+    ...extractMediaFromItems(answers.caballetes, "caballete"),
   ];
 }
 
@@ -319,6 +327,11 @@ function buildAttachments(entry) {
     pushFiles(item.logoFiles, "logo", group);
     pushFiles(item.referenciaFiles, "referencia", group);
   }
+  for (const item of answers.caballetes || []) {
+    const group = item.caballete || "Caballete";
+    pushFiles(item.logoFiles, "logo", group);
+    pushFiles(item.referenciaFiles, "referencia", group);
+  }
   return attachments;
 }
 
@@ -330,6 +343,7 @@ function boardItemFromEntry(entry) {
     media: extractMedia(entry),
     lonasDetail: Array.isArray(answers.lonas) ? answers.lonas : null,
     toldosDetail: Array.isArray(answers.toldos) ? answers.toldos : null,
+    caballetesDetail: Array.isArray(answers.caballetes) ? answers.caballetes : null,
   };
 }
 
@@ -340,6 +354,7 @@ function enrichSheetItem(item) {
     media,
     lonasDetail: null,
     toldosDetail: null,
+    caballetesDetail: null,
   };
 }
 
@@ -385,7 +400,7 @@ function flatten(entry) {
   for (const [key] of FIELD_ORDER) {
     if (key === "receivedAt" || key === "id" || key === "folio") continue;
     const v = a[key];
-    if (key === "lonas" || key === "toldos") {
+    if (key === "lonas" || key === "toldos" || key === "caballetes") {
       out[key] = stringifyComplex(v);
     } else if (Array.isArray(v)) out[key] = v.join(", ");
     else if (v == null) out[key] = "";
@@ -558,6 +573,7 @@ function mergeBoardItems(localItems, sheetsItems) {
       media,
       lonasDetail: item.lonasDetail || prev.lonasDetail || null,
       toldosDetail: item.toldosDetail || prev.toldosDetail || null,
+      caballetesDetail: item.caballetesDetail || prev.caballetesDetail || null,
     });
   }
   return [...map.values()].sort((a, b) => {
@@ -729,6 +745,9 @@ app.post("/api/submit", (req, res) => {
       }
       if (Array.isArray(entry.answers.toldos)) {
         entry.answers.toldos = attachItemFiles(entry.id, entry.answers.toldos, "toldo", files);
+      }
+      if (Array.isArray(entry.answers.caballetes)) {
+        entry.answers.caballetes = attachItemFiles(entry.id, entry.answers.caballetes, "caballete", files);
       }
 
       const list = readResponses();

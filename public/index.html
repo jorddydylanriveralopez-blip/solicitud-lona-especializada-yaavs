@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#050b14" />
     <meta
       name="description"
-      content="Solicitud de diseño y producción de lonas o toldos YAAVS."
+      content="Solicitud de diseño y producción de lonas, toldos o caballetes YAAVS."
     />
-    <title>Solicitud de material · Lonas y toldos · YAAVS</title>
+    <title>Solicitud de material · Lonas, toldos y caballetes · YAAVS</title>
     <link rel="icon" href="./favicon.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260818b1" />
-    <link rel="stylesheet" href="./lona.css?v=20260818b1" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260828a1" />
+    <link rel="stylesheet" href="./lona.css?v=20260828a1" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -42,8 +42,9 @@
         <p class="eyebrow">Mercadotecnia · Producción</p>
         <h1 id="heroTitle">Solicitud de material especializado</h1>
         <p class="lede" id="heroLede">
-          Elige primero si solicitas <strong>lona</strong> o <strong>toldo</strong>. Luego completa el
-          cuestionario correspondiente con el ejecutivo YAAVSTAR y el YAAVSER.
+          Elige primero si solicitas <strong>lona</strong>, <strong>toldo</strong> o
+          <strong>caballete</strong>. Luego completa el cuestionario correspondiente con el ejecutivo
+          YAAVSTAR y el YAAVSER.
         </p>
       </section>
 
@@ -69,6 +70,13 @@
               <span>
                 <strong>Toldo</strong>
                 <small>Diseño y producción de toldo y cortina desplegable</small>
+              </span>
+            </label>
+            <label class="choice material-choice">
+              <input type="radio" name="material" value="Caballete" />
+              <span>
+                <strong>Caballete</strong>
+                <small>Diseño y producción de caballete para punto de venta</small>
               </span>
             </label>
           </fieldset>
@@ -291,6 +299,21 @@
           </section>
           </div>
 
+          <div id="flowCaballete" hidden>
+          <section class="card-section">
+            <header class="section-head">
+              <span>8</span>
+              <h2>Especificaciones y diseño del caballete</h2>
+            </header>
+            <fieldset class="choice-group compact" data-required="true">
+              <legend>¿Cuántos caballetes solicitas? <span class="req">*</span></legend>
+              <label class="choice"><input type="radio" name="cantidadCaballetes" value="1" checked /><span>1 caballete</span></label>
+              <label class="choice"><input type="radio" name="cantidadCaballetes" value="2" /><span>2 caballetes</span></label>
+            </fieldset>
+            <div id="caballetesSpecs" class="lonas-specs"></div>
+          </section>
+          </div>
+
           <section class="card-section">
             <header class="section-head">
               <span>9</span>
@@ -333,6 +356,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260818a1" defer></script>
+    <script src="./app.js?v=20260828a1" defer></script>
   </body>
 </html>

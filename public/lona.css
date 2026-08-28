@@ -126,7 +126,8 @@
 #afterMaterial:not([hidden]),
 #formRest:not([hidden]),
 #flowLona:not([hidden]),
-#flowToldo:not([hidden]) {
+#flowToldo:not([hidden]),
+#flowCaballete:not([hidden]) {
   display: grid !important;
   gap: 2.75rem;
 }

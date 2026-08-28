@@ -5,12 +5,14 @@
   const blockNoAuth = document.getElementById("blockNoAuth");
   const flowLona = document.getElementById("flowLona");
   const flowToldo = document.getElementById("flowToldo");
+  const flowCaballete = document.getElementById("flowCaballete");
   const successPanel = document.getElementById("successPanel");
   const toast = document.getElementById("toast");
   const hint = document.getElementById("formHint");
   const submitBtn = document.getElementById("submitBtn");
   const lonasSpecs = document.getElementById("lonasSpecs");
   const toldosSpecs = document.getElementById("toldosSpecs");
+  const caballetesSpecs = document.getElementById("caballetesSpecs");
   const heroTitle = document.getElementById("heroTitle");
   const heroLede = document.getElementById("heroLede");
   const objetivoLegend = document.getElementById("objetivoLegend");
@@ -18,6 +20,7 @@
   const ACABADOS = ["Dobladillo", "Ojillos", "Dobladillo y ojillos", "Sin acabados"];
   const ORIENTACIONES = ["Horizontal", "Vertical", "Cuadrada"];
   const TIPOS_TOLDO = ["Toldo", "Cortina desplegable"];
+  const CARAS_CABALLETE = ["Una cara", "Dos caras"];
 
   function showToast(msg) {
     if (!toast) return;
@@ -53,6 +56,30 @@
     return selectedMaterial() === "Toldo";
   }
 
+  function isCaballete() {
+    return selectedMaterial() === "Caballete";
+  }
+
+  function materialCopy() {
+    const mat = selectedMaterial();
+    if (mat === "Toldo") {
+      return {
+        title: "Solicitud de diseño y producción de toldo",
+        objetivo: '¿Cuál es el objetivo principal del toldo? <span class="req">*</span>',
+      };
+    }
+    if (mat === "Caballete") {
+      return {
+        title: "Solicitud de diseño y producción de caballete",
+        objetivo: '¿Cuál es el objetivo principal del caballete? <span class="req">*</span>',
+      };
+    }
+    return {
+      title: "Solicitud de diseño y producción de lona especializada",
+      objetivo: '¿Cuál es el objetivo principal de la lona? <span class="req">*</span>',
+    };
+  }
+
   function isAuthorized() {
     const v = form.querySelector('input[name="autorizada"]:checked')?.value || "";
     return v.startsWith("Sí");
@@ -66,27 +93,20 @@
       return;
     }
 
-    if (heroTitle) {
-      heroTitle.textContent =
-        mat === "Toldo"
-          ? "Solicitud de diseño y producción de toldo"
-          : "Solicitud de diseño y producción de lona especializada";
-    }
+    const copy = materialCopy();
+    if (heroTitle) heroTitle.textContent = copy.title;
     if (heroLede) {
       heroLede.textContent =
         "Completa este formulario el ejecutivo de ventas YAAVSTAR junto con el YAAVSER. Verifica medidas exactas, información vigente y autorización del gerente territorial.";
     }
-    if (objetivoLegend) {
-      objetivoLegend.innerHTML =
-        mat === "Toldo"
-          ? '¿Cuál es el objetivo principal del toldo? <span class="req">*</span>'
-          : '¿Cuál es el objetivo principal de la lona? <span class="req">*</span>';
-    }
+    if (objetivoLegend) objetivoLegend.innerHTML = copy.objetivo;
 
     flowLona.hidden = mat !== "Lona";
     flowToldo.hidden = mat !== "Toldo";
+    flowCaballete.hidden = mat !== "Caballete";
     renderLonas();
     renderToldos();
+    renderCaballetes();
     syncAuthGate();
   }
 
@@ -117,6 +137,10 @@
 
   function toldoCount() {
     return Number(form.querySelector('input[name="cantidadToldos"]:checked')?.value || 1) === 2 ? 2 : 1;
+  }
+
+  function caballeteCount() {
+    return Number(form.querySelector('input[name="cantidadCaballetes"]:checked')?.value || 1) === 2 ? 2 : 1;
   }
 
   const MARCAS = ["AT&T", "Movistar", "Unefon", "BAIT", "Telcel"];
@@ -340,6 +364,55 @@
     bindFilePreviews(toldosSpecs);
   }
 
+  function renderCaballetes() {
+    if (!caballetesSpecs) return;
+    const count = caballeteCount();
+    const blocks = [];
+    for (let i = 1; i <= count; i += 1) {
+      const title = count === 1 ? "Caballete" : `Caballete ${i}`;
+      blocks.push(`
+        <div class="lona-block" data-caballete="${i}">
+          <h3>${escapeHtml(title)}</h3>
+          <div class="grid-2">
+            <label class="field">
+              <span>Ancho (cm) <span class="req">*</span></span>
+              <input type="number" min="1" step="1" inputmode="numeric" data-k="ancho" />
+            </label>
+            <label class="field">
+              <span>Alto (cm) <span class="req">*</span></span>
+              <input type="number" min="1" step="1" inputmode="numeric" data-k="alto" />
+            </label>
+          </div>
+          <fieldset class="choice-group compact">
+            <legend>Caras a imprimir <span class="req">*</span></legend>
+            ${CARAS_CABALLETE.map(
+              (c) =>
+                `<label class="choice"><input type="radio" name="caras_${i}" value="${escapeHtml(c)}" /><span>${escapeHtml(c)}</span></label>`,
+            ).join("")}
+          </fieldset>
+          <fieldset class="choice-group compact">
+            <legend>Orientación del diseño <span class="req">*</span></legend>
+            ${ORIENTACIONES.map(
+              (o) =>
+                `<label class="choice"><input type="radio" name="orientacionCab_${i}" value="${escapeHtml(o)}" /><span>${escapeHtml(o)}</span></label>`,
+            ).join("")}
+          </fieldset>
+          <fieldset class="choice-group" data-multi="true">
+            <legend>Acabados requeridos <span class="req">*</span></legend>
+            <p class="multi-hint">Puedes elegir más de una respuesta.</p>
+            ${ACABADOS.map(
+              (a) =>
+                `<label class="choice"><input type="checkbox" name="acabadosCab_${i}" value="${escapeHtml(a)}" /><span>${escapeHtml(a)}</span></label>`,
+            ).join("")}
+          </fieldset>
+          ${designFieldsHtml("caballete", i)}
+        </div>
+      `);
+    }
+    caballetesSpecs.innerHTML = blocks.join("");
+    bindFilePreviews(caballetesSpecs);
+  }
+
   function collectDesign(prefix, i) {
     const marcas = [...form.querySelectorAll(`input[name="marcas_${prefix}_${i}"]:checked`)].map(
       (el) => el.value,
@@ -400,6 +473,29 @@
         incluyeEstructura:
           form.querySelector(`input[name="estructura_${i}"]:checked`)?.value || "",
         ...collectDesign("toldo", i),
+      });
+    }
+    return out;
+  }
+
+  function collectCaballetes() {
+    if (!isCaballete()) return [];
+    const count = caballeteCount();
+    const out = [];
+    for (let i = 1; i <= count; i += 1) {
+      const block = caballetesSpecs.querySelector(`[data-caballete="${i}"]`);
+      if (!block) continue;
+      const acabados = [...form.querySelectorAll(`input[name="acabadosCab_${i}"]:checked`)].map(
+        (el) => el.value,
+      );
+      out.push({
+        caballete: count === 1 ? "Caballete 1" : `Caballete ${i}`,
+        ancho: Number(block.querySelector('[data-k="ancho"]')?.value || 0),
+        alto: Number(block.querySelector('[data-k="alto"]')?.value || 0),
+        caras: form.querySelector(`input[name="caras_${i}"]:checked`)?.value || "",
+        orientacion: form.querySelector(`input[name="orientacionCab_${i}"]:checked`)?.value || "",
+        acabados,
+        ...collectDesign("caballete", i),
       });
     }
     return out;
@@ -616,6 +712,36 @@
       });
     }
 
+    if (isCaballete()) {
+      if (!form.querySelector('input[name="cantidadCaballetes"]:checked')) {
+        errors.push("Selecciona si solicitas 1 o 2 caballetes.");
+        markInvalid(form.querySelector('input[name="cantidadCaballetes"]'));
+      }
+      const caballetes = collectCaballetes();
+      if (!caballetes.length) errors.push("Completa las especificaciones del caballete.");
+      caballetes.forEach((c, idx) => {
+        const i = idx + 1;
+        const block = caballetesSpecs.querySelector(`[data-caballete="${i}"]`);
+        if (!c.ancho || !c.alto) {
+          errors.push(`Captura ancho y alto de ${c.caballete}.`);
+          markInvalid(block);
+        }
+        if (!c.caras) {
+          errors.push(`Selecciona las caras a imprimir de ${c.caballete}.`);
+          markInvalid(block);
+        }
+        if (!c.orientacion) {
+          errors.push(`Selecciona la orientación de ${c.caballete}.`);
+          markInvalid(block);
+        }
+        if (!c.acabados.length) {
+          errors.push(`Selecciona acabados de ${c.caballete}.`);
+          markInvalid(block);
+        }
+        validateDesign("caballete", i, c.caballete, errors);
+      });
+    }
+
     return [...new Set(errors)];
   }
 
@@ -647,6 +773,14 @@
         ...base,
         cantidadLonas: lonaCount(),
         lonas: collectLonas(),
+      };
+    }
+
+    if (mat === "Caballete") {
+      return {
+        ...base,
+        cantidadCaballetes: caballeteCount(),
+        caballetes: collectCaballetes(),
       };
     }
 
@@ -685,6 +819,11 @@
       syncContacto();
       syncReferencia();
     }
+    if (t.name === "cantidadCaballetes") {
+      renderCaballetes();
+      syncContacto();
+      syncReferencia();
+    }
     if (t.name === "tipoEstablecimiento") syncTipoOtro();
     if (t.hasAttribute("data-contacto")) syncContacto();
     if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
@@ -709,6 +848,7 @@
       fd.append("answers", JSON.stringify(buildAnswers()));
       if (isLona()) appendItemFiles(fd, "lona", lonaCount());
       if (isToldo()) appendItemFiles(fd, "toldo", toldoCount());
+      if (isCaballete()) appendItemFiles(fd, "caballete", caballeteCount());
       const res = await fetch("/api/submit", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo enviar");
@@ -731,6 +871,7 @@
 
   renderLonas();
   renderToldos();
+  renderCaballetes();
   syncMaterial();
   syncTipoOtro();
   syncContacto();

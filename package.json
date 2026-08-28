@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "node -e \"console.log('No build step')\""
+    "build": "node -e \"console.log('No build step')\"",
+    "deploy:gas": "npx @google/clasp push --force && npx @google/clasp deploy --description \"Deploy $(date '+%Y-%m-%d %H:%M')\"",
+    "deploy:all": "bash scripts/deploy-all.sh"
   },
   "engines": {
     "node": ">=18"

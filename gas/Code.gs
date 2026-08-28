@@ -47,6 +47,8 @@ var HEADERS = [
   "Confirmaciones",
   "ID interno",
   "Archivos adjuntos",
+  "Cantidad de caballetes",
+  "Especificaciones por caballete",
 ];
 
 var KEYS = [
@@ -76,6 +78,8 @@ var KEYS = [
   "confirmaciones",
   "id",
   "media",
+  "cantidadCaballetes",
+  "caballetes",
 ];
 
 function doGet(e) {
@@ -135,6 +139,10 @@ function ensureSheet_() {
     sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
     sheet.setFrozenRows(1);
     sheet.autoResizeColumns(1, Math.min(12, HEADERS.length));
+  } else {
+    var headerRow = sheet.getRange(1, 1, 1, HEADERS.length);
+    headerRow.setValues([HEADERS]);
+    headerRow.setFontWeight("bold");
   }
   return sheet;
 }
@@ -265,5 +273,7 @@ function rowFromPayload_(data) {
     asText_(pick_(data, "confirmaciones")),
     pick_(data, "id"),
     media.length ? JSON.stringify(media) : "",
+    pick_(data, "cantidadCaballetes"),
+    asText_(pick_(data, "caballetes")),
   ];
 }

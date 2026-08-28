@@ -290,6 +290,10 @@ body.lightbox-open {
   background: linear-gradient(145deg, #0097b2, #0f2440);
 }
 
+.request-card-placeholder.caballete {
+  background: linear-gradient(145deg, #7c5cbf, #0f2440);
+}
+
 .request-card-body {
   min-width: 0;
 }
@@ -341,6 +345,11 @@ body.lightbox-open {
 .badge.toldo {
   background: rgba(0, 151, 178, 0.14);
   color: #007a90;
+}
+
+.badge.caballete {
+  background: rgba(124, 92, 191, 0.16);
+  color: #5d3fa8;
 }
 
 .badge.large {
