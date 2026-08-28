@@ -347,7 +347,7 @@
           <textarea name="texto_${prefix}_${i}" rows="3" placeholder="Opcional. Mercadotecnia podrá ajustar el texto."></textarea>
         </label>
         <fieldset class="choice-group" data-multi="true">
-          <legend>Datos de contacto que deberán aparecer <span class="req">*</span></legend>
+          <legend>Datos de contacto que deberán aparecer en tu ${mat} <span class="req">*</span></legend>
           <p class="multi-hint">Puedes elegir más de una respuesta.</p>
           ${CONTACTO_OPTS.map(
             (c) =>
