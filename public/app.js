@@ -297,7 +297,6 @@
     "Número telefónico",
     "WhatsApp",
     "Redes sociales",
-    "Dirección",
     "Ninguno",
   ];
 
