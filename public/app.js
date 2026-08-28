@@ -278,15 +278,15 @@
   ubicacionInput?.addEventListener("change", syncUbicacionFromInput);
 
   function lonaCount() {
-    return Number(form.querySelector('input[name="cantidadLonas"]:checked')?.value || 1) === 2 ? 2 : 1;
+    return 1;
   }
 
   function toldoCount() {
-    return Number(form.querySelector('input[name="cantidadToldos"]:checked')?.value || 1) === 2 ? 2 : 1;
+    return 1;
   }
 
   function caballeteCount() {
-    return Number(form.querySelector('input[name="cantidadCaballetes"]:checked')?.value || 1) === 2 ? 2 : 1;
+    return 1;
   }
 
   const MARCAS = ["AT&T", "Movistar", "Unefon", "BAIT", "Telcel"];
@@ -892,8 +892,6 @@
       tipoEstablecimiento: checkedValues("tipoEstablecimiento"),
       tipoEstablecimientoOtro: String(form.tipoEstablecimientoOtro.value || "").trim(),
       objetivoLona: checkedValues("objetivoLona"),
-      resultadoEsperado: checkedValues("resultadoEsperado"),
-      serviciosActuales: checkedValues("serviciosActuales"),
       confirmaciones: checkedValues("confirmaciones"),
     };
 
@@ -943,21 +941,6 @@
     if (!(t instanceof HTMLElement)) return;
     if (t.name === "material") syncMaterial();
     if (t.name === "autorizada") syncAuthGate();
-    if (t.name === "cantidadLonas") {
-      renderLonas();
-      syncContacto();
-      syncReferencia();
-    }
-    if (t.name === "cantidadToldos") {
-      renderToldos();
-      syncContacto();
-      syncReferencia();
-    }
-    if (t.name === "cantidadCaballetes") {
-      renderCaballetes();
-      syncContacto();
-      syncReferencia();
-    }
     if (t.name === "tipoEstablecimiento") syncTipoOtro();
     if (t.hasAttribute("data-contacto")) syncContacto();
     if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
