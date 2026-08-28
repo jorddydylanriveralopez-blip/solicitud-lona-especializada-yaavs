@@ -609,7 +609,6 @@
       ["ejecutivoTelefono", "Captura el teléfono del ejecutivo."],
       ["yaavserNombre", "Captura el nombre del YAAVSER."],
       ["claveYaavser", "Captura la clave YAAVSER."],
-      ["yaavserTelefono", "Captura el teléfono del YAAVSER."],
       ["puntoVenta", "Captura el nombre del punto de venta."],
     ];
     for (const [name, msg] of requiredText) {
@@ -618,12 +617,6 @@
         errors.push(msg);
         markInvalid(el);
       }
-    }
-
-    const email = String(form.ejecutivoCorreo.value || "").trim();
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.push("Revisa el correo electrónico corporativo.");
-      markInvalid(form.ejecutivoCorreo);
     }
 
     const multiRequired = [
@@ -748,10 +741,8 @@
       autorizada: form.querySelector('input[name="autorizada"]:checked')?.value || "",
       ejecutivoNombre: String(form.ejecutivoNombre.value || "").trim(),
       ejecutivoTelefono: String(form.ejecutivoTelefono.value || "").trim(),
-      ejecutivoCorreo: String(form.ejecutivoCorreo.value || "").trim(),
       yaavserNombre: String(form.yaavserNombre.value || "").trim(),
       claveYaavser: String(form.claveYaavser.value || "").trim().toUpperCase(),
-      yaavserTelefono: String(form.yaavserTelefono.value || "").trim(),
       puntoVenta: String(form.puntoVenta.value || "").trim(),
       tipoEstablecimiento: checkedValues("tipoEstablecimiento"),
       tipoEstablecimientoOtro: String(form.tipoEstablecimientoOtro.value || "").trim(),
