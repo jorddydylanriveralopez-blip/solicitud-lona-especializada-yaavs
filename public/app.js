@@ -323,13 +323,20 @@
     `;
   }
 
+  function materialNombre(prefix) {
+    if (prefix === "toldo") return "toldo";
+    if (prefix === "caballete") return "caballete";
+    return "lona";
+  }
+
   function designFieldsHtml(prefix, i) {
+    const mat = materialNombre(prefix);
     return `
       <div class="design-block">
         <h4>Contenido y diseño</h4>
         ${fileFieldHtml("Logotipo del punto de venta", `logo_${prefix}_${i}`, true)}
         <fieldset class="choice-group" data-multi="true">
-          <legend>Marcas principales que deberán aparecer <span class="req">*</span></legend>
+          <legend>¿Cuáles son las marcas que deben de aparecer en tu ${mat}? <span class="req">*</span></legend>
           <p class="multi-hint">Puedes elegir más de una respuesta.</p>
           ${MARCAS.map(
             (m) =>
