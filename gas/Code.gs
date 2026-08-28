@@ -35,6 +35,8 @@ var HEADERS = [
   "Clave YAAVSER",
   "Teléfono YAAVSER",
   "Punto de venta",
+  "Ubicación punto de venta",
+  "Google Maps punto de venta",
   "Tipo de establecimiento",
   "Tipo (otro)",
   "Objetivo",
@@ -66,6 +68,8 @@ var KEYS = [
   "claveYaavser",
   "yaavserTelefono",
   "puntoVenta",
+  "puntoVentaUbicacion",
+  "puntoVentaUbicacionMaps",
   "tipoEstablecimiento",
   "tipoEstablecimientoOtro",
   "objetivoLona",
@@ -235,7 +239,7 @@ function saveAttachments_(attachments, label) {
         url: "https://drive.google.com/uc?export=view&id=" + file.getId(),
         kind: att.kind || "archivo",
         group: att.group || "",
-        label: att.kind === "logo" ? "Logotipo" : att.kind === "referencia" ? "Referencia" : att.kind === "ubicacion" ? "Foto de ubicación" : "Archivo",
+        label: att.kind === "logo" ? "Logotipo" : att.kind === "referencia" ? "Referencia" : "Archivo",
       });
     } catch (err) {
       // omitir adjunto fallido
@@ -261,6 +265,8 @@ function rowFromPayload_(data) {
     pick_(data, "claveYaavser"),
     pick_(data, "yaavserTelefono"),
     pick_(data, "puntoVenta"),
+    pick_(data, "puntoVentaUbicacion"),
+    pick_(data, "puntoVentaUbicacionMaps"),
     asText_(pick_(data, "tipoEstablecimiento")),
     pick_(data, "tipoEstablecimientoOtro"),
     asText_(pick_(data, "objetivoLona")),

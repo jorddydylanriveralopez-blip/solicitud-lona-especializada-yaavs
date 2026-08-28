@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260828f1" />
-    <link rel="stylesheet" href="./lona.css?v=20260828f1" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260828g1" />
+    <link rel="stylesheet" href="./lona.css?v=20260828g1" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -180,23 +180,36 @@
             </label>
 
             <div id="toldoPuntoVentaExtra" class="grid-2" hidden>
-              <label class="field file-field grid-span-2">
-                <span>Sube la ubicación del punto de venta <span class="req">*</span></span>
-                <div class="file-drop">
-                  <input type="file" name="toldo_ubicacion" accept=".jpg,.jpeg,.png,image/jpeg,image/png" data-preview />
-                  <div class="file-drop-copy">
-                    <strong>Sube o selecciona un archivo</strong>
-                    <small>JPG o PNG</small>
-                  </div>
-                  <div class="file-preview" hidden>
-                    <div class="file-preview-media"></div>
-                    <div class="file-preview-meta">
-                      <strong class="file-preview-name"></strong>
-                      <small class="file-preview-size"></small>
-                    </div>
-                  </div>
-                </div>
+              <label class="field grid-span-2">
+                <span>Ubicación del punto de venta <span class="req">*</span></span>
+                <input
+                  type="text"
+                  id="puntoVentaUbicacionInput"
+                  name="puntoVentaUbicacion"
+                  autocomplete="off"
+                  placeholder="Busca tu tienda, dirección o pega el enlace de Google Maps"
+                />
+                <input type="hidden" name="puntoVentaUbicacionMaps" id="puntoVentaUbicacionMaps" />
+                <input type="hidden" name="puntoVentaLat" id="puntoVentaLat" />
+                <input type="hidden" name="puntoVentaLng" id="puntoVentaLng" />
+                <small class="help" id="ubicacionHelp">
+                  Busca tu negocio, detecta tu ubicación o pega el enlace que compartes desde Google Maps.
+                </small>
               </label>
+              <div class="ubicacion-actions grid-span-2">
+                <button type="button" class="btn btn-ghost" id="btnDetectarUbicacion">
+                  Usar mi ubicación actual
+                </button>
+                <a
+                  class="btn btn-ghost"
+                  href="https://www.google.com/maps"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Abrir Google Maps
+                </a>
+              </div>
+              <div id="ubicacionPreview" class="ubicacion-preview grid-span-2" hidden></div>
               <label class="field file-field grid-span-2">
                 <span>Sube la foto del punto de venta <span class="req">*</span></span>
                 <div class="file-drop">
@@ -342,6 +355,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260828f1" defer></script>
+    <script src="./app.js?v=20260828g1" defer></script>
   </body>
 </html>

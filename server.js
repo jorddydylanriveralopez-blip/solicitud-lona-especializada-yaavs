@@ -85,6 +85,8 @@ const FIELD_ORDER = [
   ["claveYaavser", "Clave YAAVSER"],
   ["yaavserTelefono", "Teléfono YAAVSER"],
   ["puntoVenta", "Punto de venta"],
+  ["puntoVentaUbicacion", "Ubicación punto de venta"],
+  ["puntoVentaUbicacionMaps", "Google Maps punto de venta"],
   ["tipoEstablecimiento", "Tipo de establecimiento"],
   ["tipoEstablecimientoOtro", "Tipo (otro)"],
   ["objetivoLona", "Objetivo"],
@@ -114,6 +116,8 @@ const COLUMN_WIDTHS = {
   claveYaavser: 18,
   yaavserTelefono: 16,
   puntoVenta: 24,
+  puntoVentaUbicacion: 36,
+  puntoVentaUbicacionMaps: 40,
   tipoEstablecimiento: 22,
   tipoEstablecimientoOtro: 18,
   objetivoLona: 36,
@@ -269,9 +273,6 @@ function extractMediaFromItems(items, labelKey) {
 function extractToldoPuntoVentaMedia(answers) {
   const media = [];
   const group = "Punto de venta";
-  for (const f of answers.toldoUbicacionFile || []) {
-    media.push({ ...f, kind: "ubicacion", group, label: "Ubicación del punto de venta" });
-  }
   for (const f of answers.toldoFotoFile || []) {
     media.push({ ...f, kind: "foto", group, label: "Foto del punto de venta" });
   }
@@ -345,7 +346,6 @@ function buildAttachments(entry) {
     pushFiles(item.logoFiles, "logo", group);
     pushFiles(item.referenciaFiles, "referencia", group);
   }
-  pushFiles(answers.toldoUbicacionFile, "ubicacion", "Punto de venta");
   pushFiles(answers.toldoFotoFile, "foto", "Punto de venta");
   return attachments;
 }
@@ -654,6 +654,12 @@ async function buildWorkbook(items) {
   return workbook;
 }
 
+app.get("/api/config", (_req, res) => {
+  res.json({
+    mapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
+  });
+});
+
 app.get("/api/health", async (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
   const board = await boardItems();
@@ -765,9 +771,7 @@ app.post("/api/submit", (req, res) => {
         entry.answers.caballetes = attachItemFiles(entry.id, entry.answers.caballetes, "caballete", files);
       }
       if (String(entry.answers.material || "").toLowerCase().includes("toldo")) {
-        const ubicacionFiles = saveNamedFiles(entry.id, "toldo_ubicacion", files);
         const fotoFiles = saveNamedFiles(entry.id, "toldo_foto", files);
-        if (ubicacionFiles.length) entry.answers.toldoUbicacionFile = ubicacionFiles;
         if (fotoFiles.length) entry.answers.toldoFotoFile = fotoFiles;
       }
 

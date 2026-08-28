@@ -47,6 +47,8 @@
       title: "Punto de venta",
       fields: [
         ["puntoVenta", "Nombre"],
+        ["puntoVentaUbicacion", "Ubicación"],
+        ["puntoVentaUbicacionMaps", "Google Maps"],
         ["tipoEstablecimiento", "Tipo"],
         ["tipoEstablecimientoOtro", "Tipo (otro)"],
         ["objetivoLona", "Objetivo"],
@@ -279,6 +281,15 @@
     });
   }
 
+  function fieldValueHtml(key, val) {
+    const text = String(val ?? "").trim();
+    if (!text) return "";
+    if (key === "puntoVentaUbicacionMaps" && /^https?:\/\//i.test(text)) {
+      return `<a href="${escapeHtml(text)}" target="_blank" rel="noopener noreferrer">Abrir en Google Maps</a>`;
+    }
+    return escapeHtml(text);
+  }
+
   function fieldGrid(fields, item) {
     const rows = fields
       .map(([key, label]) => {
@@ -287,7 +298,7 @@
         return `
           <div class="field">
             <span class="field-label">${escapeHtml(label)}</span>
-            <span class="field-value">${escapeHtml(val)}</span>
+            <span class="field-value">${fieldValueHtml(key, val)}</span>
           </div>`;
       })
       .filter(Boolean)
@@ -388,14 +399,7 @@
           .map((file, i) => {
             const globalIdx = media.indexOf(file);
             const kindLabel =
-              file.label ||
-              (file.kind === "logo"
-                ? "Logotipo"
-                : file.kind === "referencia"
-                  ? "Referencia"
-                  : file.kind === "ubicacion"
-                    ? "Foto de ubicación"
-                    : "Archivo");
+              file.label || (file.kind === "logo" ? "Logotipo" : file.kind === "referencia" ? "Referencia" : "Archivo");
             if (isImageMime(file.mime, file.name)) {
               return `
                 <button type="button" class="evidence-item image-tile" data-media-index="${globalIdx}">
@@ -577,14 +581,7 @@
     lightboxImg.src = file.url;
     lightboxImg.alt = file.name || "Imagen adjunta";
     const kind =
-      file.label ||
-      (file.kind === "logo"
-        ? "Logotipo"
-        : file.kind === "referencia"
-          ? "Referencia"
-          : file.kind === "ubicacion"
-            ? "Foto de ubicación"
-            : "Archivo");
+      file.label || (file.kind === "logo" ? "Logotipo" : file.kind === "referencia" ? "Referencia" : "Archivo");
     lightboxCaption.textContent = `${kind}${file.group ? ` · ${file.group}` : ""}${file.name ? ` · ${file.name}` : ""}`;
     lightboxPrev.disabled = lightboxMedia.length <= 1;
     lightboxNext.disabled = lightboxMedia.length <= 1;

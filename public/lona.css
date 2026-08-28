@@ -547,6 +547,42 @@ textarea.is-invalid {
   width: 0;
 }
 
+.ubicacion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.ubicacion-preview {
+  border: 1px solid var(--line, #dbe3ef);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  background: var(--surface-2, #f7f9fc);
+}
+
+.ubicacion-preview p {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+
+.ubicacion-preview a {
+  color: var(--brand, #0057ff);
+  font-weight: 600;
+}
+
+.ubicacion-preview iframe {
+  display: block;
+  width: 100%;
+  height: 220px;
+  margin-top: 0.75rem;
+  border: 0;
+  border-radius: 10px;
+}
+
+.pac-container {
+  z-index: 10000;
+}
+
 @media (max-width: 720px) {
   .grid-2 {
     grid-template-columns: 1fr;

@@ -133,6 +133,150 @@
     }
   }
 
+  const ubicacionInput = document.getElementById("puntoVentaUbicacionInput");
+  const ubicacionMaps = document.getElementById("puntoVentaUbicacionMaps");
+  const ubicacionLat = document.getElementById("puntoVentaLat");
+  const ubicacionLng = document.getElementById("puntoVentaLng");
+  const ubicacionPreview = document.getElementById("ubicacionPreview");
+  const btnDetectarUbicacion = document.getElementById("btnDetectarUbicacion");
+
+  function isMapsUrl(value) {
+    return /google\.(com|[a-z.]{2,})\/maps|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(String(value || ""));
+  }
+
+  function mapsUrlFromCoords(lat, lng) {
+    return `https://www.google.com/maps?q=${lat},${lng}`;
+  }
+
+  function setUbicacion({ label, mapsUrl, lat = "", lng = "" }) {
+    if (ubicacionInput && label != null) ubicacionInput.value = label;
+    if (ubicacionMaps) ubicacionMaps.value = mapsUrl || "";
+    if (ubicacionLat) ubicacionLat.value = lat === "" ? "" : String(lat);
+    if (ubicacionLng) ubicacionLng.value = lng === "" ? "" : String(lng);
+    renderUbicacionPreview(mapsUrl, label);
+  }
+
+  function renderUbicacionPreview(mapsUrl, label) {
+    if (!ubicacionPreview) return;
+    if (!mapsUrl) {
+      ubicacionPreview.hidden = true;
+      ubicacionPreview.innerHTML = "";
+      return;
+    }
+    const embedMatch = mapsUrl.match(/[?&]q=([^&]+)/);
+    const embedSrc = embedMatch
+      ? `https://maps.google.com/maps?q=${encodeURIComponent(decodeURIComponent(embedMatch[1]))}&z=16&output=embed`
+      : `https://maps.google.com/maps?q=${encodeURIComponent(mapsUrl)}&z=16&output=embed`;
+    ubicacionPreview.hidden = false;
+    ubicacionPreview.innerHTML = `
+      <p>${escapeHtml(label || "Ubicación confirmada")}</p>
+      <a href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer">Ver en Google Maps</a>
+      <iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${escapeHtml(embedSrc)}" title="Vista previa de ubicación"></iframe>
+    `;
+  }
+
+  function syncUbicacionFromInput() {
+    const raw = String(ubicacionInput?.value || "").trim();
+    if (!raw) return;
+    if (isMapsUrl(raw)) {
+      setUbicacion({ label: raw, mapsUrl: raw });
+      return;
+    }
+    const coords = raw.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+    if (coords) {
+      setUbicacion({
+        label: raw,
+        mapsUrl: mapsUrlFromCoords(coords[1], coords[2]),
+        lat: coords[1],
+        lng: coords[2],
+      });
+    }
+  }
+
+  function hasUbicacionPuntoVenta() {
+    syncUbicacionFromInput();
+    return Boolean(String(ubicacionMaps?.value || "").trim() || String(ubicacionInput?.value || "").trim());
+  }
+
+  function loadMapsPlaces(apiKey) {
+    return new Promise((resolve, reject) => {
+      if (window.google?.maps?.places) {
+        resolve(window.google.maps);
+        return;
+      }
+      const cb = `mapsInit_${Date.now()}`;
+      window[cb] = () => {
+        delete window[cb];
+        resolve(window.google.maps);
+      };
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&callback=${cb}`;
+      script.async = true;
+      script.onerror = () => reject(new Error("No se pudo cargar Google Maps"));
+      document.head.appendChild(script);
+    });
+  }
+
+  async function initUbicacionPicker() {
+    if (!ubicacionInput) return;
+    try {
+      const res = await fetch("/api/config");
+      const data = await res.json();
+      if (!data.mapsApiKey) return;
+      const maps = await loadMapsPlaces(data.mapsApiKey);
+      const autocomplete = new maps.places.Autocomplete(ubicacionInput, {
+        componentRestrictions: { country: "mx" },
+        fields: ["formatted_address", "geometry", "name", "url"],
+      });
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
+        const loc = place.geometry?.location;
+        const lat = loc ? loc.lat() : "";
+        const lng = loc ? loc.lng() : "";
+        const label = place.name
+          ? `${place.name}${place.formatted_address ? ` — ${place.formatted_address}` : ""}`
+          : place.formatted_address || ubicacionInput.value;
+        const mapsUrl =
+          place.url || (lat !== "" && lng !== "" ? mapsUrlFromCoords(lat, lng) : String(ubicacionInput.value || ""));
+        setUbicacion({ label, mapsUrl, lat, lng });
+      });
+    } catch (_) {
+      // Sin autocomplete: siguen valiendo pegar enlace o detectar ubicación.
+    }
+  }
+
+  btnDetectarUbicacion?.addEventListener("click", () => {
+    if (!navigator.geolocation) {
+      showToast("Tu navegador no permite detectar ubicación.");
+      return;
+    }
+    btnDetectarUbicacion.disabled = true;
+    btnDetectarUbicacion.textContent = "Detectando…";
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude.toFixed(6);
+        const lng = pos.coords.longitude.toFixed(6);
+        setUbicacion({
+          label: `Ubicación detectada (${lat}, ${lng})`,
+          mapsUrl: mapsUrlFromCoords(lat, lng),
+          lat,
+          lng,
+        });
+        btnDetectarUbicacion.disabled = false;
+        btnDetectarUbicacion.textContent = "Usar mi ubicación actual";
+      },
+      () => {
+        showToast("No se pudo obtener tu ubicación. Busca tu tienda o pega el enlace de Google Maps.");
+        btnDetectarUbicacion.disabled = false;
+        btnDetectarUbicacion.textContent = "Usar mi ubicación actual";
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+    );
+  });
+
+  ubicacionInput?.addEventListener("blur", syncUbicacionFromInput);
+  ubicacionInput?.addEventListener("change", syncUbicacionFromInput);
+
   function lonaCount() {
     return Number(form.querySelector('input[name="cantidadLonas"]:checked')?.value || 1) === 2 ? 2 : 1;
   }
@@ -328,17 +472,6 @@
                 `<label class="choice"><input type="radio" name="tipoToldo_${i}" value="${escapeHtml(t)}" /><span>${escapeHtml(t)}</span></label>`,
             ).join("")}
           </fieldset>
-          <label class="field">
-            <span>Ubicación del punto de venta (Google Maps) <span class="req">*</span></span>
-            <input
-              type="url"
-              name="ubicacionMaps_${i}"
-              data-k="ubicacionMaps"
-              inputmode="url"
-              placeholder="Pega aquí el link de Google Maps"
-            />
-            <small class="help">Abre Google Maps, comparte la ubicación y pega el enlace.</small>
-          </label>
           <div class="grid-2">
             <label class="field">
               <span>Ancho (cm) <span class="req">*</span></span>
@@ -468,7 +601,6 @@
       out.push({
         toldo: count === 1 ? "Toldo 1" : `Toldo ${i}`,
         tipo,
-        ubicacionMaps: String(block.querySelector('[data-k="ubicacionMaps"]')?.value || "").trim(),
         ancho: Number(block.querySelector('[data-k="ancho"]')?.value || 0),
         largo: Number(block.querySelector('[data-k="largo"]')?.value || 0),
         alto: Number(block.querySelector('[data-k="alto"]')?.value || 0),
@@ -648,12 +780,11 @@
     }
 
     if (isToldo()) {
-      const ubicacion = form.querySelector('input[name="toldo_ubicacion"]');
-      const foto = form.querySelector('input[name="toldo_foto"]');
-      if (!ubicacion?.files?.[0]) {
-        errors.push("Sube la ubicación del punto de venta.");
-        markInvalid(ubicacion);
+      if (!hasUbicacionPuntoVenta()) {
+        errors.push("Indica la ubicación del punto de venta en Google Maps.");
+        markInvalid(ubicacionInput);
       }
+      const foto = form.querySelector('input[name="toldo_foto"]');
       if (!foto?.files?.[0]) {
         errors.push("Sube la foto del punto de venta.");
         markInvalid(foto);
@@ -699,10 +830,6 @@
         if (!t.tipo) {
           errors.push(`Selecciona el tipo de ${t.toldo}.`);
           markInvalid(block);
-        }
-        if (!t.ubicacionMaps) {
-          errors.push(`Captura la ubicación de Google Maps de ${t.toldo}.`);
-          markInvalid(block?.querySelector('[data-k="ubicacionMaps"]'));
         }
         if (!t.ancho || !t.largo || !t.alto) {
           errors.push(`Captura medidas de ${t.toldo}.`);
@@ -750,6 +877,7 @@
   }
 
   function buildAnswers() {
+    if (isToldo()) syncUbicacionFromInput();
     const mat = selectedMaterial();
     const base = {
       material: mat,
@@ -759,6 +887,10 @@
       yaavserNombre: String(form.yaavserNombre.value || "").trim(),
       claveYaavser: String(form.claveYaavser.value || "").trim().toUpperCase(),
       puntoVenta: String(form.puntoVenta.value || "").trim(),
+      puntoVentaUbicacion: String(form.puntoVentaUbicacion?.value || "").trim(),
+      puntoVentaUbicacionMaps: String(form.puntoVentaUbicacionMaps?.value || "").trim(),
+      puntoVentaLat: String(form.puntoVentaLat?.value || "").trim(),
+      puntoVentaLng: String(form.puntoVentaLng?.value || "").trim(),
       tipoEstablecimiento: checkedValues("tipoEstablecimiento"),
       tipoEstablecimientoOtro: String(form.tipoEstablecimientoOtro.value || "").trim(),
       objetivoLona: checkedValues("objetivoLona"),
@@ -791,9 +923,7 @@
   }
 
   function appendToldoPuntoVentaFiles(fd) {
-    const ubicacion = form.querySelector('input[name="toldo_ubicacion"]');
     const foto = form.querySelector('input[name="toldo_foto"]');
-    if (ubicacion?.files?.[0]) fd.append("toldo_ubicacion", ubicacion.files[0]);
     if (foto?.files?.[0]) fd.append("toldo_foto", foto.files[0]);
   }
 
@@ -882,6 +1012,7 @@
   renderToldos();
   renderCaballetes();
   if (toldoPuntoVentaExtra) bindFilePreviews(toldoPuntoVentaExtra);
+  initUbicacionPicker();
   syncMaterial();
   syncTipoOtro();
   syncContacto();
