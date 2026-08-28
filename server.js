@@ -243,12 +243,10 @@ function attachItemFiles(entryId, items, prefix, files) {
     const i = idx + 1;
     const logoFiles = saveNamedFiles(entryId, `logo_${prefix}_${i}`, files);
     const referenciaFiles = saveNamedFiles(entryId, `referenciaFile_${prefix}_${i}`, files);
-    const fotoUbicacionFiles = saveNamedFiles(entryId, `fotoUbicacion_${prefix}_${i}`, files);
     return {
       ...item,
       logoFiles,
       referenciaFiles,
-      fotoUbicacionFiles,
     };
   });
 }
@@ -264,10 +262,19 @@ function extractMediaFromItems(items, labelKey) {
     for (const f of item.referenciaFiles || []) {
       media.push({ ...f, kind: "referencia", group, label: "Referencia de diseño" });
     }
-    for (const f of item.fotoUbicacionFiles || []) {
-      media.push({ ...f, kind: "ubicacion", group, label: "Foto de ubicación" });
-    }
   });
+  return media;
+}
+
+function extractToldoPuntoVentaMedia(answers) {
+  const media = [];
+  const group = "Punto de venta";
+  for (const f of answers.toldoUbicacionFile || []) {
+    media.push({ ...f, kind: "ubicacion", group, label: "Ubicación del punto de venta" });
+  }
+  for (const f of answers.toldoFotoFile || []) {
+    media.push({ ...f, kind: "foto", group, label: "Foto del punto de venta" });
+  }
   return media;
 }
 
@@ -277,6 +284,7 @@ function extractMedia(entry) {
     ...extractMediaFromItems(answers.lonas, "lona"),
     ...extractMediaFromItems(answers.toldos, "toldo"),
     ...extractMediaFromItems(answers.caballetes, "caballete"),
+    ...extractToldoPuntoVentaMedia(answers),
   ];
 }
 
@@ -331,13 +339,14 @@ function buildAttachments(entry) {
     const group = item.toldo || "Toldo";
     pushFiles(item.logoFiles, "logo", group);
     pushFiles(item.referenciaFiles, "referencia", group);
-    pushFiles(item.fotoUbicacionFiles, "ubicacion", group);
   }
   for (const item of answers.caballetes || []) {
     const group = item.caballete || "Caballete";
     pushFiles(item.logoFiles, "logo", group);
     pushFiles(item.referenciaFiles, "referencia", group);
   }
+  pushFiles(answers.toldoUbicacionFile, "ubicacion", "Punto de venta");
+  pushFiles(answers.toldoFotoFile, "foto", "Punto de venta");
   return attachments;
 }
 
@@ -754,6 +763,12 @@ app.post("/api/submit", (req, res) => {
       }
       if (Array.isArray(entry.answers.caballetes)) {
         entry.answers.caballetes = attachItemFiles(entry.id, entry.answers.caballetes, "caballete", files);
+      }
+      if (String(entry.answers.material || "").toLowerCase().includes("toldo")) {
+        const ubicacionFiles = saveNamedFiles(entry.id, "toldo_ubicacion", files);
+        const fotoFiles = saveNamedFiles(entry.id, "toldo_foto", files);
+        if (ubicacionFiles.length) entry.answers.toldoUbicacionFile = ubicacionFiles;
+        if (fotoFiles.length) entry.answers.toldoFotoFile = fotoFiles;
       }
 
       const list = readResponses();

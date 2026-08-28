@@ -5,6 +5,7 @@
   const blockNoAuth = document.getElementById("blockNoAuth");
   const flowLona = document.getElementById("flowLona");
   const flowToldo = document.getElementById("flowToldo");
+  const toldoPuntoVentaExtra = document.getElementById("toldoPuntoVentaExtra");
   const flowCaballete = document.getElementById("flowCaballete");
   const successPanel = document.getElementById("successPanel");
   const toast = document.getElementById("toast");
@@ -104,6 +105,7 @@
     flowLona.hidden = mat !== "Lona";
     flowToldo.hidden = mat !== "Toldo";
     flowCaballete.hidden = mat !== "Caballete";
+    if (toldoPuntoVentaExtra) toldoPuntoVentaExtra.hidden = mat !== "Toldo";
     renderLonas();
     renderToldos();
     renderCaballetes();
@@ -152,12 +154,12 @@
     "Ninguno",
   ];
 
-  function fileFieldHtml(label, name, required = false, accept = ".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf") {
+  function fileFieldHtml(label, name, required = false) {
     return `
       <label class="field file-field">
         <span>${label}${required ? ' <span class="req">*</span>' : ""}</span>
         <div class="file-drop">
-          <input type="file" name="${name}" accept="${accept}" data-preview />
+          <input type="file" name="${name}" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" data-preview />
           <div class="file-drop-copy">
             <strong>Sube o selecciona un archivo</strong>
             <small>JPG, PNG o PDF</small>
@@ -319,26 +321,6 @@
       blocks.push(`
         <div class="lona-block" data-toldo="${i}">
           <h3>${escapeHtml(title)}</h3>
-          <div class="design-block">
-            <h4>Ubicación del toldo</h4>
-            <label class="field">
-              <span>Enlace de Google Maps <span class="req">*</span></span>
-              <input
-                type="url"
-                name="ubicacionMaps_${i}"
-                data-k="ubicacionMaps"
-                inputmode="url"
-                placeholder="Pega aquí el link de Google Maps"
-              />
-              <small class="help">Abre Google Maps, comparte la ubicación del punto de venta y pega el enlace.</small>
-            </label>
-            ${fileFieldHtml(
-              "Foto del punto de venta o ubicación del toldo",
-              `fotoUbicacion_toldo_${i}`,
-              true,
-              ".jpg,.jpeg,.png,image/jpeg,image/png",
-            )}
-          </div>
           <fieldset class="choice-group compact">
             <legend>Tipo <span class="req">*</span></legend>
             ${TIPOS_TOLDO.map(
@@ -346,6 +328,17 @@
                 `<label class="choice"><input type="radio" name="tipoToldo_${i}" value="${escapeHtml(t)}" /><span>${escapeHtml(t)}</span></label>`,
             ).join("")}
           </fieldset>
+          <label class="field">
+            <span>Ubicación del punto de venta (Google Maps) <span class="req">*</span></span>
+            <input
+              type="url"
+              name="ubicacionMaps_${i}"
+              data-k="ubicacionMaps"
+              inputmode="url"
+              placeholder="Pega aquí el link de Google Maps"
+            />
+            <small class="help">Abre Google Maps, comparte la ubicación y pega el enlace.</small>
+          </label>
           <div class="grid-2">
             <label class="field">
               <span>Ancho (cm) <span class="req">*</span></span>
@@ -654,6 +647,19 @@
       }
     }
 
+    if (isToldo()) {
+      const ubicacion = form.querySelector('input[name="toldo_ubicacion"]');
+      const foto = form.querySelector('input[name="toldo_foto"]');
+      if (!ubicacion?.files?.[0]) {
+        errors.push("Sube la ubicación del punto de venta.");
+        markInvalid(ubicacion);
+      }
+      if (!foto?.files?.[0]) {
+        errors.push("Sube la foto del punto de venta.");
+        markInvalid(foto);
+      }
+    }
+
     if (isLona()) {
       if (!form.querySelector('input[name="cantidadLonas"]:checked')) {
         errors.push("Selecciona si solicitas 1 o 2 lonas.");
@@ -697,11 +703,6 @@
         if (!t.ubicacionMaps) {
           errors.push(`Captura la ubicación de Google Maps de ${t.toldo}.`);
           markInvalid(block?.querySelector('[data-k="ubicacionMaps"]'));
-        }
-        const fotoUbicacion = form.querySelector(`input[name="fotoUbicacion_toldo_${i}"]`);
-        if (!fotoUbicacion?.files?.length) {
-          errors.push(`Adjunta la foto de ubicación de ${t.toldo}.`);
-          markInvalid(fotoUbicacion);
         }
         if (!t.ancho || !t.largo || !t.alto) {
           errors.push(`Captura medidas de ${t.toldo}.`);
@@ -789,6 +790,13 @@
     };
   }
 
+  function appendToldoPuntoVentaFiles(fd) {
+    const ubicacion = form.querySelector('input[name="toldo_ubicacion"]');
+    const foto = form.querySelector('input[name="toldo_foto"]');
+    if (ubicacion?.files?.[0]) fd.append("toldo_ubicacion", ubicacion.files[0]);
+    if (foto?.files?.[0]) fd.append("toldo_foto", foto.files[0]);
+  }
+
   function appendItemFiles(fd, prefix, count) {
     for (let i = 1; i <= count; i += 1) {
       const logo = form.querySelector(`input[name="logo_${prefix}_${i}"]`);
@@ -798,10 +806,6 @@
       const refFile = form.querySelector(`input[name="referenciaFile_${prefix}_${i}"]`);
       if (refYes && refFile?.files?.[0]) {
         fd.append(`referenciaFile_${prefix}_${i}`, refFile.files[0]);
-      }
-      const fotoUbicacion = form.querySelector(`input[name="fotoUbicacion_${prefix}_${i}"]`);
-      if (fotoUbicacion?.files?.[0]) {
-        fd.append(`fotoUbicacion_${prefix}_${i}`, fotoUbicacion.files[0]);
       }
     }
   }
@@ -849,7 +853,10 @@
       const fd = new FormData();
       fd.append("answers", JSON.stringify(buildAnswers()));
       if (isLona()) appendItemFiles(fd, "lona", lonaCount());
-      if (isToldo()) appendItemFiles(fd, "toldo", toldoCount());
+      if (isToldo()) {
+        appendToldoPuntoVentaFiles(fd);
+        appendItemFiles(fd, "toldo", toldoCount());
+      }
       if (isCaballete()) appendItemFiles(fd, "caballete", caballeteCount());
       const res = await fetch("/api/submit", { method: "POST", body: fd });
       const data = await res.json();
@@ -874,6 +881,7 @@
   renderLonas();
   renderToldos();
   renderCaballetes();
+  if (toldoPuntoVentaExtra) bindFilePreviews(toldoPuntoVentaExtra);
   syncMaterial();
   syncTipoOtro();
   syncContacto();
