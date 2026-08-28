@@ -41,7 +41,7 @@ body {
 body {
   font-family: var(--font);
   color: var(--ink);
-  background: #050b14;
+  background: #eef4fa;
   overflow-x: hidden;
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -52,37 +52,24 @@ body {
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background: #050b14;
+  background: linear-gradient(165deg, #f8fbff 0%, #eef4fa 45%, #e4edf6 100%);
 }
 
 .scene-photo {
   position: absolute;
   inset: 0;
-  background: url("./assets/bg-telecom-signals.svg") center / cover no-repeat;
-  transform: scale(1.04);
-  animation: photo-drift 28s ease-in-out infinite alternate;
+  background: none;
+  transform: none;
+  animation: none;
 }
 
 .scene-overlay {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(
-      180deg,
-      rgba(5, 11, 20, 0.28) 0%,
-      rgba(5, 11, 20, 0.18) 38%,
-      rgba(5, 11, 20, 0.55) 100%
-    ),
-    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0, 151, 178, 0.16), transparent 62%);
-}
-
-@keyframes photo-drift {
-  from {
-    transform: scale(1.06) translate3d(0, 0, 0);
-  }
-  to {
-    transform: scale(1.12) translate3d(-1.2%, -0.7%, 0);
-  }
+    radial-gradient(ellipse 75% 55% at 8% -5%, rgba(37, 99, 181, 0.1), transparent 58%),
+    radial-gradient(ellipse 60% 45% at 96% 8%, rgba(0, 151, 178, 0.12), transparent 52%),
+    radial-gradient(ellipse 70% 40% at 50% 100%, rgba(15, 36, 64, 0.05), transparent 62%);
 }
 
 .topbar {
@@ -97,7 +84,7 @@ body {
   width: min(200px, 52vw);
   height: auto;
   display: block;
-  filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 4px 14px rgba(15, 36, 64, 0.08));
   animation: brand-in 0.7s var(--ease) both;
 }
 
