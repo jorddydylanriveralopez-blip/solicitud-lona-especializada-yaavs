@@ -756,8 +756,6 @@
     const multiRequired = [
       ["tipoEstablecimiento", "Selecciona el tipo de establecimiento."],
       ["objetivoLona", "Selecciona el objetivo del material."],
-      ["resultadoEsperado", "Selecciona el resultado esperado."],
-      ["serviciosActuales", "Selecciona los servicios actuales."],
       ["confirmaciones", "Debes aceptar las tres confirmaciones."],
     ];
     for (const [name, msg] of multiRequired) {

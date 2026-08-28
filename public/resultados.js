@@ -52,8 +52,6 @@
         ["tipoEstablecimiento", "Tipo"],
         ["tipoEstablecimientoOtro", "Tipo (otro)"],
         ["objetivoLona", "Objetivo"],
-        ["resultadoEsperado", "Resultado esperado"],
-        ["serviciosActuales", "Servicios actuales"],
       ],
     },
   ];
