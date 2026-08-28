@@ -90,8 +90,6 @@ const FIELD_ORDER = [
   ["tipoEstablecimiento", "Tipo de establecimiento"],
   ["tipoEstablecimientoOtro", "Tipo (otro)"],
   ["objetivoLona", "Objetivo"],
-  ["resultadoEsperado", "Resultado esperado"],
-  ["serviciosActuales", "Servicios actuales"],
   ["cantidadLonas", "Cantidad de lonas"],
   ["lonas", "Especificaciones por lona"],
   ["cantidadToldos", "Cantidad de toldos"],

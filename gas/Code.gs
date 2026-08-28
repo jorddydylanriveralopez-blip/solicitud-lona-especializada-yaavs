@@ -40,8 +40,6 @@ var HEADERS = [
   "Tipo de establecimiento",
   "Tipo (otro)",
   "Objetivo",
-  "Resultado esperado",
-  "Servicios actuales",
   "Cantidad de lonas",
   "Especificaciones por lona",
   "Cantidad de toldos",
