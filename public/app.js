@@ -610,9 +610,6 @@
       ["ejecutivoCorreo", "Captura el correo del ejecutivo."],
       ["yaavserNombre", "Captura el nombre del YAAVSER."],
       ["claveYaavser", "Captura la clave YAAVSER."],
-      ["gerenteTerritorial", "Captura el nombre del gerente que autorizó."],
-      ["gerenteTelefono", "Captura el teléfono del gerente que autorizó."],
-      ["territorioGerente", "Captura el territorio del gerente que autorizó."],
       ["yaavserTelefono", "Captura el teléfono del YAAVSER."],
       ["puntoVenta", "Captura el nombre del punto de venta."],
     ];
@@ -750,9 +747,6 @@
     const base = {
       material: mat,
       autorizada: form.querySelector('input[name="autorizada"]:checked')?.value || "",
-      gerenteTerritorial: String(form.gerenteTerritorial.value || "").trim(),
-      gerenteTelefono: String(form.gerenteTelefono?.value || "").trim(),
-      territorioGerente: String(form.territorioGerente?.value || "").trim(),
       ejecutivoNombre: String(form.ejecutivoNombre.value || "").trim(),
       ejecutivoTelefono: String(form.ejecutivoTelefono.value || "").trim(),
       ejecutivoCorreo: String(form.ejecutivoCorreo.value || "").trim(),
