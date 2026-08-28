@@ -607,7 +607,6 @@
     const requiredText = [
       ["ejecutivoNombre", "Captura el nombre del ejecutivo."],
       ["ejecutivoTelefono", "Captura el teléfono del ejecutivo."],
-      ["ejecutivoCorreo", "Captura el correo del ejecutivo."],
       ["yaavserNombre", "Captura el nombre del YAAVSER."],
       ["claveYaavser", "Captura la clave YAAVSER."],
       ["yaavserTelefono", "Captura el teléfono del YAAVSER."],
