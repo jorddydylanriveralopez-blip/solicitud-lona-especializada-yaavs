@@ -66,18 +66,21 @@
     if (mat === "Toldo") {
       return {
         title: "Solicitud de diseño y producción de toldo",
-        objetivo: '¿Cuál es el objetivo principal del toldo? <span class="req">*</span>',
+        objetivo:
+          '¿Cuál es el objetivo que se requiere obtener del toldo? <span class="req">*</span>',
       };
     }
     if (mat === "Caballete") {
       return {
         title: "Solicitud de diseño y producción de caballete",
-        objetivo: '¿Cuál es el objetivo principal del caballete? <span class="req">*</span>',
+        objetivo:
+          '¿Cuál es el objetivo que se requiere obtener del caballete? <span class="req">*</span>',
       };
     }
     return {
       title: "Solicitud de diseño y producción de lona especializada",
-      objetivo: '¿Cuál es el objetivo principal de la lona? <span class="req">*</span>',
+      objetivo:
+        '¿Cuál es el objetivo que se requiere obtener de la lona? <span class="req">*</span>',
     };
   }
 
@@ -790,10 +793,6 @@
     }
 
     if (isLona()) {
-      if (!form.querySelector('input[name="cantidadLonas"]:checked')) {
-        errors.push("Selecciona si solicitas 1 o 2 lonas.");
-        markInvalid(form.querySelector('input[name="cantidadLonas"]'));
-      }
       const lonas = collectLonas();
       if (!lonas.length) errors.push("Completa las especificaciones de la lona.");
       lonas.forEach((l, idx) => {
@@ -816,10 +815,6 @@
     }
 
     if (isToldo()) {
-      if (!form.querySelector('input[name="cantidadToldos"]:checked')) {
-        errors.push("Selecciona si solicitas 1 o 2 toldos.");
-        markInvalid(form.querySelector('input[name="cantidadToldos"]'));
-      }
       const toldos = collectToldos();
       if (!toldos.length) errors.push("Completa las especificaciones del toldo.");
       toldos.forEach((t, idx) => {
@@ -842,10 +837,6 @@
     }
 
     if (isCaballete()) {
-      if (!form.querySelector('input[name="cantidadCaballetes"]:checked')) {
-        errors.push("Selecciona si solicitas 1 o 2 caballetes.");
-        markInvalid(form.querySelector('input[name="cantidadCaballetes"]'));
-      }
       const caballetes = collectCaballetes();
       if (!caballetes.length) errors.push("Completa las especificaciones del caballete.");
       caballetes.forEach((c, idx) => {
