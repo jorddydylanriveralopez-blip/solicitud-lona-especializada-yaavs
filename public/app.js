@@ -355,8 +355,8 @@
           ).join("")}
         </fieldset>
         <label class="field" data-contacto-detalle="${prefix}_${i}" hidden>
-          <span>Captura los datos de contacto <span class="req">*</span></span>
-          <textarea name="contactoDetalle_${prefix}_${i}" rows="3" placeholder="Teléfono, WhatsApp, redes, dirección…"></textarea>
+          <span>Captura los datos de contacto de tu ${mat} <span class="req">*</span></span>
+          <textarea name="contactoDetalle_${prefix}_${i}" rows="3" placeholder="Teléfono, WhatsApp, redes…"></textarea>
         </label>
         <fieldset class="choice-group compact">
           <legend>¿Existe un diseño anterior como referencia? <span class="req">*</span></legend>
