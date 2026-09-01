@@ -2,7 +2,6 @@
   const form = document.getElementById("lonaForm");
   const afterMaterial = document.getElementById("afterMaterial");
   const formRest = document.getElementById("formRest");
-  const blockNoAuth = document.getElementById("blockNoAuth");
   const flowLona = document.getElementById("flowLona");
   const flowToldo = document.getElementById("flowToldo");
   const toldoPuntoVentaExtra = document.getElementById("toldoPuntoVentaExtra");
@@ -84,24 +83,16 @@
     };
   }
 
-  function isAuthorized() {
-    const v = form.querySelector('input[name="autorizada"]:checked')?.value || "";
-    return v.startsWith("Sí");
-  }
-
   function syncMaterial() {
     const mat = selectedMaterial();
     afterMaterial.hidden = !mat;
-    if (!mat) {
-      formRest.hidden = true;
-      return;
-    }
+    if (!mat) return;
 
     const copy = materialCopy();
     if (heroTitle) heroTitle.textContent = copy.title;
     if (heroLede) {
       heroLede.textContent =
-        "Completa este formulario el ejecutivo de ventas YAAVSTAR junto con el YAAVSER. Verifica medidas exactas, información vigente y autorización del gerente territorial.";
+        "Completa este formulario el ejecutivo de ventas YAAVSTAR junto con el YAAVSER. Verifica medidas exactas e información vigente.";
     }
     if (objetivoLegend) objetivoLegend.innerHTML = copy.objetivo;
 
@@ -112,28 +103,6 @@
     renderLonas();
     renderToldos();
     renderCaballetes();
-    syncAuthGate();
-  }
-
-  function syncAuthGate() {
-    if (!selectedMaterial()) {
-      blockNoAuth.hidden = true;
-      formRest.hidden = true;
-      return;
-    }
-    const selected = form.querySelector('input[name="autorizada"]:checked');
-    if (!selected) {
-      blockNoAuth.hidden = true;
-      formRest.hidden = false;
-      return;
-    }
-    if (isAuthorized()) {
-      blockNoAuth.hidden = true;
-      formRest.hidden = false;
-    } else {
-      blockNoAuth.hidden = false;
-      formRest.hidden = true;
-    }
   }
 
   const ubicacionInput = document.getElementById("puntoVentaUbicacionInput");
@@ -292,7 +261,6 @@
     return 1;
   }
 
-  const MARCAS = ["AT&T", "Movistar", "Unefon", "BAIT", "Telcel"];
   const CONTACTO_OPTS = [
     "Número telefónico",
     "WhatsApp",
@@ -334,14 +302,6 @@
       <div class="design-block">
         <h4>Contenido y diseño</h4>
         ${fileFieldHtml("Logotipo del punto de venta", `logo_${prefix}_${i}`, true)}
-        <fieldset class="choice-group" data-multi="true">
-          <legend>¿Cuáles son las marcas que deben de aparecer en tu ${mat}? <span class="req">*</span></legend>
-          <p class="multi-hint">Puedes elegir más de una respuesta.</p>
-          ${MARCAS.map(
-            (m) =>
-              `<label class="choice"><input type="checkbox" name="marcas_${prefix}_${i}" value="${escapeHtml(m)}" /><span>${escapeHtml(m)}</span></label>`,
-          ).join("")}
-        </fieldset>
         <label class="field">
           <span>Ingresa el texto que quieres comunicar en tu ${mat}</span>
           <textarea name="texto_${prefix}_${i}" rows="3" placeholder="Opcional. Mercadotecnia podrá ajustar el texto."></textarea>
@@ -551,14 +511,10 @@
   }
 
   function collectDesign(prefix, i) {
-    const marcas = [...form.querySelectorAll(`input[name="marcas_${prefix}_${i}"]:checked`)].map(
-      (el) => el.value,
-    );
     const contacto = [...form.querySelectorAll(`input[name="contacto_${prefix}_${i}"]:checked`)].map(
       (el) => el.value,
     );
     return {
-      marcas,
       textoPrincipal: String(form[`texto_${prefix}_${i}`]?.value || "").trim(),
       datosContactoOpciones: contacto,
       datosContactoDetalle: String(form[`contactoDetalle_${prefix}_${i}`]?.value || "").trim(),
@@ -671,11 +627,6 @@
       errors.push(`Adjunta el logotipo de ${label}.`);
       markInvalid(logoInput);
     }
-    const marcas = [...form.querySelectorAll(`input[name="marcas_${prefix}_${i}"]:checked`)];
-    if (!marcas.length) {
-      errors.push(`Selecciona marcas de ${label}.`);
-      markInvalid(form.querySelector(`input[name="marcas_${prefix}_${i}"]`));
-    }
     const contacto = [...form.querySelectorAll(`input[name="contacto_${prefix}_${i}"]:checked`)].map(
       (el) => el.value,
     );
@@ -721,15 +672,6 @@
     if (!selectedMaterial()) {
       errors.push("Selecciona el material a solicitar.");
       markInvalid(form.querySelector('input[name="material"]'));
-      return errors;
-    }
-
-    if (!form.querySelector('input[name="autorizada"]:checked')) {
-      errors.push("Indica si la solicitud ya fue autorizada.");
-      markInvalid(form.querySelector('input[name="autorizada"]'));
-    }
-    if (!isAuthorized()) {
-      errors.push("La solicitud debe estar autorizada para continuar.");
       return errors;
     }
 
@@ -851,7 +793,6 @@
     const mat = selectedMaterial();
     const base = {
       material: mat,
-      autorizada: form.querySelector('input[name="autorizada"]:checked')?.value || "",
       ejecutivoNombre: String(form.ejecutivoNombre.value || "").trim(),
       ejecutivoTelefono: String(form.ejecutivoTelefono.value || "").trim(),
       yaavserNombre: String(form.yaavserNombre.value || "").trim(),
