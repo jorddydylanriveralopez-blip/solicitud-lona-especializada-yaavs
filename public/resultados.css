@@ -447,6 +447,21 @@ body.lightbox-open {
   background: #eef6fb;
 }
 
+.nav button.delete-btn {
+  border-color: #f1b7bb;
+  background: #fdf1f2;
+  color: #b3261e;
+}
+
+.nav button.delete-btn:hover {
+  background: #fbdfe1;
+}
+
+.nav button.delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .chip-row {
   display: flex;
   flex-wrap: wrap;

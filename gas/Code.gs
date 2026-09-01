@@ -108,6 +108,10 @@ function doPost(e) {
   try {
     var raw = (e && e.postData && e.postData.contents) || "{}";
     var data = JSON.parse(raw);
+    if (data.action === "delete") {
+      var deleted = deleteRows_(data.id, data.folio);
+      return jsonOut_({ ok: true, deleted: deleted });
+    }
     var media = saveAttachments_(data.attachments || [], data.folio || data.id || "");
     data.media = media;
     var sheet = ensureSheet_();
@@ -116,6 +120,35 @@ function doPost(e) {
   } catch (err) {
     return jsonOut_({ ok: false, error: String(err) });
   }
+}
+
+function deleteRows_(id, folio) {
+  var wantedId = String(id || "").trim();
+  var wantedFolio = String(folio || "").trim();
+  if (!wantedId && !wantedFolio) return 0;
+
+  var sheet = ensureSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+
+  var idCol = KEYS.indexOf("id");
+  var folioCol = KEYS.indexOf("folio");
+  var values = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
+  var rowsToDelete = [];
+  for (var r = 0; r < values.length; r++) {
+    var rowId = idCol >= 0 ? String(values[r][idCol] || "").trim() : "";
+    var rowFolio = folioCol >= 0 ? String(values[r][folioCol] || "").trim() : "";
+    if ((wantedId && rowId === wantedId) || (wantedFolio && rowFolio === wantedFolio)) {
+      rowsToDelete.push(r + 2);
+    }
+  }
+  rowsToDelete.sort(function (a, b) {
+    return b - a;
+  });
+  for (var i = 0; i < rowsToDelete.length; i++) {
+    sheet.deleteRow(rowsToDelete[i]);
+  }
+  return rowsToDelete.length;
 }
 
 function setupSheet() {

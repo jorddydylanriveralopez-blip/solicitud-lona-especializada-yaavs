@@ -475,6 +475,7 @@
             <div class="nav">
               <button type="button" id="prevBtn">← Anterior</button>
               <button type="button" id="nextBtn">Siguiente →</button>
+              <button type="button" id="deleteBtn" class="delete-btn">Eliminar</button>
             </div>
           </div>
         </header>
@@ -546,6 +547,29 @@
       index = (index + 1) % items.length;
       renderList();
       renderDetail();
+    };
+
+    document.getElementById("deleteBtn").onclick = async () => {
+      const label = item.folio || item.puntoVenta || "esta solicitud";
+      if (!window.confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer.`)) return;
+      const btn = document.getElementById("deleteBtn");
+      btn.disabled = true;
+      btn.textContent = "Eliminando…";
+      try {
+        const res = await fetch(`/api/responses/${encodeURIComponent(item.id)}`, {
+          method: "DELETE",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok === false) {
+          throw new Error(data.error || "No se pudo eliminar");
+        }
+        index = 0;
+        await refresh();
+      } catch (err) {
+        window.alert(`Error al eliminar: ${err.message || err}`);
+        btn.disabled = false;
+        btn.textContent = "Eliminar";
+      }
     };
 
     detailEl.querySelectorAll("[data-media-index]").forEach((btn) => {

@@ -437,20 +437,8 @@ function normalize(body) {
   };
 }
 
-async function forwardToSheets(entry) {
+async function postToSheetsRaw(payload) {
   if (!SHEETS_WEBHOOK_URL) return { skipped: true };
-  const flat = flatten(entry);
-  const attachments = buildAttachments(entry);
-  const payload = JSON.stringify({
-    ...flat,
-    receivedAt: flat.receivedAt || entry.receivedAt,
-    timestamp: entry.timestamp || flat.receivedAt,
-    id: entry.id,
-    folio: entry.folio,
-    answers: entry.answers,
-    attachments,
-  });
-
   try {
     // Apps Script ejecuta doPost en el 1er hop y responde 302.
     // El cuerpo de respuesta se lee con GET en Location (POST ahí da 405).
@@ -493,6 +481,28 @@ async function forwardToSheets(entry) {
     console.error("Sheets webhook error:", err.message);
     return { ok: false, error: err.message };
   }
+}
+
+async function forwardToSheets(entry) {
+  if (!SHEETS_WEBHOOK_URL) return { skipped: true };
+  const flat = flatten(entry);
+  const attachments = buildAttachments(entry);
+  const payload = JSON.stringify({
+    ...flat,
+    receivedAt: flat.receivedAt || entry.receivedAt,
+    timestamp: entry.timestamp || flat.receivedAt,
+    id: entry.id,
+    folio: entry.folio,
+    answers: entry.answers,
+    attachments,
+  });
+  return postToSheetsRaw(payload);
+}
+
+async function deleteFromSheets(id, folio) {
+  if (!SHEETS_WEBHOOK_URL) return { skipped: true };
+  const payload = JSON.stringify({ action: "delete", id: id || "", folio: folio || "" });
+  return postToSheetsRaw(payload);
 }
 
 function formatDateMx(iso) {
@@ -702,6 +712,36 @@ app.get("/api/responses", async (_req, res) => {
     sheetsError: board.sheetsError || null,
     updatedAt: new Date().toISOString(),
   });
+});
+
+app.delete("/api/responses/:id", async (req, res) => {
+  try {
+    const id = String(req.params.id || "").trim();
+    if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
+
+    const before = readResponses();
+    const match = before.find((e) => e.id === id || e.folio === id);
+    const remaining = before.filter((e) => e.id !== id && e.folio !== id);
+    if (remaining.length !== before.length) {
+      writeResponses(remaining);
+      const entryId = match?.id;
+      if (entryId) {
+        const dir = path.join(uploadsRoot, entryId);
+        fs.rm(dir, { recursive: true, force: true }, () => {});
+      }
+    }
+
+    const sheetsResult = await deleteFromSheets(id, match?.folio || id);
+    sheetsListCache = { at: 0, items: null, error: null };
+
+    res.json({
+      ok: true,
+      removedLocal: remaining.length !== before.length,
+      sheets: sheetsResult,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message || "Error al eliminar" });
+  }
 });
 
 app.get("/api/export.xlsx", async (_req, res) => {
