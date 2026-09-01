@@ -853,7 +853,7 @@
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
     if (t.name === "material") syncMaterial();
-    if (t.name === "autorizada") syncAuthGate();
+    if (t.name === "tipoEstablecimiento") syncTipoOtro();
     if (t.hasAttribute("data-contacto")) syncContacto();
     if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
   });
