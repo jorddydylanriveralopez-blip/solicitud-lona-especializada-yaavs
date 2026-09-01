@@ -112,6 +112,10 @@ function doPost(e) {
       var deleted = deleteRows_(data.id, data.folio);
       return jsonOut_({ ok: true, deleted: deleted });
     }
+    if (data.action === "resetAll") {
+      var clearedRows = resetAllRows_();
+      return jsonOut_({ ok: true, cleared: clearedRows });
+    }
     var media = saveAttachments_(data.attachments || [], data.folio || data.id || "");
     data.media = media;
     var sheet = ensureSheet_();
@@ -153,6 +157,15 @@ function deleteRows_(id, folio) {
 
 function setupSheet() {
   ensureSheet_();
+}
+
+function resetAllRows_() {
+  var sheet = ensureSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+  var count = lastRow - 1;
+  sheet.deleteRows(2, count);
+  return count;
 }
 
 function jsonOut_(obj) {
