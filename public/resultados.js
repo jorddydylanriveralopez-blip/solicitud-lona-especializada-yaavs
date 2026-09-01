@@ -327,7 +327,6 @@
               ["alto", "Alto (cm)"],
               ["caras", "Caras"],
               ["orientacion", "Orientación"],
-              ["acabados", "Acabados"],
               ["marcas", "Marcas"],
               ["textoPrincipal", "Texto principal"],
               ["datosContactoOpciones", "Contacto"],

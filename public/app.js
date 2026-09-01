@@ -528,6 +528,7 @@
             </label>
           </div>
           <fieldset class="choice-group compact">
+            <fieldset class="choice-group" data-multi="true">
             <legend>Caras a imprimir <span class="req">*</span></legend>
             ${CARAS_CABALLETE.map(
               (c) =>
@@ -539,14 +540,6 @@
             ${ORIENTACIONES.map(
               (o) =>
                 `<label class="choice"><input type="radio" name="orientacionCab_${i}" value="${escapeHtml(o)}" /><span>${escapeHtml(o)}</span></label>`,
-            ).join("")}
-          </fieldset>
-          <fieldset class="choice-group" data-multi="true">
-            <legend>Acabados requeridos <span class="req">*</span></legend>
-            <p class="multi-hint">Puedes elegir más de una respuesta.</p>
-            ${ACABADOS.map(
-              (a) =>
-                `<label class="choice"><input type="checkbox" name="acabadosCab_${i}" value="${escapeHtml(a)}" /><span>${escapeHtml(a)}</span></label>`,
             ).join("")}
           </fieldset>
           ${designFieldsHtml("caballete", i)}
@@ -628,26 +621,19 @@
     for (let i = 1; i <= count; i += 1) {
       const block = caballetesSpecs.querySelector(`[data-caballete="${i}"]`);
       if (!block) continue;
-      const acabados = [...form.querySelectorAll(`input[name="acabadosCab_${i}"]:checked`)].map(
-        (el) => el.value,
-      );
       out.push({
         caballete: count === 1 ? "Caballete 1" : `Caballete ${i}`,
         ancho: Number(block.querySelector('[data-k="ancho"]')?.value || 0),
         alto: Number(block.querySelector('[data-k="alto"]')?.value || 0),
         caras: form.querySelector(`input[name="caras_${i}"]:checked`)?.value || "",
         orientacion: form.querySelector(`input[name="orientacionCab_${i}"]:checked`)?.value || "",
-        acabados,
         ...collectDesign("caballete", i),
       });
     }
     return out;
   }
 
-  function syncTipoOtro() {
-    const on = document.getElementById("tipoOtroChk")?.checked;
-    document.getElementById("tipoOtroWrap").hidden = !on;
-  }
+
 
   function syncContacto() {
     const keys = new Set();
@@ -775,15 +761,8 @@
       }
     }
 
-    if (checkedValues("confirmaciones").length < 3) {
-      errors.push("Debes aceptar las tres confirmaciones.");
-    }
-
-    if (document.getElementById("tipoOtroChk")?.checked) {
-      if (!String(form.tipoEstablecimientoOtro.value || "").trim()) {
-        errors.push("Especifica el tipo de establecimiento.");
-        markInvalid(form.tipoEstablecimientoOtro);
-      }
+    if (checkedValues("confirmaciones").length < 2) {
+      errors.push("Debes aceptar las dos confirmaciones.");
     }
 
     if (isToldo()) {
@@ -860,10 +839,6 @@
           errors.push(`Selecciona la orientación de ${c.caballete}.`);
           markInvalid(block);
         }
-        if (!c.acabados.length) {
-          errors.push(`Selecciona acabados de ${c.caballete}.`);
-          markInvalid(block);
-        }
         validateDesign("caballete", i, c.caballete, errors);
       });
     }
@@ -887,7 +862,7 @@
       puntoVentaLat: String(form.puntoVentaLat?.value || "").trim(),
       puntoVentaLng: String(form.puntoVentaLng?.value || "").trim(),
       tipoEstablecimiento: checkedValues("tipoEstablecimiento"),
-      tipoEstablecimientoOtro: String(form.tipoEstablecimientoOtro.value || "").trim(),
+      tipoEstablecimientoOtro: String(form.tipoEstablecimientoOtro?.value || "").trim(),
       objetivoLona: checkedValues("objetivoLona"),
       confirmaciones: checkedValues("confirmaciones"),
     };
@@ -938,7 +913,6 @@
     if (!(t instanceof HTMLElement)) return;
     if (t.name === "material") syncMaterial();
     if (t.name === "autorizada") syncAuthGate();
-    if (t.name === "tipoEstablecimiento") syncTipoOtro();
     if (t.hasAttribute("data-contacto")) syncContacto();
     if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
   });
@@ -992,7 +966,6 @@
   if (toldoPuntoVentaExtra) bindFilePreviews(toldoPuntoVentaExtra);
   initUbicacionPicker();
   syncMaterial();
-  syncTipoOtro();
   syncContacto();
   syncReferencia();
 })();

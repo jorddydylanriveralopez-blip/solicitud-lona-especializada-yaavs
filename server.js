@@ -119,8 +119,6 @@ const COLUMN_WIDTHS = {
   tipoEstablecimiento: 22,
   tipoEstablecimientoOtro: 18,
   objetivoLona: 36,
-  resultadoEsperado: 36,
-  serviciosActuales: 36,
   cantidadLonas: 12,
   mismoDiseno: 16,
   lonas: 56,
