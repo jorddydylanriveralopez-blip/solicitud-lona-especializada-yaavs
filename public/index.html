@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260925c5" />
-    <link rel="stylesheet" href="./lona.css?v=20260925c5" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260925c6" />
+    <link rel="stylesheet" href="./lona.css?v=20260925c6" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -446,10 +446,50 @@
               </div>
             </fieldset>
 
-            <label class="field">
-              <span>Versión de bastidor requerida <span class="req">*</span></span>
-              <input type="text" name="rotulacionBastidor" required placeholder="Describe la versión de bastidor" />
-            </label>
+            <fieldset class="bastidor-picker" data-required="true">
+              <legend>Versión de bastidor requerida <span class="req">*</span></legend>
+              <p class="multi-hint" id="bastidorHint">
+                Selecciona primero un color para ver las dos versiones de bastidor.
+              </p>
+              <div class="bastidor-picker-grid" id="bastidorPicker" hidden>
+                <label class="bastidor-option">
+                  <input type="radio" name="rotulacionBastidor" value="Con personaje" />
+                  <span class="bastidor-card">
+                    <span class="bastidor-preview">
+                      <img
+                        class="bastidor-preview-img"
+                        data-bastidor="0"
+                        src="./assets/rotulacion-colores/verde/0.jpg"
+                        alt="Bastidor con personaje"
+                        loading="lazy"
+                      />
+                    </span>
+                    <span class="bastidor-meta">
+                      <strong>Con personaje</strong>
+                      <em>Seleccionar</em>
+                    </span>
+                  </span>
+                </label>
+                <label class="bastidor-option">
+                  <input type="radio" name="rotulacionBastidor" value="Sin personaje (logos)" />
+                  <span class="bastidor-card">
+                    <span class="bastidor-preview">
+                      <img
+                        class="bastidor-preview-img"
+                        data-bastidor="1"
+                        src="./assets/rotulacion-colores/verde/1.jpg"
+                        alt="Bastidor sin personaje"
+                        loading="lazy"
+                      />
+                    </span>
+                    <span class="bastidor-meta">
+                      <strong>Sin personaje (logos)</strong>
+                      <em>Seleccionar</em>
+                    </span>
+                  </span>
+                </label>
+              </div>
+            </fieldset>
 
             <h3 class="rotulacion-subtitle">Dimensiones del punto de venta</h3>
             <p class="section-note">
@@ -673,6 +713,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260925c5" defer></script>
+    <script src="./app.js?v=20260925c6" defer></script>
   </body>
 </html>

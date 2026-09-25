@@ -142,6 +142,42 @@
           : "Sube la fotografía frontal completa del negocio.";
     }
     syncRotulacionColorPreviews();
+    syncRotulacionBastidorPreviews();
+  }
+
+  function syncRotulacionBastidorPreviews() {
+    const color =
+      form.querySelector('input[name="rotulacionColor"]:checked')?.value?.toLowerCase() || "";
+    const picker = document.getElementById("bastidorPicker");
+    const hint = document.getElementById("bastidorHint");
+    const colorKey = {
+      verde: "verde",
+      azul: "azul",
+      rosa: "rosa",
+      anaranjado: "anaranjado",
+      amarillo: "amarillo",
+    }[color];
+
+    if (!colorKey) {
+      if (picker) picker.hidden = true;
+      if (hint) {
+        hint.hidden = false;
+        hint.textContent = "Selecciona primero un color para ver las dos versiones de bastidor.";
+      }
+      return;
+    }
+
+    if (picker) picker.hidden = false;
+    if (hint) {
+      hint.hidden = false;
+      hint.textContent = `Elige una versión de bastidor para el color ${color.charAt(0).toUpperCase()}${color.slice(1)}.`;
+    }
+
+    document.querySelectorAll(".bastidor-preview-img[data-bastidor]").forEach((img) => {
+      const key = img.getAttribute("data-bastidor");
+      const next = `./assets/rotulacion-colores/${colorKey}/${key}.jpg`;
+      if (img.getAttribute("src") !== next) img.setAttribute("src", next);
+    });
   }
 
   const ROTULACION_CLASSIF_PREVIEW = {
@@ -706,7 +742,8 @@
       clasificacion:
         form.querySelector('input[name="rotulacionClasificacion"]:checked')?.value || "",
       color: form.querySelector('input[name="rotulacionColor"]:checked')?.value || "",
-      versionBastidor: String(form.rotulacionBastidor?.value || "").trim(),
+      versionBastidor:
+        form.querySelector('input[name="rotulacionBastidor"]:checked')?.value || "",
       dimensiones: {
         cortinaAcceso: { alto: num("rotDim_cortina_alto"), ancho: num("rotDim_cortina_ancho") },
         paredDerecha: { alto: num("rotDim_paredDer_alto"), ancho: num("rotDim_paredDer_ancho") },
@@ -788,7 +825,7 @@
   function markInvalid(el) {
     if (!el) return;
     el.classList.add("is-invalid");
-    const group = el.closest(".choice-group, .field, .lona-block, .color-picker");
+    const group = el.closest(".choice-group, .field, .lona-block, .color-picker, .bastidor-picker");
     if (group) group.classList.add("is-invalid");
   }
 
@@ -934,8 +971,8 @@
         markInvalid(form.querySelector('input[name="rotulacionColor"]'));
       }
       if (!r?.versionBastidor) {
-        errors.push("Captura la versión de bastidor requerida.");
-        markInvalid(form.rotulacionBastidor);
+        errors.push("Selecciona la versión de bastidor.");
+        markInvalid(form.querySelector('input[name="rotulacionBastidor"]'));
       }
       const dims = r?.dimensiones || {};
       const dimFields = [
@@ -1061,6 +1098,7 @@
     ) {
       syncRotulacionUi();
     }
+    if (t.name === "rotulacionColor") syncRotulacionBastidorPreviews();
     if (t.hasAttribute("data-contacto")) syncContacto();
     if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
   });
@@ -1117,6 +1155,7 @@
   initUbicacionPicker();
   syncMaterial();
   syncRotulacionUi();
+  syncRotulacionBastidorPreviews();
   syncContacto();
   syncReferencia();
 })();
