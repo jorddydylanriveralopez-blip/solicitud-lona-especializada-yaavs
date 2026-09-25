@@ -287,7 +287,7 @@ function extractRotulacionMedia(answers) {
     media.push({ ...f, kind: "permiso", group, label: "Evidencia de permiso" });
   }
   for (const f of answers.rotulacionFotoFiles || []) {
-    media.push({ ...f, kind: "foto", group, label: "Foto de fachada" });
+    media.push({ ...f, kind: "foto", group: "Punto de venta", label: "Foto del punto de venta" });
   }
   return media;
 }
@@ -362,7 +362,7 @@ function buildAttachments(entry) {
   }
   pushFiles(answers.toldoFotoFile, "foto", "Punto de venta");
   pushFiles(answers.rotulacionPermisoFile, "permiso", "Rotulación");
-  pushFiles(answers.rotulacionFotoFiles, "foto", "Rotulación");
+  pushFiles(answers.rotulacionFotoFiles, "foto", "Punto de venta");
   return attachments;
 }
 

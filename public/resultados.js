@@ -158,9 +158,49 @@
     return [];
   }
 
+  function isPuntoVentaMedia(file, item) {
+    const group = String(file?.group || "").toLowerCase();
+    const label = String(file?.label || "").toLowerCase();
+    const kind = String(file?.kind || "").toLowerCase();
+    const material = String(item?.material || "").toLowerCase();
+    if (group.includes("punto de venta")) return true;
+    if (label.includes("punto de venta")) return true;
+    if (label.includes("fachada")) return true;
+    if (group.includes("rotul") && kind === "foto") return true;
+    if ((material.includes("rotul") || material.includes("toldo")) && kind === "foto") return true;
+    return false;
+  }
+
+  function puntoVentaMedia(item) {
+    return mediaOf(item).filter((f) => f?.url && isPuntoVentaMedia(f, item));
+  }
+
   function firstThumb(item) {
+    const preferred = puntoVentaMedia(item).find((f) => isImageMime(f.mime, f.name) && f.url);
+    if (preferred?.url) return preferred.url;
     const img = mediaOf(item).find((f) => isImageMime(f.mime, f.name) && f.url);
     return img?.url || "";
+  }
+
+  function renderPuntoVentaPhotos(item) {
+    const files = puntoVentaMedia(item).filter((f) => isImageMime(f.mime, f.name));
+    if (!files.length) return "";
+    const tiles = files
+      .map((file) => {
+        const globalIdx = mediaOf(item).indexOf(file);
+        const kindLabel = file.label || "Foto del punto de venta";
+        return `
+          <button type="button" class="evidence-item image-tile pv-photo" data-media-index="${globalIdx}">
+            <img src="${escapeAttr(file.url)}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
+            <span>${escapeHtml(kindLabel)}</span>
+          </button>`;
+      })
+      .join("");
+    return `
+      <div class="pv-photos">
+        <span class="field-label">Foto del punto de venta</span>
+        <div class="evidence-gallery">${tiles}</div>
+      </div>`;
   }
 
   function parsePipeBlock(text) {
@@ -618,11 +658,13 @@
 
         ${SECTIONS.map((section) => {
           const body = fieldGrid(section.fields, item);
-          if (!body) return "";
+          const pvPhotos = section.title === "Punto de venta" ? renderPuntoVentaPhotos(item) : "";
+          if (!body && !pvPhotos) return "";
           return `
             <section class="panel">
               <div class="panel-head"><h3>${escapeHtml(section.title)}</h3></div>
               ${body}
+              ${pvPhotos}
             </section>`;
         }).join("")}
 

@@ -732,8 +732,32 @@ body.lightbox-open {
   object-fit: cover;
   border-radius: 14px;
   border: 1px solid var(--line);
-  background: #0f2440;
+  background: #e8eef5;
   transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.pv-photos {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.pv-photos .field-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pv-photos .evidence-gallery {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+
+.pv-photos .evidence-item img {
+  aspect-ratio: 4 / 3;
+  min-height: 140px;
+  background: #e8eef5;
 }
 
 .image-tile:hover img {
