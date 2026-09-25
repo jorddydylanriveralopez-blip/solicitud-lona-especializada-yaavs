@@ -98,6 +98,7 @@ const FIELD_ORDER = [
   ["caballetes", "Especificaciones por caballete"],
   ["rotulacion", "Especificaciones de rotulación"],
   ["confirmaciones", "Confirmaciones"],
+  ["observacionesAdicionales", "Observaciones adicionales"],
   ["id", "ID interno"],
 ];
 
@@ -129,6 +130,7 @@ const COLUMN_WIDTHS = {
   caballetes: 56,
   rotulacion: 56,
   confirmaciones: 40,
+  observacionesAdicionales: 40,
   id: 28,
 };
 

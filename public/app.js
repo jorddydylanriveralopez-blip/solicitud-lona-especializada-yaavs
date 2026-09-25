@@ -642,7 +642,6 @@
       },
       evidenciaTipo:
         form.querySelector('input[name="rotulacionEvidenciaTipo"]:checked')?.value || "",
-      observaciones: String(form.rotulacionObservaciones?.value || "").trim(),
     };
   }
 
@@ -917,6 +916,7 @@
       tipoEstablecimientoOtro: String(form.tipoEstablecimientoOtro?.value || "").trim(),
       objetivoLona: checkedValues("objetivoLona"),
       confirmaciones: checkedValues("confirmaciones"),
+      observacionesAdicionales: String(form.observacionesAdicionales?.value || "").trim(),
     };
 
     if (mat === "Lona") {

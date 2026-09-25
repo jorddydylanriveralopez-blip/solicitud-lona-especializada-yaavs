@@ -50,6 +50,7 @@ var HEADERS = [
   "Cantidad de caballetes",
   "Especificaciones por caballete",
   "Especificaciones de rotulación",
+  "Observaciones adicionales",
 ];
 
 var KEYS = [
@@ -82,6 +83,7 @@ var KEYS = [
   "cantidadCaballetes",
   "caballetes",
   "rotulacion",
+  "observacionesAdicionales",
 ];
 
 function doGet(e) {
@@ -324,5 +326,6 @@ function rowFromPayload_(data) {
     pick_(data, "cantidadCaballetes"),
     asText_(pick_(data, "caballetes")),
     asText_(pick_(data, "rotulacion")),
+    pick_(data, "observacionesAdicionales"),
   ];
 }

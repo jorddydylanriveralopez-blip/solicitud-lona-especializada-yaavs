@@ -52,6 +52,7 @@
         ["tipoEstablecimiento", "Tipo"],
         ["tipoEstablecimientoOtro", "Tipo (otro)"],
         ["objetivoLona", "Objetivo"],
+        ["observacionesAdicionales", "Observaciones adicionales"],
       ],
     },
   ];
@@ -247,7 +248,6 @@
           ? `${d.marquesina.alto || "—"} × ${d.marquesina.ancho || "—"} cm`
           : "",
         evidenciaTipo: r.evidenciaTipo,
-        observaciones: r.observaciones,
       },
     ];
   }
@@ -389,7 +389,6 @@
                 ["paredIzquierda", "Pared izquierda"],
                 ["marquesina", "Marquesina"],
                 ["evidenciaTipo", "Evidencia fotográfica"],
-                ["observaciones", "Observaciones adicionales"],
                 ["detalle", "Detalle"],
               ]
             : [
