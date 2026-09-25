@@ -395,8 +395,8 @@ function buildAttachments(entry) {
   const answers = entry.answers && typeof entry.answers === "object" ? entry.answers : {};
   const attachments = [];
   let totalBytes = 0;
-  const maxTotal = 18 * 1024 * 1024;
-  const maxFile = 8 * 1024 * 1024;
+  const maxTotal = 8 * 1024 * 1024;
+  const maxFile = 4 * 1024 * 1024;
 
   const pushFiles = (files, kind, group, label) => {
     for (const f of files || []) {
@@ -619,17 +619,44 @@ async function postToSheetsRaw(payload) {
 async function forwardToSheets(entry) {
   if (!SHEETS_WEBHOOK_URL) return { skipped: true };
   const flat = flatten(entry);
-  const attachments = buildAttachments(entry);
-  const payload = JSON.stringify({
-    ...flat,
-    receivedAt: flat.receivedAt || entry.receivedAt,
-    timestamp: entry.timestamp || flat.receivedAt,
-    id: entry.id,
-    folio: entry.folio,
-    answers: entry.answers,
-    attachments,
-  });
-  return postToSheetsRaw(payload);
+  const localMedia = extractMedia(entry);
+
+  const makePayload = (attachments) =>
+    JSON.stringify({
+      ...flat,
+      receivedAt: flat.receivedAt || entry.receivedAt,
+      timestamp: entry.timestamp || flat.receivedAt,
+      id: entry.id,
+      folio: entry.folio,
+      answers: entry.answers,
+      media: localMedia,
+      attachments,
+    });
+
+  let attachments = buildAttachments(entry);
+  let payload = makePayload(attachments);
+  // Apps Script suele fallar con payloads muy grandes (varias fotos en base64).
+  const maxBytes = 3.5 * 1024 * 1024;
+  if (Buffer.byteLength(payload, "utf8") > maxBytes) {
+    console.warn(
+      "Sheets payload too large (%d bytes); reenviando sin binarios",
+      Buffer.byteLength(payload, "utf8"),
+    );
+    attachments = [];
+    payload = makePayload([]);
+  }
+
+  let result = await postToSheetsRaw(payload);
+  if (!result.ok && attachments.length) {
+    console.warn("Sheets webhook failed with attachments; retrying metadata-only");
+    result = await postToSheetsRaw(makePayload([]));
+  }
+  if (result.ok) {
+    sheetsListCache = { at: 0, items: null, error: null };
+  } else {
+    console.error("Sheets forward failed:", result.error || result.status, result.body);
+  }
+  return result;
 }
 
 async function deleteFromSheets(id, folio) {

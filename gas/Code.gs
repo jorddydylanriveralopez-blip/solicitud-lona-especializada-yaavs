@@ -121,10 +121,17 @@ function doPost(e) {
       return jsonOut_({ ok: true, cleared: clearedRows });
     }
     var media = saveAttachments_(data.attachments || [], data.folio || data.id || "");
-    data.media = media;
+    if ((!media || !media.length) && data.media) {
+      if (Object.prototype.toString.call(data.media) === "[object Array]") {
+        media = data.media;
+      } else {
+        media = parseMedia_(data.media);
+      }
+    }
+    data.media = media || [];
     var sheet = ensureSheet_();
     sheet.appendRow(rowFromPayload_(data));
-    return jsonOut_({ ok: true, appended: true, mediaCount: media.length });
+    return jsonOut_({ ok: true, appended: true, mediaCount: (data.media || []).length });
   } catch (err) {
     return jsonOut_({ ok: false, error: String(err) });
   }

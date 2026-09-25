@@ -17,7 +17,7 @@
   let lightboxMedia = [];
   let lightboxIndex = 0;
   let materialFilter = "all";
-  let lastFingerprint = "";
+  let lastFingerprint = null;
   let refreshInFlight = false;
 
   const MATERIAL_FILTERS = [
@@ -772,9 +772,12 @@
           <div class="empty-icon" aria-hidden="true">◎</div>
           <h2>Aún no hay solicitudes</h2>
           <p class="empty-note">
-            Este tablero se actualiza cada 2 segundos con las respuestas del formulario
-            (Google Sheets + respaldo local). Cuando llegue una solicitud aparecerá aquí
-            agrupable por Lona, Toldo, Caballete o Rotulación.
+            El tablero está en vivo y se actualiza solo. Cuando envíes una solicitud desde el
+            formulario aparecerá aquí (Lona, Toldo, Caballete o Rotulación).
+          </p>
+          <p class="empty-note">
+            Si acabas de desplegar en Render, el disco temporal se reinicia: las respuestas
+            nuevas se guardan otra vez al enviar el formulario y también en Google Sheets.
           </p>
           <a class="cta-link" href="./">Ir al formulario</a>
         </section>`;
@@ -1004,10 +1007,10 @@
       sheetsConfigured = Boolean(data.sheetsConfigured);
 
       const fingerprint = boardFingerprint(next);
-      const dataChanged = fingerprint !== lastFingerprint;
+      const dataChanged = lastFingerprint === null || fingerprint !== lastFingerprint;
       const lightboxOpen = lightbox.classList.contains("is-open");
       const hadNew =
-        dataChanged && next.length > lastTotal && lastTotal >= 0;
+        dataChanged && lastFingerprint !== null && next.length > lastTotal && lastTotal >= 0;
 
       if (dataChanged) {
         const prevId = items[index]?.id || items[index]?.folio || "";
