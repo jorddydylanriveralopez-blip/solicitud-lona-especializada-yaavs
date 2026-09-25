@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260925c6" />
-    <link rel="stylesheet" href="./lona.css?v=20260925c6" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260925c7" />
+    <link rel="stylesheet" href="./lona.css?v=20260925c7" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -449,9 +449,9 @@
             <fieldset class="bastidor-picker" data-required="true">
               <legend>Versión de bastidor requerida <span class="req">*</span></legend>
               <p class="multi-hint" id="bastidorHint">
-                Selecciona primero un color para ver las dos versiones de bastidor.
+                Elige un color arriba; aquí verás las dos versiones de bastidor (se actualizan con tu color).
               </p>
-              <div class="bastidor-picker-grid" id="bastidorPicker" hidden>
+              <div class="bastidor-picker-grid" id="bastidorPicker">
                 <label class="bastidor-option">
                   <input type="radio" name="rotulacionBastidor" value="Con personaje" />
                   <span class="bastidor-card">
@@ -461,7 +461,7 @@
                         data-bastidor="0"
                         src="./assets/rotulacion-colores/verde/0.jpg"
                         alt="Bastidor con personaje"
-                        loading="lazy"
+                        loading="eager"
                       />
                     </span>
                     <span class="bastidor-meta">
@@ -479,7 +479,7 @@
                         data-bastidor="1"
                         src="./assets/rotulacion-colores/verde/1.jpg"
                         alt="Bastidor sin personaje"
-                        loading="lazy"
+                        loading="eager"
                       />
                     </span>
                     <span class="bastidor-meta">
@@ -713,6 +713,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260925c6" defer></script>
+    <script src="./app.js?v=20260925c7" defer></script>
   </body>
 </html>

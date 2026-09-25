@@ -937,13 +937,15 @@ textarea.is-invalid {
   overflow: hidden;
   background: #eef3f8;
   box-shadow: inset 0 0 0 1px rgba(15, 36, 64, 0.06);
+  min-height: 88px;
 }
 
 .bastidor-preview img {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 130px;
+  min-height: 88px;
+  max-height: 160px;
   object-fit: contain;
   object-position: center;
   background: #eef3f8;

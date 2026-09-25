@@ -146,37 +146,34 @@
   }
 
   function syncRotulacionBastidorPreviews() {
-    const color =
-      form.querySelector('input[name="rotulacionColor"]:checked')?.value?.toLowerCase() || "";
+    const colorRaw = form.querySelector('input[name="rotulacionColor"]:checked')?.value || "";
+    const color = String(colorRaw).trim().toLowerCase();
     const picker = document.getElementById("bastidorPicker");
     const hint = document.getElementById("bastidorHint");
-    const colorKey = {
+    const colorKeyMap = {
       verde: "verde",
       azul: "azul",
       rosa: "rosa",
       anaranjado: "anaranjado",
       amarillo: "amarillo",
-    }[color];
-
-    if (!colorKey) {
-      if (picker) picker.hidden = true;
-      if (hint) {
-        hint.hidden = false;
-        hint.textContent = "Selecciona primero un color para ver las dos versiones de bastidor.";
-      }
-      return;
-    }
+    };
+    const colorKey = colorKeyMap[color] || "verde";
+    const colorLabel = colorRaw || "Verde";
 
     if (picker) picker.hidden = false;
     if (hint) {
       hint.hidden = false;
-      hint.textContent = `Elige una versión de bastidor para el color ${color.charAt(0).toUpperCase()}${color.slice(1)}.`;
+      hint.textContent = colorKeyMap[color]
+        ? `Elige una versión de bastidor para el color ${colorLabel}.`
+        : "Elige un color arriba; aquí verás las dos versiones de bastidor (se actualizan con tu color).";
     }
 
     document.querySelectorAll(".bastidor-preview-img[data-bastidor]").forEach((img) => {
       const key = img.getAttribute("data-bastidor");
       const next = `./assets/rotulacion-colores/${colorKey}/${key}.jpg`;
-      if (img.getAttribute("src") !== next) img.setAttribute("src", next);
+      img.setAttribute("src", next);
+      img.removeAttribute("hidden");
+      img.style.display = "block";
     });
   }
 
