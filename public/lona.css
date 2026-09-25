@@ -227,6 +227,18 @@
   gap: 0.35rem;
 }
 
+.field[hidden],
+.file-field[hidden],
+#rotulacionFotosWrap[hidden],
+#rotulacionFoto2Wrap[hidden] {
+  display: none !important;
+}
+
+#rotulacionFotosWrap.is-single {
+  grid-template-columns: 1fr;
+  max-width: 420px;
+}
+
 .field > span {
   font-size: 0.78rem;
   font-weight: 700;

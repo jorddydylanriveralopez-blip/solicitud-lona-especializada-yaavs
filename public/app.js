@@ -105,15 +105,41 @@
 
     const evidencia = form.querySelector('input[name="rotulacionEvidenciaTipo"]:checked')?.value || "";
     const fotosWrap = document.getElementById("rotulacionFotosWrap");
+    const foto1Wrap = document.getElementById("rotulacionFoto1Wrap");
     const foto2Wrap = document.getElementById("rotulacionFoto2Wrap");
     const foto1Label = document.getElementById("rotulacionFoto1Label");
-    if (fotosWrap) fotosWrap.hidden = !evidencia;
-    if (foto2Wrap) foto2Wrap.hidden = evidencia !== "esquina";
+    const foto1Input = form.querySelector('input[name="rotulacion_foto_1"]');
+    const foto2Input = form.querySelector('input[name="rotulacion_foto_2"]');
+    const showFotos = evidencia === "frente" || evidencia === "esquina";
+    const showFoto2 = evidencia === "esquina";
+
+    if (fotosWrap) {
+      fotosWrap.hidden = !showFotos;
+      fotosWrap.classList.toggle("is-single", evidencia === "frente");
+    }
+    if (foto1Wrap) foto1Wrap.hidden = !showFotos;
+    if (foto2Wrap) foto2Wrap.hidden = !showFoto2;
+    if (foto1Input) foto1Input.required = showFotos;
+    if (foto2Input) {
+      foto2Input.required = showFoto2;
+      if (!showFoto2 && foto2Input.value) {
+        foto2Input.value = "";
+        foto2Input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
     if (foto1Label) {
       foto1Label.innerHTML =
         evidencia === "esquina"
           ? 'Primera fotografía de fachada <span class="req">*</span>'
           : 'Fotografía frontal completa <span class="req">*</span>';
+    }
+    const evidenciaHint = document.getElementById("rotulacionEvidenciaHint");
+    if (evidenciaHint) {
+      evidenciaHint.hidden = !showFotos;
+      evidenciaHint.textContent =
+        evidencia === "esquina"
+          ? "Sube dos fotografías: una de cada vista de la esquina / contraesquina."
+          : "Sube la fotografía frontal completa del negocio.";
     }
     syncRotulacionColorPreviews();
   }
