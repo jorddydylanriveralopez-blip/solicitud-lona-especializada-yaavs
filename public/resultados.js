@@ -175,6 +175,10 @@
       nextKind = "permiso";
       nextGroup = "Permisos gubernamentales";
       nextLabel = "Evidencia de permiso";
+    } else if (field.includes("foto_pv") || (labelRaw.includes("punto de venta") && !labelRaw.includes("fachada") && !groupRaw.includes("fachada"))) {
+      nextKind = "foto";
+      nextGroup = "Punto de venta";
+      nextLabel = "Foto del punto de venta";
     } else if (
       nextKind === "foto" ||
       field.includes("foto") ||
@@ -184,11 +188,19 @@
       groupRaw.includes("fachada")
     ) {
       nextKind = "foto";
-      nextGroup = isRotul ? "Fachada del punto de venta" : "Punto de venta";
-      if (field.includes("foto_2") || /(?:^|\s)2$/.test(String(file.label || "").trim())) {
-        nextLabel = isRotul ? "Foto de fachada 2" : "Foto del punto de venta 2";
+      if (field.includes("foto_pv")) {
+        nextGroup = "Punto de venta";
+        nextLabel = "Foto del punto de venta";
+      } else if (isRotul || field.includes("rotulacion_foto") || groupRaw.includes("fachada") || labelRaw.includes("fachada")) {
+        nextGroup = "Fachada del punto de venta";
+        if (field.includes("foto_2") || /(?:^|\s)2$/.test(String(file.label || "").trim())) {
+          nextLabel = "Foto de fachada 2";
+        } else {
+          nextLabel = "Foto de fachada";
+        }
       } else {
-        nextLabel = isRotul ? "Foto de fachada" : "Foto del punto de venta";
+        nextGroup = nextGroup && !groupRaw.includes("rotul") ? nextGroup : "Punto de venta";
+        nextLabel = nextLabel || "Foto del punto de venta";
       }
     } else if (nextKind === "logo" || labelRaw.includes("logo")) {
       nextKind = "logo";
@@ -242,31 +254,43 @@
     const field = String(file?.field || "").toLowerCase();
     const material = String(item?.material || "").toLowerCase();
     if (kind === "permiso" || field.includes("permiso")) return false;
-    if (field.includes("rotulacion_foto") || field.includes("toldo_foto")) return true;
-    if (group.includes("punto de venta") || group.includes("fachada")) return true;
-    if (label.includes("punto de venta") || label.includes("fachada")) return true;
-    if (kind === "foto" && (material.includes("rotul") || material.includes("toldo"))) return true;
+    // Dedicated PV photo for rotulación
+    if (field.includes("foto_pv") || (group === "punto de venta" && label.includes("punto de venta"))) {
+      return true;
+    }
+    // Fachada evidence belongs to Rotulación panel, not the PV block
+    if (field.includes("rotulacion_foto_1") || field.includes("rotulacion_foto_2") || group.includes("fachada") || label.includes("fachada")) {
+      return material.includes("rotul") ? false : true;
+    }
+    if (field.includes("toldo_foto")) return true;
+    if (group.includes("punto de venta")) return true;
+    if (label.includes("punto de venta")) return true;
+    if (kind === "foto" && material.includes("toldo")) return true;
+    return false;
+  }
+
+  function isFachadaMedia(file, item) {
+    const group = String(file?.group || "").toLowerCase();
+    const label = String(file?.label || "").toLowerCase();
+    const field = String(file?.field || "").toLowerCase();
+    if (field.includes("foto_pv")) return false;
+    if (field.includes("permiso")) return false;
+    if (field.includes("rotulacion_foto_1") || field.includes("rotulacion_foto_2")) return true;
+    if (group.includes("fachada") || label.includes("fachada")) return true;
     return false;
   }
 
   function mediaLabel(file, item) {
-    if (file?.label && !/punto de venta/i.test(file.label)) return file.label;
+    if (file?.label) return file.label;
     const kind = String(file?.kind || "").toLowerCase();
     const field = String(file?.field || "").toLowerCase();
-    const material = String(item?.material || "").toLowerCase();
-    const isRotul = material.includes("rotul") || field.includes("rotulacion_foto");
     if (kind === "logo") return "Logotipo";
     if (kind === "referencia") return "Referencia de diseño";
     if (kind === "permiso") return "Evidencia de permiso";
-    if (kind === "foto" || field.includes("foto")) {
-      if (field.includes("foto_2")) return isRotul ? "Foto de fachada 2" : "Foto del punto de venta 2";
-      if (field.includes("foto_1")) return isRotul ? "Foto de fachada" : "Foto del punto de venta";
-      if (isRotul) {
-        if (/2$/.test(String(file.label || ""))) return "Foto de fachada 2";
-        return "Foto de fachada";
-      }
-      return file?.label || "Foto del punto de venta";
-    }
+    if (field.includes("foto_pv")) return "Foto del punto de venta";
+    if (field.includes("foto_2")) return "Foto de fachada 2";
+    if (field.includes("rotulacion_foto")) return "Foto de fachada";
+    if (kind === "foto") return "Foto del punto de venta";
     return file?.name || "Archivo";
   }
 
@@ -359,8 +383,6 @@
     const all = media || mediaOf(item);
     const files = all.filter((f) => f?.url && isPuntoVentaMedia(f, item) && (isImageMime(f.mime, f.name) || isPdf(f.mime, f.name)));
     if (!files.length) return "";
-    const isRotul = materialKind(item) === "rotulacion";
-    const heading = isRotul ? "Foto de fachada" : "Foto del punto de venta";
     const tiles = files
       .map((file) => {
         const globalIdx = mediaIndex(all, file);
@@ -381,7 +403,36 @@
       .join("");
     return `
       <div class="pv-photos">
-        <span class="field-label">${escapeHtml(heading)}</span>
+        <span class="field-label">Foto del punto de venta</span>
+        <div class="evidence-gallery">${tiles}</div>
+      </div>`;
+  }
+
+  function renderFachadaPhotos(item, media) {
+    const all = media || mediaOf(item);
+    const files = all.filter((f) => f?.url && isFachadaMedia(f, item) && (isImageMime(f.mime, f.name) || isPdf(f.mime, f.name)));
+    if (!files.length) return "";
+    const tiles = files
+      .map((file) => {
+        const globalIdx = mediaIndex(all, file);
+        const kindLabel = mediaLabel(file, item);
+        if (isImageMime(file.mime, file.name)) {
+          return `
+            <button type="button" class="evidence-item image-tile pv-photo" data-media-index="${globalIdx}">
+              <img src="${escapeAttr(file.url)}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
+              <span>${escapeHtml(kindLabel)}</span>
+            </button>`;
+        }
+        return `
+          <a class="evidence-item file-tile" href="${escapeAttr(file.url)}" target="_blank" rel="noopener">
+            <div class="evidence-file-tile">PDF</div>
+            <span>${escapeHtml(kindLabel)}</span>
+          </a>`;
+      })
+      .join("");
+    return `
+      <div class="pv-photos">
+        <span class="field-label">Evidencia fotográfica de fachada</span>
         <div class="evidence-gallery">${tiles}</div>
       </div>`;
   }
@@ -824,7 +875,7 @@
             ? `<section class="panel">
                 <div class="panel-head"><h3>Rotulación</h3></div>
                 ${renderSpecCards(rotulaciones, "rotulacion")}
-                ${renderPuntoVentaPhotos(item, media)}
+                ${renderFachadaPhotos(item, media)}
               </section>`
             : ""
         }

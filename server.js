@@ -325,6 +325,10 @@ function extractRotulacionMedia(answers) {
     ...(answers.rotulacionPermisoFile || []),
     ...(detail.permisoFiles || []),
   ]);
+  const pvFiles = dedupeMedia([
+    ...(answers.rotulacionFotoPvFile || []),
+    ...(detail.fotoPvFiles || []),
+  ]);
   const fotoFiles = dedupeMedia([
     ...(answers.rotulacionFotoFiles || []),
     ...(detail.fotoFiles || []),
@@ -338,12 +342,18 @@ function extractRotulacionMedia(answers) {
       label: "Evidencia de permiso",
     });
   }
+  for (const f of pvFiles) {
+    media.push({
+      ...f,
+      kind: "foto",
+      group: "Punto de venta",
+      label: "Foto del punto de venta",
+    });
+  }
   fotoFiles.forEach((f, idx) => {
     const fromField = String(f.field || "");
-    let label = "Foto de fachada";
-    if (fromField.includes("foto_2") || idx === 1) label = "Foto de fachada 2";
-    else if (fromField.includes("foto_1") || fotoFiles.length === 1) label = "Foto de fachada";
-    else label = `Foto de fachada ${idx + 1}`;
+    const label =
+      fromField.includes("foto_2") || idx >= 1 ? "Foto de fachada 2" : "Foto de fachada";
     media.push({
       ...f,
       kind: "foto",
@@ -441,6 +451,12 @@ function buildAttachments(entry) {
     "permiso",
     "Permisos gubernamentales",
     "Evidencia de permiso",
+  );
+  pushFiles(
+    [...(answers.rotulacionFotoPvFile || []), ...(rotDetail.fotoPvFiles || [])],
+    "foto",
+    "Punto de venta",
+    "Foto del punto de venta",
   );
   pushFiles(
     [...(answers.rotulacionFotoFiles || []), ...(rotDetail.fotoFiles || [])],
@@ -970,15 +986,18 @@ app.post("/api/submit", (req, res) => {
       }
       if (String(entry.answers.material || "").toLowerCase().includes("rotul")) {
         const permisoFiles = saveNamedFiles(entry.id, "rotulacion_permiso", files);
+        const fotoPvFiles = saveNamedFiles(entry.id, "rotulacion_foto_pv", files);
         const foto1 = saveNamedFiles(entry.id, "rotulacion_foto_1", files);
         const foto2 = saveNamedFiles(entry.id, "rotulacion_foto_2", files);
         if (permisoFiles.length) entry.answers.rotulacionPermisoFile = permisoFiles;
+        if (fotoPvFiles.length) entry.answers.rotulacionFotoPvFile = fotoPvFiles;
         const fotoFiles = [...foto1, ...foto2];
         if (fotoFiles.length) entry.answers.rotulacionFotoFiles = fotoFiles;
         if (entry.answers.rotulacion && typeof entry.answers.rotulacion === "object") {
           entry.answers.rotulacion = {
             ...entry.answers.rotulacion,
             permisoFiles,
+            fotoPvFiles,
             fotoFiles,
           };
         }

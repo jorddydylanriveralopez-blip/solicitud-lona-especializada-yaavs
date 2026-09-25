@@ -122,10 +122,7 @@
     if (foto1Input) foto1Input.required = showFotos;
     if (foto2Input) {
       foto2Input.required = showFoto2;
-      if (!showFoto2 && foto2Input.value) {
-        foto2Input.value = "";
-        foto2Input.dispatchEvent(new Event("change", { bubbles: true }));
-      }
+      // Keep the file if the user toggles evidencia type; only skip it on submit when not esquina.
     }
     if (foto1Label) {
       foto1Label.innerHTML =
@@ -969,6 +966,11 @@
           markInvalid(permisoFile);
         }
       }
+      const fotoPv = form.querySelector('input[name="rotulacion_foto_pv"]');
+      if (!fotoPv?.files?.[0]) {
+        errors.push("Sube la fotografía del punto de venta.");
+        markInvalid(fotoPv);
+      }
       if (!r?.clasificacion) {
         errors.push("Selecciona la clasificación del punto de venta.");
         markInvalid(form.querySelector('input[name="rotulacionClasificacion"]'));
@@ -1069,10 +1071,14 @@
   function appendRotulacionFiles(fd) {
     const permiso = form.querySelector('input[name="rotulacion_permiso"]');
     if (permiso?.files?.[0]) fd.append("rotulacion_permiso", permiso.files[0]);
+    const fotoPv = form.querySelector('input[name="rotulacion_foto_pv"]');
+    if (fotoPv?.files?.[0]) fd.append("rotulacion_foto_pv", fotoPv.files[0]);
     const f1 = form.querySelector('input[name="rotulacion_foto_1"]');
     if (f1?.files?.[0]) fd.append("rotulacion_foto_1", f1.files[0]);
+    const evidencia =
+      form.querySelector('input[name="rotulacionEvidenciaTipo"]:checked')?.value || "";
     const f2 = form.querySelector('input[name="rotulacion_foto_2"]');
-    if (f2?.files?.[0]) fd.append("rotulacion_foto_2", f2.files[0]);
+    if (evidencia === "esquina" && f2?.files?.[0]) fd.append("rotulacion_foto_2", f2.files[0]);
   }
 
   function appendToldoPuntoVentaFiles(fd) {
