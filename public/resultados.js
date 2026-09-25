@@ -145,7 +145,7 @@
   function isImageMime(mime, name) {
     const m = String(mime || "").toLowerCase();
     if (m.startsWith("image/")) return true;
-    return /\.(jpe?g|png|webp|gif)$/i.test(String(name || ""));
+    return /\.(jpe?g|png|webp|gif|heic|heif|bmp)$/i.test(String(name || ""));
   }
 
   function isPdf(mime, name) {
@@ -153,9 +153,64 @@
     return m.includes("pdf") || /\.pdf$/i.test(String(name || ""));
   }
 
+  function normalizeMediaFile(file) {
+    if (!file || typeof file !== "object") return null;
+    const kind = String(file.kind || "").toLowerCase();
+    const labelRaw = String(file.label || "").toLowerCase();
+    const groupRaw = String(file.group || "").toLowerCase();
+    let nextKind = kind;
+    let nextGroup = file.group || "";
+    let nextLabel = file.label || "";
+
+    if (
+      nextKind === "permiso" ||
+      labelRaw.includes("permiso") ||
+      groupRaw.includes("permiso")
+    ) {
+      nextKind = "permiso";
+      nextGroup = "Permisos gubernamentales";
+      nextLabel = nextLabel || "Evidencia de permiso";
+    } else if (
+      nextKind === "foto" ||
+      labelRaw.includes("punto de venta") ||
+      labelRaw.includes("fachada") ||
+      groupRaw.includes("punto de venta")
+    ) {
+      nextKind = nextKind || "foto";
+      nextGroup = nextGroup && !groupRaw.includes("rotul") ? nextGroup : "Punto de venta";
+      nextLabel = nextLabel || "Foto del punto de venta";
+    } else if (nextKind === "logo" || labelRaw.includes("logo")) {
+      nextKind = "logo";
+      nextLabel = nextLabel || "Logotipo";
+      nextGroup = nextGroup || "General";
+    } else if (nextKind === "referencia" || labelRaw.includes("referencia")) {
+      nextKind = "referencia";
+      nextLabel = nextLabel || "Referencia de diseño";
+      nextGroup = nextGroup || "General";
+    } else {
+      nextGroup = nextGroup || "General";
+      nextLabel = nextLabel || file.name || "Archivo";
+    }
+
+    return {
+      ...file,
+      kind: nextKind || file.kind || "archivo",
+      group: nextGroup,
+      label: nextLabel,
+    };
+  }
+
   function mediaOf(item) {
-    if (Array.isArray(item?.media) && item.media.length) return item.media;
-    return [];
+    if (!Array.isArray(item?.media) || !item.media.length) return [];
+    return item.media.map(normalizeMediaFile).filter((f) => f && f.url);
+  }
+
+  function mediaGroupOrder(name) {
+    const g = String(name || "").toLowerCase();
+    if (g.includes("permiso")) return 0;
+    if (g.includes("punto de venta")) return 1;
+    if (g.includes("logo") || g.includes("referencia")) return 2;
+    return 3;
   }
 
   function isPuntoVentaMedia(file, item) {
@@ -163,12 +218,97 @@
     const label = String(file?.label || "").toLowerCase();
     const kind = String(file?.kind || "").toLowerCase();
     const material = String(item?.material || "").toLowerCase();
+    if (kind === "permiso") return false;
     if (group.includes("punto de venta")) return true;
     if (label.includes("punto de venta")) return true;
     if (label.includes("fachada")) return true;
     if (group.includes("rotul") && kind === "foto") return true;
     if ((material.includes("rotul") || material.includes("toldo")) && kind === "foto") return true;
     return false;
+  }
+
+  function mediaLabel(file) {
+    if (file?.label) return file.label;
+    const kind = String(file?.kind || "").toLowerCase();
+    if (kind === "logo") return "Logotipo";
+    if (kind === "referencia") return "Referencia de diseño";
+    if (kind === "permiso") return "Evidencia de permiso";
+    if (kind === "foto") return "Foto del punto de venta";
+    return file?.name || "Archivo";
+  }
+
+  function renderMediaGallery(media) {
+    if (!media.length) {
+      return `
+        <section class="panel media-panel">
+          <div class="panel-head">
+            <h3>Archivos adjuntos</h3>
+          </div>
+          <p class="empty-evidence">No hay archivos disponibles para esta solicitud.</p>
+          <p class="empty-note">Los archivos nuevos se guardan en el servidor y en Google Drive; aparecen aquí automáticamente.</p>
+        </section>`;
+    }
+
+    const groups = new Map();
+    media.forEach((file) => {
+      const key =
+        file.group ||
+        (file.kind === "permiso"
+          ? "Permisos gubernamentales"
+          : file.kind === "foto"
+            ? "Punto de venta"
+            : "General");
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(file);
+    });
+
+    const blocks = [...groups.entries()]
+      .sort((a, b) => mediaGroupOrder(a[0]) - mediaGroupOrder(b[0]) || a[0].localeCompare(b[0]))
+      .map(([group, files]) => {
+        const tiles = files
+          .map((file) => {
+            const globalIdx = media.indexOf(file);
+            const kindLabel = mediaLabel(file);
+            if (isImageMime(file.mime, file.name)) {
+              return `
+                <button type="button" class="evidence-item image-tile" data-media-index="${globalIdx}">
+                  <img src="${escapeAttr(file.url)}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
+                  <span>${escapeHtml(kindLabel)}</span>
+                </button>`;
+            }
+            if (isPdf(file.mime, file.name)) {
+              return `
+                <a class="evidence-item file-tile" href="${escapeAttr(file.url)}" target="_blank" rel="noopener">
+                  <div class="evidence-file-tile">PDF</div>
+                  <span>${escapeHtml(kindLabel)}</span>
+                  <small>${escapeHtml(file.name || "")}</small>
+                </a>`;
+            }
+            return `
+              <a class="evidence-item file-tile" href="${escapeAttr(file.url)}" target="_blank" rel="noopener">
+                <div class="evidence-file-tile">DOC</div>
+                <span>${escapeHtml(kindLabel)}</span>
+                <small>${escapeHtml(file.name || "")}</small>
+              </a>`;
+          })
+          .join("");
+        return `
+          <div class="evidence-block">
+            <h4>${escapeHtml(group)} <em>${files.length}</em></h4>
+            <div class="evidence-gallery">${tiles}</div>
+          </div>`;
+      })
+      .join("");
+
+    return `
+      <section class="panel media-panel">
+        <div class="panel-head">
+          <h3>Archivos adjuntos</h3>
+          <span class="pill">${media.length} archivo${media.length === 1 ? "" : "s"}</span>
+        </div>
+        <p class="media-note">Se muestran todos los archivos enviados: permisos, fotos del punto de venta, logotipos y referencias.</p>
+        <div class="evidence-blocks">${blocks}</div>
+      </section>`;
   }
 
   function puntoVentaMedia(item) {
@@ -183,17 +323,24 @@
   }
 
   function renderPuntoVentaPhotos(item) {
-    const files = puntoVentaMedia(item).filter((f) => isImageMime(f.mime, f.name));
+    const files = puntoVentaMedia(item).filter((f) => isImageMime(f.mime, f.name) || isPdf(f.mime, f.name));
     if (!files.length) return "";
     const tiles = files
       .map((file) => {
         const globalIdx = mediaOf(item).indexOf(file);
-        const kindLabel = file.label || "Foto del punto de venta";
+        const kindLabel = mediaLabel(file);
+        if (isImageMime(file.mime, file.name)) {
+          return `
+            <button type="button" class="evidence-item image-tile pv-photo" data-media-index="${globalIdx}">
+              <img src="${escapeAttr(file.url)}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
+              <span>${escapeHtml(kindLabel)}</span>
+            </button>`;
+        }
         return `
-          <button type="button" class="evidence-item image-tile pv-photo" data-media-index="${globalIdx}">
-            <img src="${escapeAttr(file.url)}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
+          <a class="evidence-item file-tile" href="${escapeAttr(file.url)}" target="_blank" rel="noopener">
+            <div class="evidence-file-tile">PDF</div>
             <span>${escapeHtml(kindLabel)}</span>
-          </button>`;
+          </a>`;
       })
       .join("");
     return `
@@ -521,71 +668,6 @@
           )
           .join("")}
       </div>`;
-  }
-
-  function renderMediaGallery(media) {
-    if (!media.length) {
-      return `
-        <section class="panel media-panel">
-          <div class="panel-head">
-            <h3>Archivos adjuntos</h3>
-          </div>
-          <p class="empty-evidence">No hay archivos disponibles para esta solicitud.</p>
-          <p class="empty-note">Los archivos nuevos se guardan en Google Drive y aparecen aquí automáticamente.</p>
-        </section>`;
-    }
-
-    const groups = new Map();
-    media.forEach((file) => {
-      const key = file.group || "General";
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(file);
-    });
-
-    const blocks = [...groups.entries()]
-      .map(([group, files]) => {
-        const tiles = files
-          .map((file, i) => {
-            const globalIdx = media.indexOf(file);
-            const kindLabel =
-              file.label || (file.kind === "logo" ? "Logotipo" : file.kind === "referencia" ? "Referencia" : "Archivo");
-            if (isImageMime(file.mime, file.name)) {
-              return `
-                <button type="button" class="evidence-item image-tile" data-media-index="${globalIdx}">
-                  <img src="${escapeAttr(file.url)}" alt="${escapeAttr(file.name)}" loading="lazy" />
-                  <span>${escapeHtml(kindLabel)}</span>
-                </button>`;
-            }
-            if (isPdf(file.mime, file.name)) {
-              return `
-                <a class="evidence-item file-tile" href="${escapeAttr(file.url)}" target="_blank" rel="noopener">
-                  <div class="evidence-file-tile">PDF</div>
-                  <span>${escapeHtml(file.name || kindLabel)}</span>
-                </a>`;
-            }
-            return `
-              <a class="evidence-item file-tile" href="${escapeAttr(file.url)}" target="_blank" rel="noopener">
-                <div class="evidence-file-tile">DOC</div>
-                <span>${escapeHtml(file.name || kindLabel)}</span>
-              </a>`;
-          })
-          .join("");
-        return `
-          <div class="evidence-block">
-            <h4>${escapeHtml(group)}</h4>
-            <div class="evidence-gallery">${tiles}</div>
-          </div>`;
-      })
-      .join("");
-
-    return `
-      <section class="panel media-panel">
-        <div class="panel-head">
-          <h3>Archivos adjuntos</h3>
-          <span class="pill">${media.length} archivo${media.length === 1 ? "" : "s"}</span>
-        </div>
-        <div class="evidence-blocks">${blocks}</div>
-      </section>`;
   }
 
   function renderDetail() {

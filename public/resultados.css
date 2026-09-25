@@ -736,6 +736,25 @@ body.lightbox-open {
   transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
 }
 
+.evidence-block h4 em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.media-note {
+  margin: 0 0 0.85rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.evidence-item small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
 .pv-photos {
   display: grid;
   gap: 0.55rem;

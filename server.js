@@ -280,27 +280,62 @@ function extractToldoPuntoVentaMedia(answers) {
   return media;
 }
 
+function dedupeMedia(files) {
+  const out = [];
+  const seen = new Set();
+  for (const f of files || []) {
+    if (!f || !(f.url || f.storedAs || f.name)) continue;
+    const key = String(f.storedAs || f.url || `${f.name}|${f.size || ""}`)
+      .trim()
+      .toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(f);
+  }
+  return out;
+}
+
 function extractRotulacionMedia(answers) {
   const media = [];
-  const group = "Rotulación";
-  for (const f of answers.rotulacionPermisoFile || []) {
-    media.push({ ...f, kind: "permiso", group, label: "Evidencia de permiso" });
+  const detail =
+    answers.rotulacion && typeof answers.rotulacion === "object" ? answers.rotulacion : {};
+  const permisoFiles = dedupeMedia([
+    ...(answers.rotulacionPermisoFile || []),
+    ...(detail.permisoFiles || []),
+  ]);
+  const fotoFiles = dedupeMedia([
+    ...(answers.rotulacionFotoFiles || []),
+    ...(detail.fotoFiles || []),
+  ]);
+
+  for (const f of permisoFiles) {
+    media.push({
+      ...f,
+      kind: "permiso",
+      group: "Permisos gubernamentales",
+      label: "Evidencia de permiso",
+    });
   }
-  for (const f of answers.rotulacionFotoFiles || []) {
-    media.push({ ...f, kind: "foto", group: "Punto de venta", label: "Foto del punto de venta" });
-  }
+  fotoFiles.forEach((f, idx) => {
+    media.push({
+      ...f,
+      kind: "foto",
+      group: "Punto de venta",
+      label: fotoFiles.length > 1 ? `Foto del punto de venta ${idx + 1}` : "Foto del punto de venta",
+    });
+  });
   return media;
 }
 
 function extractMedia(entry) {
   const answers = entry?.answers && typeof entry.answers === "object" ? entry.answers : {};
-  return [
+  return dedupeMedia([
     ...extractMediaFromItems(answers.lonas, "lona"),
     ...extractMediaFromItems(answers.toldos, "toldo"),
     ...extractMediaFromItems(answers.caballetes, "caballete"),
     ...extractToldoPuntoVentaMedia(answers),
     ...extractRotulacionMedia(answers),
-  ];
+  ]);
 }
 
 function parseMediaField(raw) {
@@ -326,7 +361,7 @@ function buildAttachments(entry) {
   const maxTotal = 18 * 1024 * 1024;
   const maxFile = 8 * 1024 * 1024;
 
-  const pushFiles = (files, kind, group) => {
+  const pushFiles = (files, kind, group, label) => {
     for (const f of files || []) {
       const storedAs = f.storedAs || path.basename(String(f.url || ""));
       if (!storedAs) continue;
@@ -340,6 +375,17 @@ function buildAttachments(entry) {
         mime: f.mime || "application/octet-stream",
         kind,
         group,
+        label:
+          label ||
+          (kind === "logo"
+            ? "Logotipo"
+            : kind === "referencia"
+              ? "Referencia de diseño"
+              : kind === "permiso"
+                ? "Evidencia de permiso"
+                : kind === "foto"
+                  ? "Foto del punto de venta"
+                  : "Archivo"),
         data: fs.readFileSync(diskPath).toString("base64"),
       });
     }
@@ -347,22 +393,34 @@ function buildAttachments(entry) {
 
   for (const item of answers.lonas || []) {
     const group = item.lona || "Lona";
-    pushFiles(item.logoFiles, "logo", group);
-    pushFiles(item.referenciaFiles, "referencia", group);
+    pushFiles(item.logoFiles, "logo", group, "Logotipo");
+    pushFiles(item.referenciaFiles, "referencia", group, "Referencia de diseño");
   }
   for (const item of answers.toldos || []) {
     const group = item.toldo || "Toldo";
-    pushFiles(item.logoFiles, "logo", group);
-    pushFiles(item.referenciaFiles, "referencia", group);
+    pushFiles(item.logoFiles, "logo", group, "Logotipo");
+    pushFiles(item.referenciaFiles, "referencia", group, "Referencia de diseño");
   }
   for (const item of answers.caballetes || []) {
     const group = item.caballete || "Caballete";
-    pushFiles(item.logoFiles, "logo", group);
-    pushFiles(item.referenciaFiles, "referencia", group);
+    pushFiles(item.logoFiles, "logo", group, "Logotipo");
+    pushFiles(item.referenciaFiles, "referencia", group, "Referencia de diseño");
   }
-  pushFiles(answers.toldoFotoFile, "foto", "Punto de venta");
-  pushFiles(answers.rotulacionPermisoFile, "permiso", "Rotulación");
-  pushFiles(answers.rotulacionFotoFiles, "foto", "Punto de venta");
+  pushFiles(answers.toldoFotoFile, "foto", "Punto de venta", "Foto del punto de venta");
+  const rotDetail =
+    answers.rotulacion && typeof answers.rotulacion === "object" ? answers.rotulacion : {};
+  pushFiles(
+    [...(answers.rotulacionPermisoFile || []), ...(rotDetail.permisoFiles || [])],
+    "permiso",
+    "Permisos gubernamentales",
+    "Evidencia de permiso",
+  );
+  pushFiles(
+    [...(answers.rotulacionFotoFiles || []), ...(rotDetail.fotoFiles || [])],
+    "foto",
+    "Punto de venta",
+    "Foto del punto de venta",
+  );
   return attachments;
 }
 
@@ -602,6 +660,45 @@ async function fetchSheetsItems() {
   }
 }
 
+function mergeMediaLists(localMedia, sheetMedia) {
+  const out = [];
+  const indexByKey = new Map();
+  const keyOf = (f) =>
+    String(f?.storedAs || f?.url || `${f?.name || ""}|${f?.size || ""}`)
+      .trim()
+      .toLowerCase();
+
+  const upsert = (file) => {
+    if (!file || !file.url) return;
+    const key = keyOf(file);
+    if (!key) {
+      out.push(file);
+      return;
+    }
+    if (indexByKey.has(key)) {
+      const idx = indexByKey.get(key);
+      const prev = out[idx] || {};
+      const preferDrive =
+        String(file.url).includes("drive.google") && !String(prev.url || "").includes("drive.google");
+      out[idx] = {
+        ...prev,
+        ...file,
+        url: preferDrive ? file.url : prev.url || file.url,
+        label: prev.label || file.label,
+        group: prev.group || file.group,
+        kind: prev.kind || file.kind,
+      };
+      return;
+    }
+    indexByKey.set(key, out.length);
+    out.push(file);
+  };
+
+  for (const f of localMedia || []) upsert(f);
+  for (const f of sheetMedia || []) upsert(f);
+  return out;
+}
+
 function mergeBoardItems(localItems, sheetsItems) {
   const map = new Map();
   const keyOf = (item) => {
@@ -619,7 +716,7 @@ function mergeBoardItems(localItems, sheetsItems) {
     const prev = map.get(k) || {};
     const localMedia = Array.isArray(item.media) ? item.media : [];
     const sheetMedia = Array.isArray(prev.media) ? prev.media : [];
-    const media = localMedia.length ? localMedia : sheetMedia;
+    const media = mergeMediaLists(localMedia, sheetMedia);
     map.set(k, {
       ...prev,
       ...item,
