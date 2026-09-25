@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260925c1" />
-    <link rel="stylesheet" href="./lona.css?v=20260925c1" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260925c2" />
+    <link rel="stylesheet" href="./lona.css?v=20260925c2" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -344,7 +344,9 @@
 
             <fieldset class="color-picker" data-required="true">
               <legend>Color de la rotulación solicitada <span class="req">*</span></legend>
-              <p class="multi-hint">Elige una paleta. Puedes ver ejemplos reales de cómo se ve en fachada.</p>
+              <p class="multi-hint" id="rotulacionColorHint">
+                Selecciona primero la clasificación del punto de venta para ver el ejemplo que corresponde.
+              </p>
               <div class="color-picker-grid" id="rotulacionColorPicker">
                 <label class="color-option" data-color="verde">
                   <input type="radio" name="rotulacionColor" value="Verde" />
@@ -354,11 +356,14 @@
                       <strong>Verde</strong>
                       <em>Seleccionar</em>
                     </span>
-                    <span class="color-option-gallery">
-                      <img src="./assets/rotulacion-colores/verde/2.jpg" alt="Ejemplo rotulación verde" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/verde/3.jpg" alt="" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/verde/4.jpg" alt="" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/verde/0.jpg" alt="" loading="lazy" />
+                    <span class="color-option-preview">
+                      <img
+                        class="color-preview-img"
+                        src="./assets/rotulacion-colores/verde/2.jpg"
+                        alt="Ejemplo rotulación verde"
+                        loading="lazy"
+                      />
+                      <span class="color-preview-label" data-preview-label>Sin laterales</span>
                     </span>
                   </span>
                 </label>
@@ -370,11 +375,14 @@
                       <strong>Azul</strong>
                       <em>Seleccionar</em>
                     </span>
-                    <span class="color-option-gallery">
-                      <img src="./assets/rotulacion-colores/azul/2.jpg" alt="Ejemplo rotulación azul" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/azul/3.jpg" alt="" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/azul/4.jpg" alt="" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/azul/0.jpg" alt="" loading="lazy" />
+                    <span class="color-option-preview">
+                      <img
+                        class="color-preview-img"
+                        src="./assets/rotulacion-colores/azul/2.jpg"
+                        alt="Ejemplo rotulación azul"
+                        loading="lazy"
+                      />
+                      <span class="color-preview-label" data-preview-label>Sin laterales</span>
                     </span>
                   </span>
                 </label>
@@ -386,11 +394,14 @@
                       <strong>Rosa</strong>
                       <em>Seleccionar</em>
                     </span>
-                    <span class="color-option-gallery">
-                      <img src="./assets/rotulacion-colores/rosa/2.jpg" alt="Ejemplo rotulación rosa" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/rosa/3.jpg" alt="" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/rosa/4.jpg" alt="" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/rosa/0.jpg" alt="" loading="lazy" />
+                    <span class="color-option-preview">
+                      <img
+                        class="color-preview-img"
+                        src="./assets/rotulacion-colores/rosa/2.jpg"
+                        alt="Ejemplo rotulación rosa"
+                        loading="lazy"
+                      />
+                      <span class="color-preview-label" data-preview-label>Sin laterales</span>
                     </span>
                   </span>
                 </label>
@@ -402,11 +413,14 @@
                       <strong>Anaranjado</strong>
                       <em>Seleccionar</em>
                     </span>
-                    <span class="color-option-gallery">
-                      <img src="./assets/rotulacion-colores/anaranjado/2.jpg" alt="Ejemplo rotulación anaranjado" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/anaranjado/3.jpg" alt="" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/anaranjado/4.jpg" alt="" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/anaranjado/0.jpg" alt="" loading="lazy" />
+                    <span class="color-option-preview">
+                      <img
+                        class="color-preview-img"
+                        src="./assets/rotulacion-colores/anaranjado/2.jpg"
+                        alt="Ejemplo rotulación anaranjado"
+                        loading="lazy"
+                      />
+                      <span class="color-preview-label" data-preview-label>Sin laterales</span>
                     </span>
                   </span>
                 </label>
@@ -418,11 +432,14 @@
                       <strong>Amarillo</strong>
                       <em>Seleccionar</em>
                     </span>
-                    <span class="color-option-gallery">
-                      <img src="./assets/rotulacion-colores/amarillo/2.jpg" alt="Ejemplo rotulación amarillo" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/amarillo/3.jpg" alt="" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/amarillo/4.jpg" alt="" loading="lazy" />
-                      <img src="./assets/rotulacion-colores/amarillo/0.jpg" alt="" loading="lazy" />
+                    <span class="color-option-preview">
+                      <img
+                        class="color-preview-img"
+                        src="./assets/rotulacion-colores/amarillo/2.jpg"
+                        alt="Ejemplo rotulación amarillo"
+                        loading="lazy"
+                      />
+                      <span class="color-preview-label" data-preview-label>Sin laterales</span>
                     </span>
                   </span>
                 </label>
@@ -586,6 +603,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260925c1" defer></script>
+    <script src="./app.js?v=20260925c2" defer></script>
   </body>
 </html>

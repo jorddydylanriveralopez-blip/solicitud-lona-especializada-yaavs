@@ -115,6 +115,53 @@
           ? 'Primera fotografía de fachada <span class="req">*</span>'
           : 'Fotografía frontal completa <span class="req">*</span>';
     }
+    syncRotulacionColorPreviews();
+  }
+
+  const ROTULACION_CLASSIF_PREVIEW = {
+    "Negocio sin espacio en paredes laterales (derecha e izquierda).": {
+      key: "2",
+      label: "Sin laterales",
+      hint: "Ejemplo según tu clasificación: fachada frontal sin laterales.",
+    },
+    "Negocio con poco espacio en paredes laterales (derecha e izquierda).": {
+      key: "3",
+      label: "Poco espacio lateral",
+      hint: "Ejemplo según tu clasificación: fachada con laterales estrechos.",
+    },
+    "Negocio con espacio amplio / considerable en paredes laterales (derecha e izquierda).": {
+      key: "4",
+      label: "Laterales amplios",
+      hint: "Ejemplo según tu clasificación: fachada con laterales amplios.",
+    },
+    "Negocio en esquina / contraesquina con doble entrada.": {
+      key: "5",
+      label: "Esquina / doble entrada",
+      hint: "Ejemplo según tu clasificación: negocio en esquina con doble entrada.",
+    },
+  };
+
+  function syncRotulacionColorPreviews() {
+    const clasif =
+      form.querySelector('input[name="rotulacionClasificacion"]:checked')?.value || "";
+    const preview = ROTULACION_CLASSIF_PREVIEW[clasif] || {
+      key: "2",
+      label: "Vista de ejemplo",
+      hint: "Selecciona primero la clasificación del punto de venta para ver el ejemplo que corresponde.",
+    };
+    const hintEl = document.getElementById("rotulacionColorHint");
+    if (hintEl) hintEl.textContent = preview.hint;
+
+    document.querySelectorAll(".color-option[data-color]").forEach((opt) => {
+      const color = opt.getAttribute("data-color");
+      const img = opt.querySelector(".color-preview-img");
+      const label = opt.querySelector("[data-preview-label]");
+      if (img && color) {
+        const next = `./assets/rotulacion-colores/${color}/${preview.key}.jpg`;
+        if (img.getAttribute("src") !== next) img.setAttribute("src", next);
+      }
+      if (label) label.textContent = preview.label;
+    });
   }
 
   function syncMaterial() {
@@ -981,7 +1028,13 @@
     if (!(t instanceof HTMLElement)) return;
     if (t.name === "material") syncMaterial();
     if (t.name === "tipoEstablecimiento") syncTipoOtro();
-    if (t.name === "rotulacionPermisos" || t.name === "rotulacionEvidenciaTipo") syncRotulacionUi();
+    if (
+      t.name === "rotulacionPermisos" ||
+      t.name === "rotulacionEvidenciaTipo" ||
+      t.name === "rotulacionClasificacion"
+    ) {
+      syncRotulacionUi();
+    }
     if (t.hasAttribute("data-contacto")) syncContacto();
     if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
   });
