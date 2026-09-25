@@ -220,16 +220,35 @@ function parseSubmitBody(req) {
   return body;
 }
 
+let saveFileSeq = 0;
+
 function saveNamedFiles(entryId, fieldKey, files) {
   const dest = path.join(uploadsRoot, entryId);
   fs.mkdirSync(dest, { recursive: true });
   const out = [];
   for (const file of files || []) {
     if (file.fieldname !== fieldKey) continue;
-    const fname = `${Date.now()}_${safeFilename(file.originalname)}`;
+    // Unique name per file: same originalname + same ms used to overwrite
+    // other uploads (permiso/foto1/foto2) and show identical images in resultados.
+    saveFileSeq += 1;
+    const fname = [
+      Date.now(),
+      saveFileSeq,
+      Math.random().toString(36).slice(2, 8),
+      String(fieldKey || "file").replace(/[^\w-]+/g, "_").slice(0, 40),
+      safeFilename(file.originalname),
+    ].join("_");
     const target = path.join(dest, fname);
-    if (file.path && fs.existsSync(file.path)) fs.renameSync(file.path, target);
-    else if (file.buffer) fs.writeFileSync(target, file.buffer);
+    if (file.path && fs.existsSync(file.path)) {
+      try {
+        fs.renameSync(file.path, target);
+      } catch (_) {
+        fs.copyFileSync(file.path, target);
+        try {
+          fs.unlinkSync(file.path);
+        } catch (_) {}
+      }
+    } else if (file.buffer) fs.writeFileSync(target, file.buffer);
     else continue;
     out.push({
       name: file.originalname || fname,
@@ -237,6 +256,7 @@ function saveNamedFiles(entryId, fieldKey, files) {
       url: `/uploads/${entryId}/${fname}`,
       mime: file.mimetype || "application/octet-stream",
       size: file.size || 0,
+      field: fieldKey,
     });
   }
   return out;
@@ -285,7 +305,9 @@ function dedupeMedia(files) {
   const seen = new Set();
   for (const f of files || []) {
     if (!f || !(f.url || f.storedAs || f.name)) continue;
-    const key = String(f.storedAs || f.url || `${f.name}|${f.size || ""}`)
+    // Prefer real identity (path/url). Never collapse different uploads that
+    // only share the same original filename.
+    const key = String(f.storedAs || f.url || `${f.field || ""}|${f.name}|${f.size || ""}|${out.length}`)
       .trim()
       .toLowerCase();
     if (seen.has(key)) continue;
@@ -317,11 +339,16 @@ function extractRotulacionMedia(answers) {
     });
   }
   fotoFiles.forEach((f, idx) => {
+    const fromField = String(f.field || "");
+    let label = "Foto del punto de venta";
+    if (fromField.includes("foto_1")) label = "Foto del punto de venta 1";
+    else if (fromField.includes("foto_2")) label = "Foto del punto de venta 2";
+    else if (fotoFiles.length > 1) label = `Foto del punto de venta ${idx + 1}`;
     media.push({
       ...f,
       kind: "foto",
       group: "Punto de venta",
-      label: fotoFiles.length > 1 ? `Foto del punto de venta ${idx + 1}` : "Foto del punto de venta",
+      label,
     });
   });
   return media;
@@ -663,10 +690,11 @@ async function fetchSheetsItems() {
 function mergeMediaLists(localMedia, sheetMedia) {
   const out = [];
   const indexByKey = new Map();
-  const keyOf = (f) =>
-    String(f?.storedAs || f?.url || `${f?.name || ""}|${f?.size || ""}`)
-      .trim()
-      .toLowerCase();
+  const keyOf = (f) => {
+    if (f?.storedAs) return `stored:${String(f.storedAs).trim().toLowerCase()}`;
+    if (f?.url) return `url:${String(f.url).trim().toLowerCase()}`;
+    return "";
+  };
 
   const upsert = (file) => {
     if (!file || !file.url) return;
