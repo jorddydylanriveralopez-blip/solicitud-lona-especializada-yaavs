@@ -720,7 +720,14 @@ textarea.is-invalid {
 
 .color-picker-grid {
   display: grid;
-  gap: 0.85rem;
+  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 520px) {
+  .color-picker-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .color-option {
@@ -737,9 +744,9 @@ textarea.is-invalid {
 
 .color-option-card {
   display: grid;
-  gap: 0.65rem;
-  padding: 0.85rem;
-  border-radius: 18px;
+  gap: 0.45rem;
+  padding: 0.55rem;
+  border-radius: 14px;
   border: 1.5px solid rgba(15, 36, 64, 0.1);
   background: linear-gradient(180deg, #ffffff, #f7fbff);
   box-shadow: 0 8px 22px rgba(15, 36, 64, 0.05);
@@ -818,7 +825,7 @@ textarea.is-invalid {
 .color-option-preview {
   position: relative;
   display: block;
-  border-radius: 14px;
+  border-radius: 10px;
   overflow: hidden;
   background: #e8eef5;
   box-shadow: inset 0 0 0 1px rgba(15, 36, 64, 0.06);
@@ -827,23 +834,35 @@ textarea.is-invalid {
 .color-option-preview img {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 10;
+  height: 110px;
+  aspect-ratio: auto;
   object-fit: cover;
+  object-position: center top;
   transition: opacity 0.2s var(--ease);
 }
 
 .color-preview-label {
   position: absolute;
-  left: 0.65rem;
-  bottom: 0.65rem;
-  padding: 0.28rem 0.55rem;
+  left: 0.45rem;
+  bottom: 0.45rem;
+  padding: 0.2rem 0.45rem;
   border-radius: 999px;
   background: rgba(11, 31, 56, 0.78);
   color: #fff;
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   backdrop-filter: blur(4px);
+}
+
+@media (min-width: 720px) {
+  .color-picker-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .color-option-preview img {
+    height: 100px;
+  }
 }
 
 @media (max-width: 720px) {
