@@ -781,9 +781,8 @@
 
         ${SECTIONS.map((section) => {
           const body = fieldGrid(section.fields, item);
-          const showPvHere =
-            section.title === "Punto de venta" && materialKind(item) !== "rotulacion";
-          const pvPhotos = showPvHere ? renderPuntoVentaPhotos(item, media) : "";
+          const pvPhotos =
+            section.title === "Punto de venta" ? renderPuntoVentaPhotos(item, media) : "";
           if (!body && !pvPhotos) return "";
           return `
             <section class="panel">
