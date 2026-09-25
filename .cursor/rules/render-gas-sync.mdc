@@ -22,9 +22,9 @@ Este proyecto tiene **dos destinos de deploy**:
 
 ## Materiales soportados
 
-Lona, Toldo y Caballete deben estar reflejados en: `index.html`, `app.js`, `server.js`, `resultados.js`, `gas/Code.gs`.
+Lona, Toldo, Caballete y Rotulación deben estar reflejados en: `index.html`, `app.js`, `server.js`, `resultados.js`, `gas/Code.gs`.
 
 ## Verificación rápida
 
 - Render: `/resultados` carga y `/api/health` responde `ok`.
-- Sheets: `SHEETS_WEBHOOK_URL?action=list` devuelve JSON con campos esperados (p. ej. `media`, `caballetes`).
+- Sheets: `SHEETS_WEBHOOK_URL?action=list` devuelve JSON con campos esperados (p. ej. `media`, `caballetes`, `rotulacion`).

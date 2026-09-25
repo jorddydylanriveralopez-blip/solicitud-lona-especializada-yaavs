@@ -314,6 +314,10 @@ body.lightbox-open {
   background: linear-gradient(145deg, #7c5cbf, #0f2440);
 }
 
+.request-card-placeholder.rotulacion {
+  background: linear-gradient(145deg, #c45c26, #0f2440);
+}
+
 .request-card-body {
   min-width: 0;
 }
@@ -370,6 +374,11 @@ body.lightbox-open {
 .badge.caballete {
   background: rgba(124, 92, 191, 0.16);
   color: #5d3fa8;
+}
+
+.badge.rotulacion {
+  background: rgba(196, 92, 38, 0.16);
+  color: #9a4a1f;
 }
 
 .badge.large {

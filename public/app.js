@@ -6,6 +6,7 @@
   const flowToldo = document.getElementById("flowToldo");
   const toldoPuntoVentaExtra = document.getElementById("toldoPuntoVentaExtra");
   const flowCaballete = document.getElementById("flowCaballete");
+  const flowRotulacion = document.getElementById("flowRotulacion");
   const successPanel = document.getElementById("successPanel");
   const toast = document.getElementById("toast");
   const hint = document.getElementById("formHint");
@@ -60,6 +61,10 @@
     return selectedMaterial() === "Caballete";
   }
 
+  function isRotulacion() {
+    return selectedMaterial() === "Rotulación";
+  }
+
   function materialCopy() {
     const mat = selectedMaterial();
     if (mat === "Toldo") {
@@ -76,11 +81,40 @@
           '¿Cuál es el objetivo que se requiere obtener del caballete? <span class="req">*</span>',
       };
     }
+    if (mat === "Rotulación") {
+      return {
+        title: "Solicitud de rotulación multimarca",
+        objetivo:
+          '¿Cuál es el objetivo que se requiere obtener de la rotulación? <span class="req">*</span>',
+      };
+    }
     return {
       title: "Solicitud de diseño y producción de lona especializada",
       objetivo:
         '¿Cuál es el objetivo que se requiere obtener de la lona? <span class="req">*</span>',
     };
+  }
+
+  function syncRotulacionUi() {
+    if (!flowRotulacion) return;
+    const permisos = form.querySelector('input[name="rotulacionPermisos"]:checked')?.value || "";
+    const permisoSi = document.getElementById("rotulacionPermisoSi");
+    const permisoNo = document.getElementById("rotulacionPermisoNo");
+    if (permisoSi) permisoSi.hidden = permisos !== "Sí";
+    if (permisoNo) permisoNo.hidden = permisos !== "No";
+
+    const evidencia = form.querySelector('input[name="rotulacionEvidenciaTipo"]:checked')?.value || "";
+    const fotosWrap = document.getElementById("rotulacionFotosWrap");
+    const foto2Wrap = document.getElementById("rotulacionFoto2Wrap");
+    const foto1Label = document.getElementById("rotulacionFoto1Label");
+    if (fotosWrap) fotosWrap.hidden = !evidencia;
+    if (foto2Wrap) foto2Wrap.hidden = evidencia !== "esquina";
+    if (foto1Label) {
+      foto1Label.innerHTML =
+        evidencia === "esquina"
+          ? 'Primera fotografía de fachada <span class="req">*</span>'
+          : 'Fotografía frontal completa <span class="req">*</span>';
+    }
   }
 
   function syncMaterial() {
@@ -99,10 +133,12 @@
     flowLona.hidden = mat !== "Lona";
     flowToldo.hidden = mat !== "Toldo";
     flowCaballete.hidden = mat !== "Caballete";
+    if (flowRotulacion) flowRotulacion.hidden = mat !== "Rotulación";
     if (toldoPuntoVentaExtra) toldoPuntoVentaExtra.hidden = mat !== "Toldo";
     renderLonas();
     renderToldos();
     renderCaballetes();
+    syncRotulacionUi();
   }
 
   const ubicacionInput = document.getElementById("puntoVentaUbicacionInput");
@@ -589,7 +625,26 @@
     return out;
   }
 
-
+  function collectRotulacion() {
+    if (!isRotulacion()) return null;
+    const num = (name) => Number(form.elements[name]?.value || 0);
+    return {
+      permisos: form.querySelector('input[name="rotulacionPermisos"]:checked')?.value || "",
+      clasificacion:
+        form.querySelector('input[name="rotulacionClasificacion"]:checked')?.value || "",
+      color: String(form.rotulacionColor?.value || "").trim(),
+      versionBastidor: String(form.rotulacionBastidor?.value || "").trim(),
+      dimensiones: {
+        cortinaAcceso: { alto: num("rotDim_cortina_alto"), ancho: num("rotDim_cortina_ancho") },
+        paredDerecha: { alto: num("rotDim_paredDer_alto"), ancho: num("rotDim_paredDer_ancho") },
+        paredIzquierda: { alto: num("rotDim_paredIzq_alto"), ancho: num("rotDim_paredIzq_ancho") },
+        marquesina: { alto: num("rotDim_marquesina_alto"), ancho: num("rotDim_marquesina_ancho") },
+      },
+      evidenciaTipo:
+        form.querySelector('input[name="rotulacionEvidenciaTipo"]:checked')?.value || "",
+      observaciones: String(form.rotulacionObservaciones?.value || "").trim(),
+    };
+  }
 
   function syncContacto() {
     const keys = new Set();
@@ -785,6 +840,62 @@
       });
     }
 
+    if (isRotulacion()) {
+      const r = collectRotulacion();
+      if (!r?.permisos) {
+        errors.push("Indica si el punto de venta cuenta con permisos gubernamentales.");
+        markInvalid(form.querySelector('input[name="rotulacionPermisos"]'));
+      }
+      if (r?.permisos === "Sí") {
+        const permisoFile = form.querySelector('input[name="rotulacion_permiso"]');
+        if (!permisoFile?.files?.[0]) {
+          errors.push("Adjunta la evidencia o comprobante del permiso.");
+          markInvalid(permisoFile);
+        }
+      }
+      if (!r?.clasificacion) {
+        errors.push("Selecciona la clasificación del punto de venta.");
+        markInvalid(form.querySelector('input[name="rotulacionClasificacion"]'));
+      }
+      if (!r?.color) {
+        errors.push("Captura el color de la rotulación.");
+        markInvalid(form.rotulacionColor);
+      }
+      if (!r?.versionBastidor) {
+        errors.push("Captura la versión de bastidor requerida.");
+        markInvalid(form.rotulacionBastidor);
+      }
+      const dims = r?.dimensiones || {};
+      const dimFields = [
+        ["cortinaAcceso", "cortina o acceso principal"],
+        ["paredDerecha", "pared derecha"],
+        ["paredIzquierda", "pared izquierda"],
+        ["marquesina", "marquesina"],
+      ];
+      for (const [key, label] of dimFields) {
+        if (!dims[key]?.alto || !dims[key]?.ancho) {
+          errors.push(`Captura alto y ancho de ${label}.`);
+        }
+      }
+      if (!r?.evidenciaTipo) {
+        errors.push("Selecciona el tipo de evidencia fotográfica.");
+        markInvalid(form.querySelector('input[name="rotulacionEvidenciaTipo"]'));
+      } else {
+        const f1 = form.querySelector('input[name="rotulacion_foto_1"]');
+        if (!f1?.files?.[0]) {
+          errors.push("Sube la fotografía de la fachada.");
+          markInvalid(f1);
+        }
+        if (r.evidenciaTipo === "esquina") {
+          const f2 = form.querySelector('input[name="rotulacion_foto_2"]');
+          if (!f2?.files?.[0]) {
+            errors.push("Sube la segunda fotografía de la fachada.");
+            markInvalid(f2);
+          }
+        }
+      }
+    }
+
     return [...new Set(errors)];
   }
 
@@ -824,11 +935,27 @@
       };
     }
 
+    if (mat === "Rotulación") {
+      return {
+        ...base,
+        rotulacion: collectRotulacion(),
+      };
+    }
+
     return {
       ...base,
       cantidadToldos: toldoCount(),
       toldos: collectToldos(),
     };
+  }
+
+  function appendRotulacionFiles(fd) {
+    const permiso = form.querySelector('input[name="rotulacion_permiso"]');
+    if (permiso?.files?.[0]) fd.append("rotulacion_permiso", permiso.files[0]);
+    const f1 = form.querySelector('input[name="rotulacion_foto_1"]');
+    if (f1?.files?.[0]) fd.append("rotulacion_foto_1", f1.files[0]);
+    const f2 = form.querySelector('input[name="rotulacion_foto_2"]');
+    if (f2?.files?.[0]) fd.append("rotulacion_foto_2", f2.files[0]);
   }
 
   function appendToldoPuntoVentaFiles(fd) {
@@ -854,6 +981,7 @@
     if (!(t instanceof HTMLElement)) return;
     if (t.name === "material") syncMaterial();
     if (t.name === "tipoEstablecimiento") syncTipoOtro();
+    if (t.name === "rotulacionPermisos" || t.name === "rotulacionEvidenciaTipo") syncRotulacionUi();
     if (t.hasAttribute("data-contacto")) syncContacto();
     if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
   });
@@ -881,6 +1009,7 @@
         appendItemFiles(fd, "toldo", toldoCount());
       }
       if (isCaballete()) appendItemFiles(fd, "caballete", caballeteCount());
+      if (isRotulacion()) appendRotulacionFiles(fd);
       const res = await fetch("/api/submit", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo enviar");
@@ -905,8 +1034,10 @@
   renderToldos();
   renderCaballetes();
   if (toldoPuntoVentaExtra) bindFilePreviews(toldoPuntoVentaExtra);
+  if (flowRotulacion) bindFilePreviews(flowRotulacion);
   initUbicacionPicker();
   syncMaterial();
+  syncRotulacionUi();
   syncContacto();
   syncReferencia();
 })();

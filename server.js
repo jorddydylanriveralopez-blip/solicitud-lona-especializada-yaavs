@@ -96,6 +96,7 @@ const FIELD_ORDER = [
   ["toldos", "Especificaciones por toldo"],
   ["cantidadCaballetes", "Cantidad de caballetes"],
   ["caballetes", "Especificaciones por caballete"],
+  ["rotulacion", "Especificaciones de rotulación"],
   ["confirmaciones", "Confirmaciones"],
   ["id", "ID interno"],
 ];
@@ -126,6 +127,7 @@ const COLUMN_WIDTHS = {
   toldos: 56,
   cantidadCaballetes: 14,
   caballetes: 56,
+  rotulacion: 56,
   confirmaciones: 40,
   id: 28,
 };
@@ -200,6 +202,7 @@ function nextFolio(material) {
   let prefix = "LONA";
   if (m.startsWith("toldo")) prefix = "TOLDO";
   else if (m.includes("caballete")) prefix = "CABAL";
+  else if (m.includes("rotul")) prefix = "ROTUL";
   return `${prefix}-${y}-${String(n).padStart(4, "0")}`;
 }
 
@@ -275,6 +278,18 @@ function extractToldoPuntoVentaMedia(answers) {
   return media;
 }
 
+function extractRotulacionMedia(answers) {
+  const media = [];
+  const group = "Rotulación";
+  for (const f of answers.rotulacionPermisoFile || []) {
+    media.push({ ...f, kind: "permiso", group, label: "Evidencia de permiso" });
+  }
+  for (const f of answers.rotulacionFotoFiles || []) {
+    media.push({ ...f, kind: "foto", group, label: "Foto de fachada" });
+  }
+  return media;
+}
+
 function extractMedia(entry) {
   const answers = entry?.answers && typeof entry.answers === "object" ? entry.answers : {};
   return [
@@ -282,6 +297,7 @@ function extractMedia(entry) {
     ...extractMediaFromItems(answers.toldos, "toldo"),
     ...extractMediaFromItems(answers.caballetes, "caballete"),
     ...extractToldoPuntoVentaMedia(answers),
+    ...extractRotulacionMedia(answers),
   ];
 }
 
@@ -343,6 +359,8 @@ function buildAttachments(entry) {
     pushFiles(item.referenciaFiles, "referencia", group);
   }
   pushFiles(answers.toldoFotoFile, "foto", "Punto de venta");
+  pushFiles(answers.rotulacionPermisoFile, "permiso", "Rotulación");
+  pushFiles(answers.rotulacionFotoFiles, "foto", "Rotulación");
   return attachments;
 }
 
@@ -355,17 +373,29 @@ function boardItemFromEntry(entry) {
     lonasDetail: Array.isArray(answers.lonas) ? answers.lonas : null,
     toldosDetail: Array.isArray(answers.toldos) ? answers.toldos : null,
     caballetesDetail: Array.isArray(answers.caballetes) ? answers.caballetes : null,
+    rotulacionDetail: answers.rotulacion && typeof answers.rotulacion === "object" ? answers.rotulacion : null,
   };
 }
 
 function enrichSheetItem(item) {
   const media = parseMediaField(item.media);
+  let rotulacionDetail = null;
+  if (item.rotulacion) {
+    if (typeof item.rotulacion === "object") rotulacionDetail = item.rotulacion;
+    else {
+      try {
+        const parsed = JSON.parse(item.rotulacion);
+        if (parsed && typeof parsed === "object") rotulacionDetail = parsed;
+      } catch (_) {}
+    }
+  }
   return {
     ...item,
     media,
     lonasDetail: null,
     toldosDetail: null,
     caballetesDetail: null,
+    rotulacionDetail,
   };
 }
 
@@ -411,7 +441,7 @@ function flatten(entry) {
   for (const [key] of FIELD_ORDER) {
     if (key === "receivedAt" || key === "id" || key === "folio") continue;
     const v = a[key];
-    if (key === "lonas" || key === "toldos" || key === "caballetes") {
+    if (key === "lonas" || key === "toldos" || key === "caballetes" || key === "rotulacion") {
       out[key] = stringifyComplex(v);
     } else if (Array.isArray(v)) out[key] = v.join(", ");
     else if (v == null) out[key] = "";
@@ -809,6 +839,21 @@ app.post("/api/submit", (req, res) => {
       if (String(entry.answers.material || "").toLowerCase().includes("toldo")) {
         const fotoFiles = saveNamedFiles(entry.id, "toldo_foto", files);
         if (fotoFiles.length) entry.answers.toldoFotoFile = fotoFiles;
+      }
+      if (String(entry.answers.material || "").toLowerCase().includes("rotul")) {
+        const permisoFiles = saveNamedFiles(entry.id, "rotulacion_permiso", files);
+        const foto1 = saveNamedFiles(entry.id, "rotulacion_foto_1", files);
+        const foto2 = saveNamedFiles(entry.id, "rotulacion_foto_2", files);
+        if (permisoFiles.length) entry.answers.rotulacionPermisoFile = permisoFiles;
+        const fotoFiles = [...foto1, ...foto2];
+        if (fotoFiles.length) entry.answers.rotulacionFotoFiles = fotoFiles;
+        if (entry.answers.rotulacion && typeof entry.answers.rotulacion === "object") {
+          entry.answers.rotulacion = {
+            ...entry.answers.rotulacion,
+            permisoFiles,
+            fotoFiles,
+          };
+        }
       }
 
       const list = readResponses();

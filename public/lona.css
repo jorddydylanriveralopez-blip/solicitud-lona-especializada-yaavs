@@ -154,7 +154,8 @@
 #formRest:not([hidden]),
 #flowLona:not([hidden]),
 #flowToldo:not([hidden]),
-#flowCaballete:not([hidden]) {
+#flowCaballete:not([hidden]),
+#flowRotulacion:not([hidden]) {
   display: grid !important;
   gap: 2.75rem;
 }
@@ -623,6 +624,13 @@ textarea.is-invalid {
 
 .pac-container {
   z-index: 10000;
+}
+
+.rotulacion-subtitle {
+  margin: 1.25rem 0 0.35rem;
+  font-family: var(--display);
+  font-size: 1rem;
+  color: var(--navy);
 }
 
 @media (max-width: 720px) {

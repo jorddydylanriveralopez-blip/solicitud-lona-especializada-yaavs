@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#f7fbff" />
     <meta
       name="description"
-      content="Solicitud de diseño y producción de lonas, toldos o caballetes YAAVS."
+      content="Solicitud de diseño y producción de lonas, toldos, caballetes o rotulación YAAVS."
     />
-    <title>Solicitud de material · Lonas, toldos y caballetes · YAAVS</title>
+    <title>Solicitud de material · Lonas, toldos, caballetes y rotulación · YAAVS</title>
     <link rel="icon" href="./favicon.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260828n1" />
-    <link rel="stylesheet" href="./lona.css?v=20260828n1" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260925a1" />
+    <link rel="stylesheet" href="./lona.css?v=20260925a1" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -42,9 +42,9 @@
         <p class="eyebrow">Mercadotecnia · Producción</p>
         <h1 id="heroTitle">Solicitud de material especializado</h1>
         <p class="lede" id="heroLede">
-          Elige primero si solicitas <strong>lona</strong>, <strong>toldo</strong> o
-          <strong>caballete</strong>. Luego completa el cuestionario correspondiente con el ejecutivo
-          YAAVSTAR y el YAAVSER.
+          Elige primero si solicitas <strong>lona</strong>, <strong>toldo</strong>,
+          <strong>caballete</strong> o <strong>rotulación</strong>. Luego completa el cuestionario
+          correspondiente con el ejecutivo YAAVSTAR y el YAAVSER.
         </p>
       </section>
 
@@ -77,6 +77,13 @@
               <span>
                 <strong>Caballete</strong>
                 <small>Diseño y producción de caballete para punto de venta</small>
+              </span>
+            </label>
+            <label class="choice material-choice">
+              <input type="radio" name="material" value="Rotulación" />
+              <span>
+                <strong>Rotulación</strong>
+                <small>Levantamiento e inspección para rotulación multimarca</small>
               </span>
             </label>
           </fieldset>
@@ -249,6 +256,209 @@
           </section>
           </div>
 
+          <div id="flowRotulacion" hidden>
+          <section class="card-section">
+            <header class="section-head">
+              <span>6</span>
+              <h2>Levantamiento de rotulación multimarca</h2>
+            </header>
+
+            <fieldset class="choice-group compact" data-required="true">
+              <legend>
+                ¿El punto de venta cuenta con los permisos gubernamentales necesarios para realizar la
+                rotulación? <span class="req">*</span>
+              </legend>
+              <label class="choice">
+                <input type="radio" name="rotulacionPermisos" value="Sí" />
+                <span>Sí</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="rotulacionPermisos" value="No" />
+                <span>No</span>
+              </label>
+            </fieldset>
+            <div id="rotulacionPermisoSi" hidden>
+              <label class="field file-field">
+                <span>Adjunta la evidencia o comprobante del permiso <span class="req">*</span></span>
+                <div class="file-drop">
+                  <input
+                    type="file"
+                    name="rotulacion_permiso"
+                    accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+                    data-preview
+                  />
+                  <div class="file-drop-copy">
+                    <strong>Sube o selecciona un archivo</strong>
+                    <small>JPG, PNG o PDF</small>
+                  </div>
+                  <div class="file-preview" hidden>
+                    <div class="file-preview-media"></div>
+                    <div class="file-preview-meta">
+                      <strong class="file-preview-name"></strong>
+                      <small class="file-preview-size"></small>
+                    </div>
+                  </div>
+                </div>
+              </label>
+            </div>
+            <div id="rotulacionPermisoNo" class="alert alert-warn" hidden>
+              Te recomendamos tramitar y obtener los permisos necesarios a la brevedad para garantizar
+              la viabilidad de la instalación.
+            </div>
+
+            <fieldset class="choice-group" data-required="true">
+              <legend>Clasificación del punto de venta <span class="req">*</span></legend>
+              <label class="choice">
+                <input
+                  type="radio"
+                  name="rotulacionClasificacion"
+                  value="Negocio sin espacio en paredes laterales (derecha e izquierda)."
+                />
+                <span>Negocio sin espacio en paredes laterales (derecha e izquierda).</span>
+              </label>
+              <label class="choice">
+                <input
+                  type="radio"
+                  name="rotulacionClasificacion"
+                  value="Negocio con poco espacio en paredes laterales (derecha e izquierda)."
+                />
+                <span>Negocio con poco espacio en paredes laterales (derecha e izquierda).</span>
+              </label>
+              <label class="choice">
+                <input
+                  type="radio"
+                  name="rotulacionClasificacion"
+                  value="Negocio con espacio amplio / considerable en paredes laterales (derecha e izquierda)."
+                />
+                <span>Negocio con espacio amplio / considerable en paredes laterales (derecha e izquierda).</span>
+              </label>
+              <label class="choice">
+                <input
+                  type="radio"
+                  name="rotulacionClasificacion"
+                  value="Negocio en esquina / contraesquina con doble entrada."
+                />
+                <span>Negocio en esquina / contraesquina con doble entrada.</span>
+              </label>
+            </fieldset>
+
+            <div class="grid-2">
+              <label class="field">
+                <span>Color de la rotulación solicitada <span class="req">*</span></span>
+                <input type="text" name="rotulacionColor" required placeholder="Ej. Azul y blanco" />
+              </label>
+              <label class="field">
+                <span>Versión de bastidor requerida <span class="req">*</span></span>
+                <input type="text" name="rotulacionBastidor" required placeholder="Describe la versión de bastidor" />
+              </label>
+            </div>
+
+            <h3 class="rotulacion-subtitle">Dimensiones del punto de venta</h3>
+            <p class="section-note">Ingresa las medidas exactas del local (en centímetros).</p>
+            <div class="grid-2">
+              <label class="field">
+                <span>Cortina o acceso principal — Alto (cm) <span class="req">*</span></span>
+                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_cortina_alto" required />
+              </label>
+              <label class="field">
+                <span>Cortina o acceso principal — Ancho (cm) <span class="req">*</span></span>
+                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_cortina_ancho" required />
+              </label>
+              <label class="field">
+                <span>Pared derecha — Alto (cm) <span class="req">*</span></span>
+                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_paredDer_alto" required />
+              </label>
+              <label class="field">
+                <span>Pared derecha — Ancho (cm) <span class="req">*</span></span>
+                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_paredDer_ancho" required />
+              </label>
+              <label class="field">
+                <span>Pared izquierda — Alto (cm) <span class="req">*</span></span>
+                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_paredIzq_alto" required />
+              </label>
+              <label class="field">
+                <span>Pared izquierda — Ancho (cm) <span class="req">*</span></span>
+                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_paredIzq_ancho" required />
+              </label>
+              <label class="field">
+                <span>Marquesina — Alto (cm) <span class="req">*</span></span>
+                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_marquesina_alto" required />
+              </label>
+              <label class="field">
+                <span>Marquesina — Ancho (cm) <span class="req">*</span></span>
+                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_marquesina_ancho" required />
+              </label>
+            </div>
+
+            <fieldset class="choice-group compact" data-required="true">
+              <legend>Evidencia fotográfica de la fachada <span class="req">*</span></legend>
+              <label class="choice">
+                <input type="radio" name="rotulacionEvidenciaTipo" value="frente" />
+                <span>Negocio de frente (1 vista)</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="rotulacionEvidenciaTipo" value="esquina" />
+                <span>Negocio en esquina / contraesquina (doble vista)</span>
+              </label>
+            </fieldset>
+            <div id="rotulacionFotosWrap" class="grid-2" hidden>
+              <label class="field file-field" id="rotulacionFoto1Wrap">
+                <span id="rotulacionFoto1Label">Fotografía frontal completa <span class="req">*</span></span>
+                <div class="file-drop">
+                  <input
+                    type="file"
+                    name="rotulacion_foto_1"
+                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                    data-preview
+                  />
+                  <div class="file-drop-copy">
+                    <strong>Sube o selecciona un archivo</strong>
+                    <small>JPG o PNG</small>
+                  </div>
+                  <div class="file-preview" hidden>
+                    <div class="file-preview-media"></div>
+                    <div class="file-preview-meta">
+                      <strong class="file-preview-name"></strong>
+                      <small class="file-preview-size"></small>
+                    </div>
+                  </div>
+                </div>
+              </label>
+              <label class="field file-field" id="rotulacionFoto2Wrap" hidden>
+                <span>Segunda fotografía de fachada <span class="req">*</span></span>
+                <div class="file-drop">
+                  <input
+                    type="file"
+                    name="rotulacion_foto_2"
+                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                    data-preview
+                  />
+                  <div class="file-drop-copy">
+                    <strong>Sube o selecciona un archivo</strong>
+                    <small>JPG o PNG</small>
+                  </div>
+                  <div class="file-preview" hidden>
+                    <div class="file-preview-media"></div>
+                    <div class="file-preview-meta">
+                      <strong class="file-preview-name"></strong>
+                      <small class="file-preview-size"></small>
+                    </div>
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <label class="field grid-span-2">
+              <span>Observaciones adicionales</span>
+              <textarea
+                name="rotulacionObservaciones"
+                rows="3"
+                placeholder="Opcional. Captura cualquier detalle extra del levantamiento."
+              ></textarea>
+            </label>
+          </section>
+          </div>
+
           <section class="card-section">
             <header class="section-head">
               <span>7</span>
@@ -287,6 +497,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260901a1" defer></script>
+    <script src="./app.js?v=20260925a1" defer></script>
   </body>
 </html>

@@ -49,6 +49,7 @@ var HEADERS = [
   "Archivos adjuntos",
   "Cantidad de caballetes",
   "Especificaciones por caballete",
+  "Especificaciones de rotulación",
 ];
 
 var KEYS = [
@@ -80,6 +81,7 @@ var KEYS = [
   "media",
   "cantidadCaballetes",
   "caballetes",
+  "rotulacion",
 ];
 
 function doGet(e) {
@@ -321,5 +323,6 @@ function rowFromPayload_(data) {
     media.length ? JSON.stringify(media) : "",
     pick_(data, "cantidadCaballetes"),
     asText_(pick_(data, "caballetes")),
+    asText_(pick_(data, "rotulacion")),
   ];
 }

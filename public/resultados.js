@@ -94,6 +94,7 @@
     const m = String(item?.material || "").toLowerCase();
     if (m.includes("toldo")) return "toldo";
     if (m.includes("caballete")) return "caballete";
+    if (m.includes("rotul")) return "rotulacion";
     return "lona";
   }
 
@@ -215,6 +216,42 @@
     return parseSpecsText(item.caballetes, "caballete");
   }
 
+  function specsRotulacion(item) {
+    const r =
+      item.rotulacionDetail && typeof item.rotulacionDetail === "object"
+        ? item.rotulacionDetail
+        : null;
+    if (!r) {
+      const text = String(item.rotulacion || "").trim();
+      if (!text) return [];
+      return [{ title: "Rotulación", detalle: text }];
+    }
+    const d = r.dimensiones || {};
+    return [
+      {
+        title: "Rotulación multimarca",
+        permisos: r.permisos,
+        clasificacion: r.clasificacion,
+        color: r.color,
+        versionBastidor: r.versionBastidor,
+        cortinaAcceso: d.cortinaAcceso
+          ? `${d.cortinaAcceso.alto || "—"} × ${d.cortinaAcceso.ancho || "—"} cm`
+          : "",
+        paredDerecha: d.paredDerecha
+          ? `${d.paredDerecha.alto || "—"} × ${d.paredDerecha.ancho || "—"} cm`
+          : "",
+        paredIzquierda: d.paredIzquierda
+          ? `${d.paredIzquierda.alto || "—"} × ${d.paredIzquierda.ancho || "—"} cm`
+          : "",
+        marquesina: d.marquesina
+          ? `${d.marquesina.alto || "—"} × ${d.marquesina.ancho || "—"} cm`
+          : "",
+        evidenciaTipo: r.evidenciaTipo,
+        observaciones: r.observaciones,
+      },
+    ];
+  }
+
   function renderStats() {
     const latest = items[0];
     const withMedia = items.filter((it) => mediaOf(it).length).length;
@@ -255,7 +292,15 @@
               ${
                 thumb
                   ? `<img src="${escapeAttr(thumb)}" alt="" loading="lazy" />`
-                  : `<span class="request-card-placeholder ${kind}">${kind === "toldo" ? "T" : kind === "caballete" ? "C" : "L"}</span>`
+                  : `<span class="request-card-placeholder ${kind}">${
+                      kind === "toldo"
+                        ? "T"
+                        : kind === "caballete"
+                          ? "C"
+                          : kind === "rotulacion"
+                            ? "R"
+                            : "L"
+                    }</span>`
               }
             </div>
             <div class="request-card-body">
@@ -333,17 +378,31 @@
               ["datosContactoDetalle", "Detalle contacto"],
               ["tieneReferencia", "Referencia previa"],
             ]
-        : [
-            ["ancho", "Ancho (cm)"],
-            ["alto", "Alto (cm)"],
-            ["orientacion", "Orientación"],
-            ["acabados", "Acabados"],
-            ["marcas", "Marcas"],
-            ["textoPrincipal", "Texto principal"],
-            ["datosContactoOpciones", "Contacto"],
-            ["datosContactoDetalle", "Detalle contacto"],
-            ["tieneReferencia", "Referencia previa"],
-          ];
+          : type === "rotulacion"
+            ? [
+                ["permisos", "Permisos"],
+                ["clasificacion", "Clasificación"],
+                ["color", "Color"],
+                ["versionBastidor", "Versión de bastidor"],
+                ["cortinaAcceso", "Cortina / acceso"],
+                ["paredDerecha", "Pared derecha"],
+                ["paredIzquierda", "Pared izquierda"],
+                ["marquesina", "Marquesina"],
+                ["evidenciaTipo", "Evidencia fotográfica"],
+                ["observaciones", "Observaciones adicionales"],
+                ["detalle", "Detalle"],
+              ]
+            : [
+                ["ancho", "Ancho (cm)"],
+                ["alto", "Alto (cm)"],
+                ["orientacion", "Orientación"],
+                ["acabados", "Acabados"],
+                ["marcas", "Marcas"],
+                ["textoPrincipal", "Texto principal"],
+                ["datosContactoOpciones", "Contacto"],
+                ["datosContactoDetalle", "Detalle contacto"],
+                ["tieneReferencia", "Referencia previa"],
+              ];
 
     return `
       <div class="spec-grid">
@@ -351,7 +410,16 @@
           .map(
             (spec) => `
           <article class="spec-card">
-            <h4>${escapeHtml(spec.title || (type === "toldo" ? "Toldo" : type === "caballete" ? "Caballete" : "Lona"))}</h4>
+            <h4>${escapeHtml(
+              spec.title ||
+                (type === "toldo"
+                  ? "Toldo"
+                  : type === "caballete"
+                    ? "Caballete"
+                    : type === "rotulacion"
+                      ? "Rotulación"
+                      : "Lona"),
+            )}</h4>
             <div class="field-grid compact">
               ${labels
                 .map(([key, label]) => {
@@ -457,6 +525,7 @@
     const lonas = specsLonas(item);
     const toldos = specsToldos(item);
     const caballetes = specsCaballetes(item);
+    const rotulaciones = specsRotulacion(item);
     const confirmaciones = String(item.confirmaciones || "")
       .split(",")
       .map((c) => c.trim())
@@ -521,6 +590,15 @@
             ? `<section class="panel">
                 <div class="panel-head"><h3>Caballetes (${caballetes.length})</h3></div>
                 ${renderSpecCards(caballetes, "caballete")}
+              </section>`
+            : ""
+        }
+
+        ${
+          rotulaciones.length
+            ? `<section class="panel">
+                <div class="panel-head"><h3>Rotulación</h3></div>
+                ${renderSpecCards(rotulaciones, "rotulacion")}
               </section>`
             : ""
         }
