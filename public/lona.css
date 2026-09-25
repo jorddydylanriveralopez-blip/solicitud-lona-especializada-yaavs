@@ -637,6 +637,62 @@ textarea.is-invalid {
   color: var(--navy);
 }
 
+.dim-blocks {
+  display: grid;
+  gap: 1rem;
+  margin: 0.85rem 0 1.25rem;
+}
+
+.dim-block {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  border-radius: 18px;
+  border: 1.5px solid rgba(15, 36, 64, 0.1);
+  background: linear-gradient(180deg, #ffffff, #f7fbff);
+  box-shadow: 0 8px 22px rgba(15, 36, 64, 0.05);
+}
+
+.dim-visual {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #e8eef5;
+  box-shadow: inset 0 0 0 1px rgba(15, 36, 64, 0.06);
+}
+
+.dim-visual img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  object-fit: cover;
+  object-position: center;
+}
+
+.dim-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.02rem;
+  color: var(--navy);
+}
+
+.dim-note {
+  margin: 0.2rem 0 0.7rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.dim-fields .field {
+  margin: 0;
+}
+
+@media (min-width: 760px) {
+  .dim-block {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    align-items: center;
+  }
+}
+
 .color-picker {
   margin: 0 0 1rem;
   border: 0;

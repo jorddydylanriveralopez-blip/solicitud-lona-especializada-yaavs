@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260925c2" />
-    <link rel="stylesheet" href="./lona.css?v=20260925c2" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260925c3" />
+    <link rel="stylesheet" href="./lona.css?v=20260925c3" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -452,40 +452,107 @@
             </label>
 
             <h3 class="rotulacion-subtitle">Dimensiones del punto de venta</h3>
-            <p class="section-note">Ingresa las medidas exactas del local (en centímetros).</p>
-            <div class="grid-2">
-              <label class="field">
-                <span>Cortina o acceso principal — Alto (cm) <span class="req">*</span></span>
-                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_cortina_alto" required />
-              </label>
-              <label class="field">
-                <span>Cortina o acceso principal — Ancho (cm) <span class="req">*</span></span>
-                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_cortina_ancho" required />
-              </label>
-              <label class="field">
-                <span>Pared derecha — Alto (cm) <span class="req">*</span></span>
-                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_paredDer_alto" required />
-              </label>
-              <label class="field">
-                <span>Pared derecha — Ancho (cm) <span class="req">*</span></span>
-                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_paredDer_ancho" required />
-              </label>
-              <label class="field">
-                <span>Pared izquierda — Alto (cm) <span class="req">*</span></span>
-                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_paredIzq_alto" required />
-              </label>
-              <label class="field">
-                <span>Pared izquierda — Ancho (cm) <span class="req">*</span></span>
-                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_paredIzq_ancho" required />
-              </label>
-              <label class="field">
-                <span>Marquesina — Alto (cm) <span class="req">*</span></span>
-                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_marquesina_alto" required />
-              </label>
-              <label class="field">
-                <span>Marquesina — Ancho (cm) <span class="req">*</span></span>
-                <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_marquesina_ancho" required />
-              </label>
+            <p class="section-note">
+              Ingresa las medidas exactas del local (en centímetros). Usa la foto de ejemplo para
+              identificar qué parte medir.
+            </p>
+
+            <div class="dim-blocks">
+              <section class="dim-block">
+                <div class="dim-visual">
+                  <img
+                    src="./assets/rotulacion-medidas/cortina.jpg"
+                    alt="Ejemplo: mide alto y ancho de la cortina o acceso principal"
+                    loading="lazy"
+                  />
+                </div>
+                <div class="dim-fields">
+                  <h4 class="dim-title">Cortina o acceso principal</h4>
+                  <p class="dim-note">Puerta / cortina metálica del frente del negocio.</p>
+                  <div class="grid-2">
+                    <label class="field">
+                      <span>Alto (cm) <span class="req">*</span></span>
+                      <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_cortina_alto" required />
+                    </label>
+                    <label class="field">
+                      <span>Ancho (cm) <span class="req">*</span></span>
+                      <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_cortina_ancho" required />
+                    </label>
+                  </div>
+                </div>
+              </section>
+
+              <section class="dim-block">
+                <div class="dim-visual">
+                  <img
+                    src="./assets/rotulacion-medidas/pared-derecha.jpg"
+                    alt="Ejemplo: mide alto y ancho de la pared derecha"
+                    loading="lazy"
+                  />
+                </div>
+                <div class="dim-fields">
+                  <h4 class="dim-title">Pared derecha</h4>
+                  <p class="dim-note">Lateral derecho del local (visto de frente).</p>
+                  <div class="grid-2">
+                    <label class="field">
+                      <span>Alto (cm) <span class="req">*</span></span>
+                      <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_paredDer_alto" required />
+                    </label>
+                    <label class="field">
+                      <span>Ancho (cm) <span class="req">*</span></span>
+                      <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_paredDer_ancho" required />
+                    </label>
+                  </div>
+                </div>
+              </section>
+
+              <section class="dim-block">
+                <div class="dim-visual">
+                  <img
+                    src="./assets/rotulacion-medidas/pared-izquierda.jpg"
+                    alt="Ejemplo: mide alto y ancho de la pared izquierda"
+                    loading="lazy"
+                  />
+                </div>
+                <div class="dim-fields">
+                  <h4 class="dim-title">Pared izquierda</h4>
+                  <p class="dim-note">Lateral izquierdo del local (visto de frente).</p>
+                  <div class="grid-2">
+                    <label class="field">
+                      <span>Alto (cm) <span class="req">*</span></span>
+                      <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_paredIzq_alto" required />
+                    </label>
+                    <label class="field">
+                      <span>Ancho (cm) <span class="req">*</span></span>
+                      <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_paredIzq_ancho" required />
+                    </label>
+                  </div>
+                </div>
+              </section>
+
+              <section class="dim-block">
+                <div class="dim-visual">
+                  <img
+                    src="./assets/rotulacion-medidas/marquesina.jpg"
+                    alt="Ejemplo: mide alto y ancho de la marquesina"
+                    loading="lazy"
+                  />
+                </div>
+                <div class="dim-fields">
+                  <h4 class="dim-title">Marquesina</h4>
+                  <p class="dim-note">Anuncio o letrero superior encima del acceso.</p>
+                  <div class="grid-2">
+                    <label class="field">
+                      <span>Alto (cm) <span class="req">*</span></span>
+                      <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_marquesina_alto" required />
+                    </label>
+                    <label class="field">
+                      <span>Ancho (cm) <span class="req">*</span></span>
+                      <input type="number" min="1" step="1" inputmode="numeric" name="rotDim_marquesina_ancho" required />
+                    </label>
+                  </div>
+                </div>
+              </section>
             </div>
 
             <fieldset class="choice-group compact" data-required="true">
@@ -603,6 +670,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260925c2" defer></script>
+    <script src="./app.js?v=20260925c3" defer></script>
   </body>
 </html>
