@@ -632,7 +632,7 @@
       permisos: form.querySelector('input[name="rotulacionPermisos"]:checked')?.value || "",
       clasificacion:
         form.querySelector('input[name="rotulacionClasificacion"]:checked')?.value || "",
-      color: String(form.rotulacionColor?.value || "").trim(),
+      color: form.querySelector('input[name="rotulacionColor"]:checked')?.value || "",
       versionBastidor: String(form.rotulacionBastidor?.value || "").trim(),
       dimensiones: {
         cortinaAcceso: { alto: num("rotDim_cortina_alto"), ancho: num("rotDim_cortina_ancho") },
@@ -715,7 +715,7 @@
   function markInvalid(el) {
     if (!el) return;
     el.classList.add("is-invalid");
-    const group = el.closest(".choice-group, .field, .lona-block");
+    const group = el.closest(".choice-group, .field, .lona-block, .color-picker");
     if (group) group.classList.add("is-invalid");
   }
 
@@ -857,8 +857,8 @@
         markInvalid(form.querySelector('input[name="rotulacionClasificacion"]'));
       }
       if (!r?.color) {
-        errors.push("Captura el color de la rotulación.");
-        markInvalid(form.rotulacionColor);
+        errors.push("Selecciona el color de la rotulación.");
+        markInvalid(form.querySelector('input[name="rotulacionColor"]'));
       }
       if (!r?.versionBastidor) {
         errors.push("Captura la versión de bastidor requerida.");
