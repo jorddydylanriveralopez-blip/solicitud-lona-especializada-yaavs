@@ -664,7 +664,7 @@ function sortedItems() {
 }
 
 let sheetsListCache = { at: 0, items: null, error: null };
-const SHEETS_LIST_CACHE_MS = 2500;
+const SHEETS_LIST_CACHE_MS = 800;
 
 function sheetsListUrl() {
   if (!SHEETS_WEBHOOK_URL) return "";
