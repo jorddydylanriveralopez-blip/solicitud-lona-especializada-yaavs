@@ -627,6 +627,7 @@ function mergeBoardItems(localItems, sheetsItems) {
       lonasDetail: item.lonasDetail || prev.lonasDetail || null,
       toldosDetail: item.toldosDetail || prev.toldosDetail || null,
       caballetesDetail: item.caballetesDetail || prev.caballetesDetail || null,
+      rotulacionDetail: item.rotulacionDetail || prev.rotulacionDetail || null,
     });
   }
   return [...map.values()].sort((a, b) => {

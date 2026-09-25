@@ -16,6 +16,52 @@
   let sheetsConfigured = false;
   let lightboxMedia = [];
   let lightboxIndex = 0;
+  let materialFilter = "all";
+
+  const MATERIAL_FILTERS = [
+    { key: "all", label: "Todos" },
+    { key: "lona", label: "Lona" },
+    { key: "toldo", label: "Toldo" },
+    { key: "caballete", label: "Caballete" },
+    { key: "rotulacion", label: "Rotulación" },
+  ];
+
+  function materialKind(item) {
+    const m = String(item?.material || "").toLowerCase();
+    if (m.includes("toldo")) return "toldo";
+    if (m.includes("caballete")) return "caballete";
+    if (m.includes("rotul")) return "rotulacion";
+    if (m.includes("lona")) return "lona";
+    return "lona";
+  }
+
+  function materialCounts() {
+    const counts = { all: items.length, lona: 0, toldo: 0, caballete: 0, rotulacion: 0 };
+    for (const it of items) {
+      const kind = materialKind(it);
+      if (counts[kind] != null) counts[kind] += 1;
+    }
+    return counts;
+  }
+
+  function filteredItems() {
+    if (materialFilter === "all") return items;
+    return items.filter((it) => materialKind(it) === materialFilter);
+  }
+
+  function filterLabel() {
+    return MATERIAL_FILTERS.find((f) => f.key === materialFilter)?.label || "Todos";
+  }
+
+  function renderMaterialFilters() {
+    const counts = materialCounts();
+    document.querySelectorAll(".material-filter").forEach((btn) => {
+      const key = btn.dataset.filter;
+      btn.classList.toggle("is-active", key === materialFilter);
+      const countEl = btn.querySelector("[data-count]");
+      if (countEl && key) countEl.textContent = String(counts[key] ?? 0);
+    });
+  }
 
   const SECTIONS = [
     {
@@ -89,14 +135,6 @@
       second: "2-digit",
       hour12: false,
     }).format(d);
-  }
-
-  function materialKind(item) {
-    const m = String(item?.material || "").toLowerCase();
-    if (m.includes("toldo")) return "toldo";
-    if (m.includes("caballete")) return "caballete";
-    if (m.includes("rotul")) return "rotulacion";
-    return "lona";
   }
 
   function materialLabel(item) {
@@ -253,12 +291,14 @@
   }
 
   function renderStats() {
-    const latest = items[0];
-    const withMedia = items.filter((it) => mediaOf(it).length).length;
+    const visible = filteredItems();
+    const latest = visible[0];
+    const withMedia = visible.filter((it) => mediaOf(it).length).length;
+    const counts = materialCounts();
     statsEl.innerHTML = `
       <div class="stat stat-accent">
-        <span>Solicitudes</span>
-        <strong>${items.length}</strong>
+        <span>${materialFilter === "all" ? "Solicitudes" : filterLabel()}</span>
+        <strong>${visible.length}</strong>
       </div>
       <div class="stat">
         <span>Último folio</span>
@@ -269,18 +309,23 @@
         <strong>${withMedia}</strong>
       </div>
       <div class="stat">
-        <span>Punto de venta</span>
-        <strong class="stat-sm">${escapeHtml(latest?.puntoVenta || "—")}</strong>
+        <span>Por material</span>
+        <strong class="stat-sm">L ${counts.lona} · T ${counts.toldo} · C ${counts.caballete} · R ${counts.rotulacion}</strong>
       </div>
     `;
   }
 
   function renderList() {
+    const visible = filteredItems();
     if (!items.length) {
       listEl.innerHTML = `<p class="list-empty">Sin solicitudes</p>`;
       return;
     }
-    listEl.innerHTML = items
+    if (!visible.length) {
+      listEl.innerHTML = `<p class="list-empty">No hay solicitudes de ${escapeHtml(filterLabel())}</p>`;
+      return;
+    }
+    listEl.innerHTML = visible
       .map((item, i) => {
         const active = i === index ? " is-active" : "";
         const thumb = firstThumb(item);
@@ -504,21 +549,36 @@
   }
 
   function renderDetail() {
+    const visible = filteredItems();
     if (!items.length) {
       detailEl.innerHTML = `
         <section class="card empty-card">
           <div class="empty-icon" aria-hidden="true">◎</div>
           <h2>Aún no hay solicitudes</h2>
           <p class="empty-note">
-            Este tablero se actualiza cada 2 segundos leyendo Google Sheets y respuestas locales.
-            Cuando llegue una nueva solicitud aparecerá aquí con sus imágenes.
+            Este tablero se actualiza cada 2 segundos con las respuestas del formulario
+            (Google Sheets + respaldo local). Cuando llegue una solicitud aparecerá aquí
+            agrupable por Lona, Toldo, Caballete o Rotulación.
           </p>
           <a class="cta-link" href="./">Ir al formulario</a>
         </section>`;
       return;
     }
 
-    const item = items[index] || items[0];
+    if (!visible.length) {
+      detailEl.innerHTML = `
+        <section class="card empty-card">
+          <div class="empty-icon" aria-hidden="true">◎</div>
+          <h2>Sin solicitudes de ${escapeHtml(filterLabel())}</h2>
+          <p class="empty-note">
+            Hay ${items.length} solicitud${items.length === 1 ? "" : "es"} en total.
+            Cambia el filtro de material para verlas.
+          </p>
+        </section>`;
+      return;
+    }
+
+    const item = visible[index] || visible[0];
     const kind = materialKind(item);
     const media = mediaOf(item);
     const lonas = specsLonas(item);
@@ -534,7 +594,7 @@
       <article class="detail-card">
         <header class="detail-hero">
           <div>
-            <p class="detail-kicker">Solicitud ${index + 1} de ${items.length}</p>
+            <p class="detail-kicker">${escapeHtml(filterLabel())} · Solicitud ${index + 1} de ${visible.length}</p>
             <h2>${escapeHtml(item.folio || "Sin folio")}</h2>
             <p class="detail-meta">${escapeHtml(formatDate(item.receivedAt))}</p>
           </div>
@@ -616,12 +676,16 @@
     `;
 
     document.getElementById("prevBtn").onclick = () => {
-      index = (index - 1 + items.length) % items.length;
+      const visible = filteredItems();
+      if (!visible.length) return;
+      index = (index - 1 + visible.length) % visible.length;
       renderList();
       renderDetail();
     };
     document.getElementById("nextBtn").onclick = () => {
-      index = (index + 1) % items.length;
+      const visible = filteredItems();
+      if (!visible.length) return;
+      index = (index + 1) % visible.length;
       renderList();
       renderDetail();
     };
@@ -714,7 +778,8 @@
       if (next.length > lastTotal && lastTotal >= 0) index = 0;
       lastTotal = next.length;
       items = next;
-      if (index >= items.length) index = 0;
+      const visible = filteredItems();
+      if (index >= visible.length) index = 0;
 
       const source = data.source || (sheetsConfigured ? "sheets" : "local");
       const sourceLabel =
@@ -723,11 +788,12 @@
           : sheetsConfigured
             ? " · Solo local"
             : "";
-      const errLabel = data.sheetsError ? " · Sync Sheets pendiente" : "";
+      const errLabel = data.sheetsError ? ` · Sync Sheets: ${data.sheetsError}` : "";
       liveStatus.textContent = `En vivo · ${items.length} solicitud${
         items.length === 1 ? "" : "es"
       } · ${formatTime(data.updatedAt)}${sourceLabel}${errLabel}`;
 
+      renderMaterialFilters();
       renderStats();
       renderList();
       renderDetail();
@@ -735,6 +801,19 @@
       liveStatus.textContent = "Sin conexión · reintentando…";
     }
   }
+
+  document.getElementById("materialFilters")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".material-filter");
+    if (!btn) return;
+    const next = btn.dataset.filter || "all";
+    if (next === materialFilter) return;
+    materialFilter = next;
+    index = 0;
+    renderMaterialFilters();
+    renderStats();
+    renderList();
+    renderDetail();
+  });
 
   refresh();
   setInterval(refresh, 2000);
