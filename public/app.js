@@ -236,6 +236,14 @@
     }
     if (objetivoLegend) objetivoLegend.innerHTML = copy.objetivo;
 
+    const secObjetivo = document.getElementById("secObjetivo");
+    if (secObjetivo) secObjetivo.hidden = mat === "Rotulación";
+    if (mat === "Rotulación") {
+      form.querySelectorAll('input[name="objetivoLona"]').forEach((el) => {
+        el.checked = false;
+      });
+    }
+
     flowLona.hidden = mat !== "Lona";
     flowToldo.hidden = mat !== "Toldo";
     flowCaballete.hidden = mat !== "Caballete";
@@ -853,9 +861,11 @@
 
     const multiRequired = [
       ["tipoEstablecimiento", "Selecciona el tipo de establecimiento."],
-      ["objetivoLona", "Selecciona el objetivo del material."],
       ["confirmaciones", "Debes aceptar las dos confirmaciones."],
     ];
+    if (!isRotulacion()) {
+      multiRequired.splice(1, 0, ["objetivoLona", "Selecciona el objetivo del material."]);
+    }
     for (const [name, msg] of multiRequired) {
       const vals = checkedValues(name);
       if (!vals.length) {
