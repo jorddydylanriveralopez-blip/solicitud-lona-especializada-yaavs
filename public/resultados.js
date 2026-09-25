@@ -153,32 +153,43 @@
     return m.includes("pdf") || /\.pdf$/i.test(String(name || ""));
   }
 
-  function normalizeMediaFile(file) {
+  function normalizeMediaFile(file, item) {
     if (!file || typeof file !== "object") return null;
     const kind = String(file.kind || "").toLowerCase();
     const labelRaw = String(file.label || "").toLowerCase();
     const groupRaw = String(file.group || "").toLowerCase();
+    const field = String(file.field || "").toLowerCase();
+    const material = String(item?.material || "").toLowerCase();
+    const isRotul =
+      material.includes("rotul") || field.includes("rotulacion_foto") || field.includes("rotulacion_permiso");
     let nextKind = kind;
     let nextGroup = file.group || "";
     let nextLabel = file.label || "";
 
     if (
       nextKind === "permiso" ||
+      field.includes("permiso") ||
       labelRaw.includes("permiso") ||
       groupRaw.includes("permiso")
     ) {
       nextKind = "permiso";
       nextGroup = "Permisos gubernamentales";
-      nextLabel = nextLabel || "Evidencia de permiso";
+      nextLabel = "Evidencia de permiso";
     } else if (
       nextKind === "foto" ||
+      field.includes("foto") ||
       labelRaw.includes("punto de venta") ||
       labelRaw.includes("fachada") ||
-      groupRaw.includes("punto de venta")
+      groupRaw.includes("punto de venta") ||
+      groupRaw.includes("fachada")
     ) {
-      nextKind = nextKind || "foto";
-      nextGroup = nextGroup && !groupRaw.includes("rotul") ? nextGroup : "Punto de venta";
-      nextLabel = nextLabel || "Foto del punto de venta";
+      nextKind = "foto";
+      nextGroup = isRotul ? "Fachada del punto de venta" : "Punto de venta";
+      if (field.includes("foto_2") || /(?:^|\s)2$/.test(String(file.label || "").trim())) {
+        nextLabel = isRotul ? "Foto de fachada 2" : "Foto del punto de venta 2";
+      } else {
+        nextLabel = isRotul ? "Foto de fachada" : "Foto del punto de venta";
+      }
     } else if (nextKind === "logo" || labelRaw.includes("logo")) {
       nextKind = "logo";
       nextLabel = nextLabel || "Logotipo";
@@ -202,13 +213,24 @@
 
   function mediaOf(item) {
     if (!Array.isArray(item?.media) || !item.media.length) return [];
-    return item.media.map(normalizeMediaFile).filter((f) => f && f.url);
+    return item.media.map((f) => normalizeMediaFile(f, item)).filter((f) => f && f.url);
+  }
+
+  function mediaIndex(media, file) {
+    if (!file) return -1;
+    const byRef = media.indexOf(file);
+    if (byRef >= 0) return byRef;
+    const url = String(file.url || "");
+    const stored = String(file.storedAs || "");
+    return media.findIndex(
+      (f) => (url && f.url === url) || (stored && f.storedAs === stored),
+    );
   }
 
   function mediaGroupOrder(name) {
     const g = String(name || "").toLowerCase();
     if (g.includes("permiso")) return 0;
-    if (g.includes("punto de venta")) return 1;
+    if (g.includes("fachada") || g.includes("punto de venta")) return 1;
     if (g.includes("logo") || g.includes("referencia")) return 2;
     return 3;
   }
@@ -217,23 +239,34 @@
     const group = String(file?.group || "").toLowerCase();
     const label = String(file?.label || "").toLowerCase();
     const kind = String(file?.kind || "").toLowerCase();
+    const field = String(file?.field || "").toLowerCase();
     const material = String(item?.material || "").toLowerCase();
-    if (kind === "permiso") return false;
-    if (group.includes("punto de venta")) return true;
-    if (label.includes("punto de venta")) return true;
-    if (label.includes("fachada")) return true;
-    if (group.includes("rotul") && kind === "foto") return true;
-    if ((material.includes("rotul") || material.includes("toldo")) && kind === "foto") return true;
+    if (kind === "permiso" || field.includes("permiso")) return false;
+    if (field.includes("rotulacion_foto") || field.includes("toldo_foto")) return true;
+    if (group.includes("punto de venta") || group.includes("fachada")) return true;
+    if (label.includes("punto de venta") || label.includes("fachada")) return true;
+    if (kind === "foto" && (material.includes("rotul") || material.includes("toldo"))) return true;
     return false;
   }
 
-  function mediaLabel(file) {
-    if (file?.label) return file.label;
+  function mediaLabel(file, item) {
+    if (file?.label && !/punto de venta/i.test(file.label)) return file.label;
     const kind = String(file?.kind || "").toLowerCase();
+    const field = String(file?.field || "").toLowerCase();
+    const material = String(item?.material || "").toLowerCase();
+    const isRotul = material.includes("rotul") || field.includes("rotulacion_foto");
     if (kind === "logo") return "Logotipo";
     if (kind === "referencia") return "Referencia de diseño";
     if (kind === "permiso") return "Evidencia de permiso";
-    if (kind === "foto") return "Foto del punto de venta";
+    if (kind === "foto" || field.includes("foto")) {
+      if (field.includes("foto_2")) return isRotul ? "Foto de fachada 2" : "Foto del punto de venta 2";
+      if (field.includes("foto_1")) return isRotul ? "Foto de fachada" : "Foto del punto de venta";
+      if (isRotul) {
+        if (/2$/.test(String(file.label || ""))) return "Foto de fachada 2";
+        return "Foto de fachada";
+      }
+      return file?.label || "Foto del punto de venta";
+    }
     return file?.name || "Archivo";
   }
 
@@ -256,7 +289,7 @@
         (file.kind === "permiso"
           ? "Permisos gubernamentales"
           : file.kind === "foto"
-            ? "Punto de venta"
+            ? "Fachada del punto de venta"
             : "General");
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(file);
@@ -267,7 +300,7 @@
       .map(([group, files]) => {
         const tiles = files
           .map((file) => {
-            const globalIdx = media.indexOf(file);
+            const globalIdx = mediaIndex(media, file);
             const kindLabel = mediaLabel(file);
             if (isImageMime(file.mime, file.name)) {
               return `
@@ -306,7 +339,7 @@
           <h3>Archivos adjuntos</h3>
           <span class="pill">${media.length} archivo${media.length === 1 ? "" : "s"}</span>
         </div>
-        <p class="media-note">Se muestran todos los archivos enviados: permisos, fotos del punto de venta, logotipos y referencias.</p>
+        <p class="media-note">Se muestran todos los archivos enviados: permisos, fotos de fachada, logotipos y referencias.</p>
         <div class="evidence-blocks">${blocks}</div>
       </section>`;
   }
@@ -322,13 +355,16 @@
     return img?.url || "";
   }
 
-  function renderPuntoVentaPhotos(item) {
-    const files = puntoVentaMedia(item).filter((f) => isImageMime(f.mime, f.name) || isPdf(f.mime, f.name));
+  function renderPuntoVentaPhotos(item, media) {
+    const all = media || mediaOf(item);
+    const files = all.filter((f) => f?.url && isPuntoVentaMedia(f, item) && (isImageMime(f.mime, f.name) || isPdf(f.mime, f.name)));
     if (!files.length) return "";
+    const isRotul = materialKind(item) === "rotulacion";
+    const heading = isRotul ? "Foto de fachada" : "Foto del punto de venta";
     const tiles = files
       .map((file) => {
-        const globalIdx = mediaOf(item).indexOf(file);
-        const kindLabel = mediaLabel(file);
+        const globalIdx = mediaIndex(all, file);
+        const kindLabel = mediaLabel(file, item);
         if (isImageMime(file.mime, file.name)) {
           return `
             <button type="button" class="evidence-item image-tile pv-photo" data-media-index="${globalIdx}">
@@ -345,7 +381,7 @@
       .join("");
     return `
       <div class="pv-photos">
-        <span class="field-label">Foto del punto de venta</span>
+        <span class="field-label">${escapeHtml(heading)}</span>
         <div class="evidence-gallery">${tiles}</div>
       </div>`;
   }
@@ -472,7 +508,12 @@
         marquesina: d.marquesina
           ? `${d.marquesina.alto || "—"} × ${d.marquesina.ancho || "—"} cm`
           : "",
-        evidenciaTipo: r.evidenciaTipo,
+        evidenciaTipo:
+          r.evidenciaTipo === "esquina"
+            ? "Esquina / contraesquina (2 fotos)"
+            : r.evidenciaTipo === "frente"
+              ? "Negocio de frente (1 foto)"
+              : r.evidenciaTipo,
       },
     ];
   }
@@ -740,7 +781,9 @@
 
         ${SECTIONS.map((section) => {
           const body = fieldGrid(section.fields, item);
-          const pvPhotos = section.title === "Punto de venta" ? renderPuntoVentaPhotos(item) : "";
+          const showPvHere =
+            section.title === "Punto de venta" && materialKind(item) !== "rotulacion";
+          const pvPhotos = showPvHere ? renderPuntoVentaPhotos(item, media) : "";
           if (!body && !pvPhotos) return "";
           return `
             <section class="panel">
@@ -782,6 +825,7 @@
             ? `<section class="panel">
                 <div class="panel-head"><h3>Rotulación</h3></div>
                 ${renderSpecCards(rotulaciones, "rotulacion")}
+                ${renderPuntoVentaPhotos(item, media)}
               </section>`
             : ""
         }
@@ -838,14 +882,20 @@
     };
 
     detailEl.querySelectorAll("[data-media-index]").forEach((btn) => {
-      btn.onclick = () => openLightbox(media, Number(btn.dataset.mediaIndex) || 0);
+      btn.onclick = () => {
+        const idx = Number(btn.dataset.mediaIndex);
+        openLightbox(media, Number.isFinite(idx) && idx >= 0 ? idx : 0);
+      };
     });
   }
 
   function openLightbox(media, startIndex) {
     lightboxMedia = media.filter((f) => isImageMime(f.mime, f.name) && f.url);
     if (!lightboxMedia.length) return;
-    lightboxIndex = lightboxMedia.findIndex((f) => f === media[startIndex]);
+    const start = media[startIndex];
+    lightboxIndex = lightboxMedia.findIndex(
+      (f) => f === start || (start?.url && f.url === start.url),
+    );
     if (lightboxIndex < 0) lightboxIndex = 0;
     updateLightbox();
     lightbox.hidden = false;

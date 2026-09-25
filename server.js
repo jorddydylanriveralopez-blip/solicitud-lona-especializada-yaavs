@@ -340,14 +340,14 @@ function extractRotulacionMedia(answers) {
   }
   fotoFiles.forEach((f, idx) => {
     const fromField = String(f.field || "");
-    let label = "Foto del punto de venta";
-    if (fromField.includes("foto_1")) label = "Foto del punto de venta 1";
-    else if (fromField.includes("foto_2")) label = "Foto del punto de venta 2";
-    else if (fotoFiles.length > 1) label = `Foto del punto de venta ${idx + 1}`;
+    let label = "Foto de fachada";
+    if (fromField.includes("foto_2") || idx === 1) label = "Foto de fachada 2";
+    else if (fromField.includes("foto_1") || fotoFiles.length === 1) label = "Foto de fachada";
+    else label = `Foto de fachada ${idx + 1}`;
     media.push({
       ...f,
       kind: "foto",
-      group: "Punto de venta",
+      group: "Fachada del punto de venta",
       label,
     });
   });
@@ -445,8 +445,8 @@ function buildAttachments(entry) {
   pushFiles(
     [...(answers.rotulacionFotoFiles || []), ...(rotDetail.fotoFiles || [])],
     "foto",
-    "Punto de venta",
-    "Foto del punto de venta",
+    "Fachada del punto de venta",
+    "Foto de fachada",
   );
   return attachments;
 }
