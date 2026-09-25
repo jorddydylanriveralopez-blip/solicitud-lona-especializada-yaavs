@@ -996,7 +996,6 @@
 
   async function refresh() {
     if (refreshInFlight) return;
-    if (lightbox.classList.contains("is-open")) return;
     refreshInFlight = true;
     try {
       const res = await fetch(`/api/responses?ts=${Date.now()}`, { cache: "no-store" });
@@ -1006,21 +1005,28 @@
 
       const fingerprint = boardFingerprint(next);
       const dataChanged = fingerprint !== lastFingerprint;
+      const lightboxOpen = lightbox.classList.contains("is-open");
+      const hadNew =
+        dataChanged && next.length > lastTotal && lastTotal >= 0;
 
       if (dataChanged) {
         const prevId = items[index]?.id || items[index]?.folio || "";
-        if (next.length > lastTotal && lastTotal >= 0) index = 0;
+        if (hadNew) index = 0;
         lastTotal = next.length;
         items = next;
         lastFingerprint = fingerprint;
 
-        const visible = filteredItems();
-        if (prevId) {
-          const kept = visible.findIndex((it) => it.id === prevId || it.folio === prevId);
-          index = kept >= 0 ? kept : 0;
-        } else if (index >= visible.length) {
-          index = 0;
+        if (!hadNew) {
+          const visible = filteredItems();
+          if (prevId) {
+            const kept = visible.findIndex((it) => it.id === prevId || it.folio === prevId);
+            index = kept >= 0 ? kept : Math.min(index, Math.max(0, visible.length - 1));
+          } else if (index >= visible.length) {
+            index = 0;
+          }
         }
+      } else {
+        lastTotal = next.length;
       }
 
       const source = data.source || (sheetsConfigured ? "sheets" : "local");
@@ -1033,18 +1039,24 @@
       const errLabel = data.sheetsError ? ` · Sync Sheets: ${data.sheetsError}` : "";
       liveStatus.textContent = `En vivo · ${items.length} solicitud${
         items.length === 1 ? "" : "es"
-      } · ${formatTime(data.updatedAt)}${sourceLabel}${errLabel}`;
+      } · ${formatTime(new Date().toISOString())}${sourceLabel}${errLabel}`;
+      liveStatus.dataset.live = "1";
 
-      if (dataChanged) {
+      // Keep UI stable while lightbox is open; apply queued data on close via next tick
+      if (dataChanged && !lightboxOpen) {
         renderMaterialFilters();
         renderStats();
         renderList();
         renderDetail();
-      } else {
+        if (hadNew) {
+          detailEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      } else if (!dataChanged) {
         renderMaterialFilters();
       }
     } catch (_) {
       liveStatus.textContent = "Sin conexión · reintentando…";
+      liveStatus.dataset.live = "0";
     } finally {
       refreshInFlight = false;
     }
@@ -1063,7 +1075,9 @@
           it.material || "",
           it.puntoVenta || "",
           media,
-          typeof it.rotulacion === "string" ? it.rotulacion : JSON.stringify(it.rotulacionDetail || it.rotulacion || ""),
+          typeof it.rotulacion === "string"
+            ? it.rotulacion
+            : JSON.stringify(it.rotulacionDetail || it.rotulacion || ""),
         ].join("~");
       })
       .join("||");
@@ -1083,7 +1097,7 @@
   });
 
   refresh();
-  setInterval(refresh, 4000);
+  setInterval(refresh, 1000);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") refresh();
   });
