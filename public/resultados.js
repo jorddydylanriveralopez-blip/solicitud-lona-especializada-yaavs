@@ -17,6 +17,8 @@
   let lightboxMedia = [];
   let lightboxIndex = 0;
   let materialFilter = "all";
+  let lastFingerprint = "";
+  let refreshInFlight = false;
 
   const MATERIAL_FILTERS = [
     { key: "all", label: "Todos" },
@@ -993,17 +995,33 @@
   });
 
   async function refresh() {
+    if (refreshInFlight) return;
+    if (lightbox.classList.contains("is-open")) return;
+    refreshInFlight = true;
     try {
       const res = await fetch(`/api/responses?ts=${Date.now()}`, { cache: "no-store" });
       const data = await res.json();
       const next = Array.isArray(data.items) ? data.items : [];
       sheetsConfigured = Boolean(data.sheetsConfigured);
 
-      if (next.length > lastTotal && lastTotal >= 0) index = 0;
-      lastTotal = next.length;
-      items = next;
-      const visible = filteredItems();
-      if (index >= visible.length) index = 0;
+      const fingerprint = boardFingerprint(next);
+      const dataChanged = fingerprint !== lastFingerprint;
+
+      if (dataChanged) {
+        const prevId = items[index]?.id || items[index]?.folio || "";
+        if (next.length > lastTotal && lastTotal >= 0) index = 0;
+        lastTotal = next.length;
+        items = next;
+        lastFingerprint = fingerprint;
+
+        const visible = filteredItems();
+        if (prevId) {
+          const kept = visible.findIndex((it) => it.id === prevId || it.folio === prevId);
+          index = kept >= 0 ? kept : 0;
+        } else if (index >= visible.length) {
+          index = 0;
+        }
+      }
 
       const source = data.source || (sheetsConfigured ? "sheets" : "local");
       const sourceLabel =
@@ -1017,13 +1035,38 @@
         items.length === 1 ? "" : "es"
       } · ${formatTime(data.updatedAt)}${sourceLabel}${errLabel}`;
 
-      renderMaterialFilters();
-      renderStats();
-      renderList();
-      renderDetail();
+      if (dataChanged) {
+        renderMaterialFilters();
+        renderStats();
+        renderList();
+        renderDetail();
+      } else {
+        renderMaterialFilters();
+      }
     } catch (_) {
       liveStatus.textContent = "Sin conexión · reintentando…";
+    } finally {
+      refreshInFlight = false;
     }
+  }
+
+  function boardFingerprint(list) {
+    return (list || [])
+      .map((it) => {
+        const media = (it.media || [])
+          .map((m) => `${m.url || ""}|${m.kind || ""}|${m.size || 0}|${m.label || ""}`)
+          .join(",");
+        return [
+          it.id || "",
+          it.folio || "",
+          it.receivedAt || "",
+          it.material || "",
+          it.puntoVenta || "",
+          media,
+          typeof it.rotulacion === "string" ? it.rotulacion : JSON.stringify(it.rotulacionDetail || it.rotulacion || ""),
+        ].join("~");
+      })
+      .join("||");
   }
 
   document.getElementById("materialFilters")?.addEventListener("click", (e) => {
@@ -1040,7 +1083,7 @@
   });
 
   refresh();
-  setInterval(refresh, 2000);
+  setInterval(refresh, 4000);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") refresh();
   });
