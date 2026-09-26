@@ -870,10 +870,9 @@
 
     const multiRequired = [
       ["tipoEstablecimiento", "Selecciona el tipo de establecimiento."],
-      ["confirmaciones", "Debes aceptar las dos confirmaciones."],
     ];
     if (!isRotulacion()) {
-      multiRequired.splice(1, 0, ["objetivoLona", "Selecciona el objetivo del material."]);
+      multiRequired.push(["objetivoLona", "Selecciona el objetivo del material."]);
     }
     for (const [name, msg] of multiRequired) {
       const vals = checkedValues(name);
@@ -881,10 +880,6 @@
         errors.push(msg);
         markInvalid(form.querySelector(`input[name="${name}"]`));
       }
-    }
-
-    if (checkedValues("confirmaciones").length < 2) {
-      errors.push("Debes aceptar las dos confirmaciones.");
     }
 
     if (isToldo()) {
@@ -1031,7 +1026,7 @@
       tipoEstablecimiento: checkedValues("tipoEstablecimiento"),
       tipoEstablecimientoOtro: String(form.tipoEstablecimientoOtro?.value || "").trim(),
       objetivoLona: checkedValues("objetivoLona"),
-      confirmaciones: checkedValues("confirmaciones"),
+      confirmaciones: [],
       observacionesAdicionales: String(form.observacionesAdicionales?.value || "").trim(),
     };
 
