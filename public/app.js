@@ -434,6 +434,7 @@
     if (ubicacionLat) ubicacionLat.value = lat === "" ? "" : String(lat);
     if (ubicacionLng) ubicacionLng.value = lng === "" ? "" : String(lng);
     renderUbicacionPreview(mapsUrl, label);
+    syncFormSteps();
   }
 
   function renderUbicacionPreview(mapsUrl, label) {
