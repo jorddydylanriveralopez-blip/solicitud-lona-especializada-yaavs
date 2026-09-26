@@ -736,7 +736,6 @@
 
   function collectRotulacion() {
     if (!isRotulacion()) return null;
-    const num = (name) => Number(form.elements[name]?.value || 0);
     return {
       permisos: form.querySelector('input[name="rotulacionPermisos"]:checked')?.value || "",
       clasificacion:
@@ -744,12 +743,6 @@
       color: form.querySelector('input[name="rotulacionColor"]:checked')?.value || "",
       versionBastidor:
         form.querySelector('input[name="rotulacionBastidor"]:checked')?.value || "",
-      dimensiones: {
-        cortinaAcceso: { alto: num("rotDim_cortina_alto"), ancho: num("rotDim_cortina_ancho") },
-        paredDerecha: { alto: num("rotDim_paredDer_alto"), ancho: num("rotDim_paredDer_ancho") },
-        paredIzquierda: { alto: num("rotDim_paredIzq_alto"), ancho: num("rotDim_paredIzq_ancho") },
-        marquesina: { alto: num("rotDim_marquesina_alto"), ancho: num("rotDim_marquesina_ancho") },
-      },
       evidenciaTipo:
         form.querySelector('input[name="rotulacionEvidenciaTipo"]:checked')?.value || "",
     };
@@ -973,18 +966,6 @@
       if (!r?.versionBastidor) {
         errors.push("Selecciona la versión de bastidor.");
         markInvalid(form.querySelector('input[name="rotulacionBastidor"]'));
-      }
-      const dims = r?.dimensiones || {};
-      const dimFields = [
-        ["cortinaAcceso", "cortina o acceso principal"],
-        ["paredDerecha", "pared derecha"],
-        ["paredIzquierda", "pared izquierda"],
-        ["marquesina", "marquesina"],
-      ];
-      for (const [key, label] of dimFields) {
-        if (!dims[key]?.alto || !dims[key]?.ancho) {
-          errors.push(`Captura alto y ancho de ${label}.`);
-        }
       }
       if (!r?.evidenciaTipo) {
         errors.push("Selecciona el tipo de evidencia fotográfica.");

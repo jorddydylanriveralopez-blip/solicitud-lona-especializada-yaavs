@@ -541,7 +541,6 @@
       if (!text) return [];
       return [{ title: "Rotulación", detalle: text }];
     }
-    const d = r.dimensiones || {};
     return [
       {
         title: "Rotulación multimarca",
@@ -549,18 +548,6 @@
         clasificacion: r.clasificacion,
         color: r.color,
         versionBastidor: r.versionBastidor,
-        cortinaAcceso: d.cortinaAcceso
-          ? `${d.cortinaAcceso.alto || "—"} × ${d.cortinaAcceso.ancho || "—"} cm`
-          : "",
-        paredDerecha: d.paredDerecha
-          ? `${d.paredDerecha.alto || "—"} × ${d.paredDerecha.ancho || "—"} cm`
-          : "",
-        paredIzquierda: d.paredIzquierda
-          ? `${d.paredIzquierda.alto || "—"} × ${d.paredIzquierda.ancho || "—"} cm`
-          : "",
-        marquesina: d.marquesina
-          ? `${d.marquesina.alto || "—"} × ${d.marquesina.ancho || "—"} cm`
-          : "",
         evidenciaTipo:
           r.evidenciaTipo === "esquina"
             ? "Esquina / contraesquina (2 fotos)"
@@ -710,10 +697,6 @@
                 ["clasificacion", "Clasificación"],
                 ["color", "Color"],
                 ["versionBastidor", "Versión de bastidor"],
-                ["cortinaAcceso", "Cortina / acceso"],
-                ["paredDerecha", "Pared derecha"],
-                ["paredIzquierda", "Pared izquierda"],
-                ["marquesina", "Marquesina"],
                 ["evidenciaTipo", "Evidencia fotográfica"],
                 ["detalle", "Detalle"],
               ]
