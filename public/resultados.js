@@ -290,8 +290,13 @@
     if (kind === "referencia") return "Referencia de diseño";
     if (kind === "permiso") return "Evidencia de permiso";
     if (field.includes("foto_pv")) return "Foto del punto de venta";
-    if (field.includes("foto_2")) return "Foto de fachada 2";
-    if (field.includes("rotulacion_foto")) return "Foto de fachada";
+    if (field.includes("foto_2")) return "Foto del lateral derecho";
+    if (field.includes("rotulacion_foto_1")) {
+      return /lateral|izquierd/i.test(String(file.label || ""))
+        ? "Foto del lateral izquierdo"
+        : file.label || "Foto frontal de fachada";
+    }
+    if (field.includes("rotulacion_foto")) return file.label || "Foto de fachada";
     if (kind === "foto") return "Foto del punto de venta";
     return file?.name || "Archivo";
   }
@@ -550,7 +555,7 @@
         versionBastidor: r.versionBastidor,
         evidenciaTipo:
           r.evidenciaTipo === "esquina"
-            ? "Esquina / contraesquina (2 fotos)"
+            ? "Esquina / contraesquina (lateral izquierdo y derecho)"
             : r.evidenciaTipo === "frente"
               ? "Negocio de frente (1 foto)"
               : r.evidenciaTipo,

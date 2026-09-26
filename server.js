@@ -350,10 +350,19 @@ function extractRotulacionMedia(answers) {
       label: "Foto del punto de venta",
     });
   }
+  const evidenciaTipo = String(detail.evidenciaTipo || answers.evidenciaTipo || "").toLowerCase();
+  const isEsquina = evidenciaTipo.includes("esquina");
   fotoFiles.forEach((f, idx) => {
     const fromField = String(f.field || "");
-    const label =
-      fromField.includes("foto_2") || idx >= 1 ? "Foto de fachada 2" : "Foto de fachada";
+    let label = "Foto de fachada";
+    if (isEsquina) {
+      if (fromField.includes("foto_2") || idx >= 1) label = "Foto del lateral derecho";
+      else label = "Foto del lateral izquierdo";
+    } else if (fromField.includes("foto_2") || idx >= 1) {
+      label = "Foto de fachada 2";
+    } else {
+      label = "Foto frontal de fachada";
+    }
     media.push({
       ...f,
       kind: "foto",

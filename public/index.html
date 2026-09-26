@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260926a2" />
-    <link rel="stylesheet" href="./lona.css?v=20260926a2" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260926a3" />
+    <link rel="stylesheet" href="./lona.css?v=20260926a3" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -495,65 +495,59 @@
               </div>
             </fieldset>
 
-            <fieldset class="choice-group compact" data-required="true">
-              <legend>Evidencia fotográfica de la fachada <span class="req">*</span></legend>
-              <label class="choice">
-                <input type="radio" name="rotulacionEvidenciaTipo" value="frente" />
-                <span>Negocio de frente (1 vista)</span>
-              </label>
-              <label class="choice">
-                <input type="radio" name="rotulacionEvidenciaTipo" value="esquina" />
-                <span>Negocio en esquina / contraesquina (doble vista)</span>
-              </label>
-            </fieldset>
-            <p class="multi-hint" id="rotulacionEvidenciaHint" hidden>
-              Sube la fotografía frontal completa del negocio.
-            </p>
-            <div id="rotulacionFotosWrap" class="grid-2" hidden>
-              <label class="field file-field" id="rotulacionFoto1Wrap">
-                <span id="rotulacionFoto1Label">Fotografía frontal completa <span class="req">*</span></span>
-                <div class="file-drop">
-                  <input
-                    type="file"
-                    name="rotulacion_foto_1"
-                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-                    data-preview
-                  />
-                  <div class="file-drop-copy">
-                    <strong>Sube o selecciona un archivo</strong>
-                    <small>JPG o PNG</small>
-                  </div>
-                  <div class="file-preview" hidden>
-                    <div class="file-preview-media"></div>
-                    <div class="file-preview-meta">
-                      <strong class="file-preview-name"></strong>
-                      <small class="file-preview-size"></small>
+            <div id="rotulacionEvidenciaBlock">
+              <h3 class="rotulacion-subtitle">Evidencia fotográfica de la fachada</h3>
+              <p class="multi-hint" id="rotulacionEvidenciaHint">
+                Selecciona primero la clasificación del punto de venta para ver qué fotos debes subir.
+              </p>
+              <div id="rotulacionFotosWrap" class="grid-2" hidden>
+                <label class="field file-field" id="rotulacionFoto1Wrap">
+                  <span id="rotulacionFoto1Label">Fotografía frontal completa <span class="req">*</span></span>
+                  <div class="file-drop">
+                    <input
+                      type="file"
+                      name="rotulacion_foto_1"
+                      accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                      data-preview
+                    />
+                    <div class="file-drop-copy">
+                      <strong>Sube o selecciona un archivo</strong>
+                      <small>JPG o PNG</small>
+                    </div>
+                    <div class="file-preview" hidden>
+                      <div class="file-preview-media"></div>
+                      <div class="file-preview-meta">
+                        <strong class="file-preview-name"></strong>
+                        <small class="file-preview-size"></small>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </label>
-              <label class="field file-field" id="rotulacionFoto2Wrap" hidden>
-                <span>Segunda fotografía de fachada <span class="req">*</span></span>
-                <div class="file-drop">
-                  <input
-                    type="file"
-                    name="rotulacion_foto_2"
-                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-                    data-preview
-                  />
-                  <div class="file-drop-copy">
-                    <strong>Sube o selecciona un archivo</strong>
-                    <small>JPG o PNG</small>
-                  </div>
-                  <div class="file-preview" hidden>
-                    <div class="file-preview-media"></div>
-                    <div class="file-preview-meta">
-                      <strong class="file-preview-name"></strong>
-                      <small class="file-preview-size"></small>
+                </label>
+                <label class="field file-field" id="rotulacionFoto2Wrap" hidden>
+                  <span id="rotulacionFoto2Label"
+                    >Sube la foto del lateral derecho <span class="req">*</span></span
+                  >
+                  <div class="file-drop">
+                    <input
+                      type="file"
+                      name="rotulacion_foto_2"
+                      accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                      data-preview
+                    />
+                    <div class="file-drop-copy">
+                      <strong>Sube o selecciona un archivo</strong>
+                      <small>JPG o PNG</small>
+                    </div>
+                    <div class="file-preview" hidden>
+                      <div class="file-preview-media"></div>
+                      <div class="file-preview-meta">
+                        <strong class="file-preview-name"></strong>
+                        <small class="file-preview-size"></small>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </label>
+                </label>
+              </div>
             </div>
 
             </div>
@@ -613,6 +607,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260926a2" defer></script>
+    <script src="./app.js?v=20260926a3" defer></script>
   </body>
 </html>

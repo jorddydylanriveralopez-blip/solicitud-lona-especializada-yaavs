@@ -95,17 +95,31 @@
     };
   }
 
+  const ROTULACION_CLASIF_ESQUINA =
+    "Negocio en esquina / contraesquina con doble entrada.";
+
+  function rotulacionEvidenciaTipo() {
+    const clasif =
+      form.querySelector('input[name="rotulacionClasificacion"]:checked')?.value || "";
+    if (!clasif) return "";
+    if (clasif === ROTULACION_CLASIF_ESQUINA || /contraesquina|esquina/i.test(clasif)) {
+      return "esquina";
+    }
+    return "frente";
+  }
+
   function syncRotulacionUi() {
     if (!flowRotulacion) return;
     const permisos = form.querySelector('input[name="rotulacionPermisos"]:checked')?.value || "";
     const permisoNo = document.getElementById("rotulacionPermisoNo");
     if (permisoNo) permisoNo.hidden = permisos !== "No";
 
-    const evidencia = form.querySelector('input[name="rotulacionEvidenciaTipo"]:checked')?.value || "";
+    const evidencia = rotulacionEvidenciaTipo();
     const fotosWrap = document.getElementById("rotulacionFotosWrap");
     const foto1Wrap = document.getElementById("rotulacionFoto1Wrap");
     const foto2Wrap = document.getElementById("rotulacionFoto2Wrap");
     const foto1Label = document.getElementById("rotulacionFoto1Label");
+    const foto2Label = document.getElementById("rotulacionFoto2Label");
     const foto1Input = form.querySelector('input[name="rotulacion_foto_1"]');
     const foto2Input = form.querySelector('input[name="rotulacion_foto_2"]');
     const showFotos = evidencia === "frente" || evidencia === "esquina";
@@ -118,23 +132,31 @@
     if (foto1Wrap) foto1Wrap.hidden = !showFotos;
     if (foto2Wrap) foto2Wrap.hidden = !showFoto2;
     if (foto1Input) foto1Input.required = showFotos;
-    if (foto2Input) {
-      foto2Input.required = showFoto2;
-      // Keep the file if the user toggles evidencia type; only skip it on submit when not esquina.
-    }
+    if (foto2Input) foto2Input.required = showFoto2;
     if (foto1Label) {
       foto1Label.innerHTML =
         evidencia === "esquina"
-          ? 'Primera fotografía de fachada <span class="req">*</span>'
-          : 'Fotografía frontal completa <span class="req">*</span>';
+          ? 'Sube la foto del lateral izquierdo <span class="req">*</span>'
+          : 'Sube la fotografía frontal completa <span class="req">*</span>';
+    }
+    if (foto2Label) {
+      foto2Label.innerHTML = 'Sube la foto del lateral derecho <span class="req">*</span>';
     }
     const evidenciaHint = document.getElementById("rotulacionEvidenciaHint");
     if (evidenciaHint) {
-      evidenciaHint.hidden = !showFotos;
-      evidenciaHint.textContent =
-        evidencia === "esquina"
-          ? "Sube dos fotografías: una de cada vista de la esquina / contraesquina."
-          : "Sube la fotografía frontal completa del negocio.";
+      if (!evidencia) {
+        evidenciaHint.hidden = false;
+        evidenciaHint.textContent =
+          "Selecciona primero la clasificación del punto de venta para ver qué fotos debes subir.";
+      } else if (evidencia === "esquina") {
+        evidenciaHint.hidden = false;
+        evidenciaHint.textContent =
+          "Por la clasificación de esquina / contraesquina, sube dos fotos: lateral izquierdo y lateral derecho.";
+      } else {
+        evidenciaHint.hidden = false;
+        evidenciaHint.textContent =
+          "Por la clasificación seleccionada, sube una fotografía frontal completa del negocio.";
+      }
     }
     syncRotulacionColorPreviews();
     syncRotulacionBastidorPreviews();
@@ -743,8 +765,7 @@
       color: form.querySelector('input[name="rotulacionColor"]:checked')?.value || "",
       versionBastidor:
         form.querySelector('input[name="rotulacionBastidor"]:checked')?.value || "",
-      evidenciaTipo:
-        form.querySelector('input[name="rotulacionEvidenciaTipo"]:checked')?.value || "",
+      evidenciaTipo: rotulacionEvidenciaTipo(),
     };
   }
 
@@ -968,18 +989,22 @@
         markInvalid(form.querySelector('input[name="rotulacionBastidor"]'));
       }
       if (!r?.evidenciaTipo) {
-        errors.push("Selecciona el tipo de evidencia fotográfica.");
-        markInvalid(form.querySelector('input[name="rotulacionEvidenciaTipo"]'));
+        errors.push("Selecciona la clasificación del punto de venta para definir la evidencia fotográfica.");
+        markInvalid(form.querySelector('input[name="rotulacionClasificacion"]'));
       } else {
         const f1 = form.querySelector('input[name="rotulacion_foto_1"]');
         if (!f1?.files?.[0]) {
-          errors.push("Sube la fotografía de la fachada.");
+          errors.push(
+            r.evidenciaTipo === "esquina"
+              ? "Sube la foto del lateral izquierdo."
+              : "Sube la fotografía frontal completa.",
+          );
           markInvalid(f1);
         }
         if (r.evidenciaTipo === "esquina") {
           const f2 = form.querySelector('input[name="rotulacion_foto_2"]');
           if (!f2?.files?.[0]) {
-            errors.push("Sube la segunda fotografía de la fachada.");
+            errors.push("Sube la foto del lateral derecho.");
             markInvalid(f2);
           }
         }
@@ -1045,8 +1070,7 @@
     if (fotoPv?.files?.[0]) fd.append("rotulacion_foto_pv", fotoPv.files[0]);
     const f1 = form.querySelector('input[name="rotulacion_foto_1"]');
     if (f1?.files?.[0]) fd.append("rotulacion_foto_1", f1.files[0]);
-    const evidencia =
-      form.querySelector('input[name="rotulacionEvidenciaTipo"]:checked')?.value || "";
+    const evidencia = rotulacionEvidenciaTipo();
     const f2 = form.querySelector('input[name="rotulacion_foto_2"]');
     if (evidencia === "esquina" && f2?.files?.[0]) fd.append("rotulacion_foto_2", f2.files[0]);
   }
@@ -1076,7 +1100,6 @@
     if (t.name === "tipoEstablecimiento") syncTipoOtro();
     if (
       t.name === "rotulacionPermisos" ||
-      t.name === "rotulacionEvidenciaTipo" ||
       t.name === "rotulacionClasificacion"
     ) {
       syncRotulacionUi();
