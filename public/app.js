@@ -160,6 +160,7 @@
     }
     syncRotulacionColorPreviews();
     syncRotulacionBastidorPreviews();
+    syncFormSteps();
   }
 
   function syncRotulacionBastidorPreviews() {
@@ -243,7 +244,10 @@
   function syncMaterial() {
     const mat = selectedMaterial();
     afterMaterial.hidden = !mat;
-    if (!mat) return;
+    if (!mat) {
+      syncFormSteps();
+      return;
+    }
 
     const copy = materialCopy();
     if (heroTitle) heroTitle.textContent = copy.title;
@@ -270,6 +274,122 @@
     renderToldos();
     renderCaballetes();
     syncRotulacionUi();
+    syncFormSteps();
+  }
+
+  function isStepApplicable(section) {
+    if (!section) return false;
+    if (section.id === "secObjetivo" && isRotulacion()) return false;
+    if (section.closest("#flowLona") && (!flowLona || flowLona.hidden)) return false;
+    if (section.closest("#flowToldo") && (!flowToldo || flowToldo.hidden)) return false;
+    if (section.closest("#flowCaballete") && (!flowCaballete || flowCaballete.hidden)) return false;
+    if (section.closest("#flowRotulacion") && (!flowRotulacion || flowRotulacion.hidden)) return false;
+    return true;
+  }
+
+  function isSectionComplete(section) {
+    if (!section || !isStepApplicable(section)) return true;
+    if (section.getAttribute("data-step-optional") === "true") return true;
+
+    const visible = (el) => el && !el.disabled && !el.hidden && !el.closest("[hidden]");
+
+    for (const el of section.querySelectorAll("input, textarea, select")) {
+      if (!visible(el)) continue;
+      if (el.type === "radio" || el.type === "checkbox") continue;
+      if (!(el.required || el.getAttribute("aria-required") === "true")) continue;
+      if (el.type === "file") {
+        if (!el.files?.length) return false;
+        continue;
+      }
+      if (!String(el.value || "").trim()) return false;
+    }
+
+    const radioNames = new Set();
+    section.querySelectorAll('input[type="radio"]').forEach((r) => {
+      if (!visible(r)) return;
+      if (r.required || r.closest('fieldset[data-required="true"]')) radioNames.add(r.name);
+    });
+    for (const name of radioNames) {
+      if (!section.querySelector(`input[name="${CSS.escape(name)}"]:checked`)) return false;
+    }
+
+    for (const fs of section.querySelectorAll('fieldset[data-required="true"][data-multi="true"]')) {
+      if (fs.hidden || fs.closest("[hidden]")) continue;
+      const box = fs.querySelector('input[type="checkbox"]');
+      if (!box) continue;
+      if (!section.querySelector(`input[name="${CSS.escape(box.name)}"]:checked`)) return false;
+    }
+
+    // Toldo extras inside punto de venta
+    if (isToldo() && section.querySelector("#toldoPuntoVentaExtra")) {
+      if (!hasUbicacionPuntoVenta()) return false;
+      const foto = section.querySelector('input[name="toldo_foto"]');
+      if (foto && visible(foto) && !foto.files?.length) return false;
+    }
+
+    // Specs blocks: require at least one filled dimension + logo when present
+    const logo = section.querySelector('input[type="file"][name^="logo_"]');
+    if (logo && visible(logo) && !logo.files?.length) return false;
+    const firstAncho = section.querySelector('input[data-k="ancho"]');
+    const firstAlto = section.querySelector('input[data-k="alto"], input[data-k="largo"]');
+    if (firstAncho && visible(firstAncho) && !String(firstAncho.value || "").trim()) return false;
+    if (firstAlto && visible(firstAlto) && !String(firstAlto.value || "").trim()) return false;
+
+    // Rotulación evidencia files (required toggled dynamically)
+    const f1 = section.querySelector('input[name="rotulacion_foto_1"]');
+    if (f1 && visible(f1) && f1.required && !f1.files?.length) return false;
+    const f2 = section.querySelector('input[name="rotulacion_foto_2"]');
+    if (f2 && visible(f2) && f2.required && !f2.files?.length) return false;
+    const fpv = section.querySelector('input[name="rotulacion_foto_pv"]');
+    if (fpv && visible(fpv) && !fpv.files?.length) return false;
+
+    return true;
+  }
+
+  function syncFormSteps() {
+    const actions = document.getElementById("formActions");
+    const steps = [...form.querySelectorAll("[data-form-step]")].filter(isStepApplicable);
+    let unlockNext = true;
+    let number = 1;
+    let lastVisible = null;
+    let newlyOpened = null;
+
+    steps.forEach((section) => {
+      const wasHidden = section.hidden;
+      if (!unlockNext) {
+        section.hidden = true;
+        section.classList.remove("is-step-active");
+        return;
+      }
+
+      section.hidden = false;
+      section.classList.add("is-step-active");
+      const badge = section.querySelector(".section-head > span");
+      if (badge) badge.textContent = String(number++);
+      lastVisible = section;
+      if (wasHidden) newlyOpened = section;
+
+      const complete = isSectionComplete(section);
+      if (!complete) unlockNext = false;
+    });
+
+    form.querySelectorAll("[data-form-step]").forEach((section) => {
+      if (!isStepApplicable(section) && section.id !== "secMaterial") {
+        section.hidden = true;
+        section.classList.remove("is-step-active");
+      }
+    });
+
+    if (actions) {
+      const showActions = Boolean(
+        lastVisible && lastVisible.getAttribute("data-step-optional") === "true",
+      );
+      actions.hidden = !showActions;
+    }
+
+    if (newlyOpened) {
+      newlyOpened.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }
 
   const ubicacionInput = document.getElementById("puntoVentaUbicacionInput");
@@ -1092,16 +1212,17 @@
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
     if (t.name === "material") syncMaterial();
-    if (t.name === "tipoEstablecimiento") syncTipoOtro();
-    if (
-      t.name === "rotulacionPermisos" ||
-      t.name === "rotulacionClasificacion"
-    ) {
+    if (t.name === "rotulacionPermisos" || t.name === "rotulacionClasificacion") {
       syncRotulacionUi();
     }
     if (t.name === "rotulacionColor") syncRotulacionBastidorPreviews();
     if (t.hasAttribute("data-contacto")) syncContacto();
     if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
+    syncFormSteps();
+  });
+
+  form.addEventListener("input", () => {
+    syncFormSteps();
   });
 
   form.addEventListener("submit", async (e) => {
@@ -1159,4 +1280,5 @@
   syncRotulacionBastidorPreviews();
   syncContacto();
   syncReferencia();
+  syncFormSteps();
 })();

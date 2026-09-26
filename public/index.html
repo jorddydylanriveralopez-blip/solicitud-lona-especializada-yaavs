@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260926a4" />
-    <link rel="stylesheet" href="./lona.css?v=20260926a4" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260926b1" />
+    <link rel="stylesheet" href="./lona.css?v=20260926b1" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -51,7 +51,7 @@
       <form id="lonaForm" class="report-form" novalidate>
         <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
 
-        <section class="card-section" id="secMaterial">
+        <section class="card-section" id="secMaterial" data-form-step>
           <header class="section-head">
             <span>1</span>
             <h2>¿Qué material solicitas?</h2>
@@ -91,7 +91,7 @@
 
         <div id="afterMaterial" hidden>
         <div id="formRest">
-          <section class="card-section">
+          <section class="card-section" data-form-step>
             <header class="section-head">
               <span>2</span>
               <h2>Datos del ejecutivo de ventas</h2>
@@ -108,7 +108,7 @@
             </div>
           </section>
 
-          <section class="card-section">
+          <section class="card-section" data-form-step>
             <header class="section-head">
               <span>3</span>
               <h2>Datos del YAAVSER</h2>
@@ -133,7 +133,7 @@
             </div>
           </section>
 
-          <section class="card-section">
+          <section class="card-section" data-form-step>
             <header class="section-head">
               <span>4</span>
               <h2>Datos del punto de venta</h2>
@@ -206,7 +206,7 @@
             </div>
           </section>
 
-          <section class="card-section" id="secObjetivo">
+          <section class="card-section" id="secObjetivo" data-form-step>
             <header class="section-head">
               <span>5</span>
               <h2>Objetivo</h2>
@@ -227,7 +227,7 @@
           </section>
 
           <div id="flowLona">
-          <section class="card-section">
+          <section class="card-section" data-form-step>
             <header class="section-head">
               <span>6</span>
               <h2>Especificaciones y diseño de la lona</h2>
@@ -237,7 +237,7 @@
           </div>
 
           <div id="flowToldo" hidden>
-          <section class="card-section">
+          <section class="card-section" data-form-step>
             <header class="section-head">
               <span>6</span>
               <h2>Especificaciones y diseño del toldo y cortina desplegable</h2>
@@ -247,7 +247,7 @@
           </div>
 
           <div id="flowCaballete" hidden>
-          <section class="card-section">
+          <section class="card-section" data-form-step>
             <header class="section-head">
               <span>6</span>
               <h2>Especificaciones y diseño del caballete</h2>
@@ -257,12 +257,11 @@
           </div>
 
           <div id="flowRotulacion" hidden>
-          <section class="card-section">
+          <section class="card-section" data-form-step>
             <header class="section-head">
-              <span>6</span>
-              <h2>Levantamiento de rotulación multimarca</h2>
+              <span>5</span>
+              <h2>Permisos gubernamentales</h2>
             </header>
-
             <fieldset class="choice-group compact" data-required="true">
               <legend>
                 ¿El punto de venta cuenta con los permisos gubernamentales necesarios para realizar la
@@ -285,9 +284,15 @@
               Te recomendamos tramitar y obtener los permisos necesarios a la brevedad para garantizar
               la viabilidad de la rotulación.
             </div>
+          </section>
 
+          <section class="card-section" data-form-step>
+            <header class="section-head">
+              <span>6</span>
+              <h2>Fotografía del punto de venta</h2>
+            </header>
             <label class="field file-field" id="rotulacionFotoPvWrap">
-              <span>Fotografía del punto de venta <span class="req">*</span></span>
+              <span>Sube la fotografía del punto de venta <span class="req">*</span></span>
               <p class="multi-hint">Vista general del negocio / local (distinta a la evidencia de fachada).</p>
               <div class="file-drop">
                 <input
@@ -309,7 +314,13 @@
                 </div>
               </div>
             </label>
+          </section>
 
+          <section class="card-section" data-form-step>
+            <header class="section-head">
+              <span>7</span>
+              <h2>Clasificación del punto de venta</h2>
+            </header>
             <fieldset class="choice-group" data-required="true">
               <legend>Clasificación del punto de venta <span class="req">*</span></legend>
               <label class="choice">
@@ -345,7 +356,13 @@
                 <span>Negocio en esquina / contraesquina con doble entrada.</span>
               </label>
             </fieldset>
+          </section>
 
+          <section class="card-section" data-form-step>
+            <header class="section-head">
+              <span>8</span>
+              <h2>Color de la rotulación</h2>
+            </header>
             <fieldset class="color-picker" data-required="true">
               <legend>Color de la rotulación solicitada <span class="req">*</span></legend>
               <p class="multi-hint" id="rotulacionColorHint">
@@ -449,7 +466,13 @@
                 </label>
               </div>
             </fieldset>
+          </section>
 
+          <section class="card-section" data-form-step>
+            <header class="section-head">
+              <span>9</span>
+              <h2>Versión de bastidor</h2>
+            </header>
             <fieldset class="bastidor-picker" data-required="true">
               <legend>Versión de bastidor requerida <span class="req">*</span></legend>
               <p class="multi-hint" id="bastidorHint">
@@ -494,69 +517,70 @@
                 </label>
               </div>
             </fieldset>
+          </section>
 
-            <div id="rotulacionEvidenciaBlock">
-              <h3 class="rotulacion-subtitle">Evidencia fotográfica de la fachada</h3>
-              <p class="multi-hint" id="rotulacionEvidenciaHint">
-                Selecciona primero la clasificación del punto de venta para ver qué fotos debes subir.
-              </p>
-              <div id="rotulacionFotosWrap" class="grid-2" hidden>
-                <label class="field file-field" id="rotulacionFoto1Wrap">
-                  <span id="rotulacionFoto1Label">Fotografía frontal completa <span class="req">*</span></span>
-                  <div class="file-drop">
-                    <input
-                      type="file"
-                      name="rotulacion_foto_1"
-                      accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-                      data-preview
-                    />
-                    <div class="file-drop-copy">
-                      <strong>Sube o selecciona un archivo</strong>
-                      <small>JPG o PNG</small>
-                    </div>
-                    <div class="file-preview" hidden>
-                      <div class="file-preview-media"></div>
-                      <div class="file-preview-meta">
-                        <strong class="file-preview-name"></strong>
-                        <small class="file-preview-size"></small>
-                      </div>
+          <section class="card-section" data-form-step id="rotulacionEvidenciaBlock">
+            <header class="section-head">
+              <span>10</span>
+              <h2>Evidencia fotográfica de la fachada</h2>
+            </header>
+            <p class="multi-hint" id="rotulacionEvidenciaHint">
+              Selecciona primero la clasificación del punto de venta para ver qué fotos debes subir.
+            </p>
+            <div id="rotulacionFotosWrap" class="grid-2" hidden>
+              <label class="field file-field" id="rotulacionFoto1Wrap">
+                <span id="rotulacionFoto1Label">Fotografía frontal completa <span class="req">*</span></span>
+                <div class="file-drop">
+                  <input
+                    type="file"
+                    name="rotulacion_foto_1"
+                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                    data-preview
+                  />
+                  <div class="file-drop-copy">
+                    <strong>Sube o selecciona un archivo</strong>
+                    <small>JPG o PNG</small>
+                  </div>
+                  <div class="file-preview" hidden>
+                    <div class="file-preview-media"></div>
+                    <div class="file-preview-meta">
+                      <strong class="file-preview-name"></strong>
+                      <small class="file-preview-size"></small>
                     </div>
                   </div>
-                </label>
-                <label class="field file-field" id="rotulacionFoto2Wrap" hidden>
-                  <span id="rotulacionFoto2Label"
-                    >Sube la foto del lateral derecho <span class="req">*</span></span
-                  >
-                  <div class="file-drop">
-                    <input
-                      type="file"
-                      name="rotulacion_foto_2"
-                      accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-                      data-preview
-                    />
-                    <div class="file-drop-copy">
-                      <strong>Sube o selecciona un archivo</strong>
-                      <small>JPG o PNG</small>
-                    </div>
-                    <div class="file-preview" hidden>
-                      <div class="file-preview-media"></div>
-                      <div class="file-preview-meta">
-                        <strong class="file-preview-name"></strong>
-                        <small class="file-preview-size"></small>
-                      </div>
+                </div>
+              </label>
+              <label class="field file-field" id="rotulacionFoto2Wrap" hidden>
+                <span id="rotulacionFoto2Label"
+                  >Sube la foto del lateral derecho <span class="req">*</span></span
+                >
+                <div class="file-drop">
+                  <input
+                    type="file"
+                    name="rotulacion_foto_2"
+                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                    data-preview
+                  />
+                  <div class="file-drop-copy">
+                    <strong>Sube o selecciona un archivo</strong>
+                    <small>JPG o PNG</small>
+                  </div>
+                  <div class="file-preview" hidden>
+                    <div class="file-preview-media"></div>
+                    <div class="file-preview-meta">
+                      <strong class="file-preview-name"></strong>
+                      <small class="file-preview-size"></small>
                     </div>
                   </div>
-                </label>
-              </div>
-            </div>
-
+                </div>
+              </label>
             </div>
           </section>
           </div>
 
-          <section class="card-section">
+          <section class="card-section" data-form-step data-step-optional="true">
             <header class="section-head">
-              <span>7</span>
+              <span>11</span>
               <h2>Observaciones adicionales</h2>
             </header>
             <label class="field">
@@ -569,7 +593,7 @@
             </label>
           </section>
 
-          <div class="form-actions">
+          <div class="form-actions" id="formActions" hidden>
             <p class="form-hint" id="formHint"></p>
             <button type="submit" class="primary-btn" id="submitBtn">Enviar solicitud</button>
           </div>
@@ -589,6 +613,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260926a4" defer></script>
+    <script src="./app.js?v=20260926b1" defer></script>
   </body>
 </html>

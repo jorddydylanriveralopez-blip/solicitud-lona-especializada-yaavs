@@ -227,11 +227,11 @@
   gap: 0.35rem;
 }
 
-.field[hidden],
-.file-field[hidden],
-#rotulacionFotosWrap[hidden],
-#rotulacionFoto2Wrap[hidden],
-#bastidorPicker[hidden] {
+.card-section[data-form-step][hidden] {
+  display: none !important;
+}
+
+#formActions[hidden] {
   display: none !important;
 }
 
