@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260925d8" />
-    <link rel="stylesheet" href="./lona.css?v=20260925d8" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260926a1" />
+    <link rel="stylesheet" href="./lona.css?v=20260926a1" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -276,31 +276,11 @@
                 <input type="radio" name="rotulacionPermisos" value="No" />
                 <span>No</span>
               </label>
-            </fieldset>
-            <div id="rotulacionPermisoSi" hidden>
-              <label class="field file-field">
-                <span>Adjunta la evidencia o comprobante del permiso <span class="req">*</span></span>
-                <div class="file-drop">
-                  <input
-                    type="file"
-                    name="rotulacion_permiso"
-                    accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
-                    data-preview
-                  />
-                  <div class="file-drop-copy">
-                    <strong>Sube o selecciona un archivo</strong>
-                    <small>JPG, PNG o PDF</small>
-                  </div>
-                  <div class="file-preview" hidden>
-                    <div class="file-preview-media"></div>
-                    <div class="file-preview-meta">
-                      <strong class="file-preview-name"></strong>
-                      <small class="file-preview-size"></small>
-                    </div>
-                  </div>
-                </div>
+              <label class="choice">
+                <input type="radio" name="rotulacionPermisos" value="No se requiere" />
+                <span>No se requiere</span>
               </label>
-            </div>
+            </fieldset>
             <div id="rotulacionPermisoNo" class="alert alert-warn" hidden>
               Te recomendamos tramitar y obtener los permisos necesarios a la brevedad para garantizar
               la viabilidad de la rotulación.
@@ -737,6 +717,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260925d8" defer></script>
+    <script src="./app.js?v=20260926a1" defer></script>
   </body>
 </html>

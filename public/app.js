@@ -98,9 +98,7 @@
   function syncRotulacionUi() {
     if (!flowRotulacion) return;
     const permisos = form.querySelector('input[name="rotulacionPermisos"]:checked')?.value || "";
-    const permisoSi = document.getElementById("rotulacionPermisoSi");
     const permisoNo = document.getElementById("rotulacionPermisoNo");
-    if (permisoSi) permisoSi.hidden = permisos !== "Sí";
     if (permisoNo) permisoNo.hidden = permisos !== "No";
 
     const evidencia = form.querySelector('input[name="rotulacionEvidenciaTipo"]:checked')?.value || "";
@@ -959,13 +957,6 @@
         errors.push("Indica si el punto de venta cuenta con permisos gubernamentales.");
         markInvalid(form.querySelector('input[name="rotulacionPermisos"]'));
       }
-      if (r?.permisos === "Sí") {
-        const permisoFile = form.querySelector('input[name="rotulacion_permiso"]');
-        if (!permisoFile?.files?.[0]) {
-          errors.push("Adjunta la evidencia o comprobante del permiso.");
-          markInvalid(permisoFile);
-        }
-      }
       const fotoPv = form.querySelector('input[name="rotulacion_foto_pv"]');
       if (!fotoPv?.files?.[0]) {
         errors.push("Sube la fotografía del punto de venta.");
@@ -1069,8 +1060,6 @@
   }
 
   function appendRotulacionFiles(fd) {
-    const permiso = form.querySelector('input[name="rotulacion_permiso"]');
-    if (permiso?.files?.[0]) fd.append("rotulacion_permiso", permiso.files[0]);
     const fotoPv = form.querySelector('input[name="rotulacion_foto_pv"]');
     if (fotoPv?.files?.[0]) fd.append("rotulacion_foto_pv", fotoPv.files[0]);
     const f1 = form.querySelector('input[name="rotulacion_foto_1"]');
