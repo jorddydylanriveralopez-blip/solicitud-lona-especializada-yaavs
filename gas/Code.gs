@@ -126,11 +126,16 @@ function doPost(e) {
         data.folio || data.id || "",
       );
       var mediaNow = appendMediaToRow_(data.id, data.folio, added);
+      var failed = [];
+      for (var ai = 0; ai < added.length; ai++) {
+        if (added[ai] && added[ai].error) failed.push(added[ai].error);
+      }
       return jsonOut_({
-        ok: true,
-        added: added.length,
+        ok: failed.length === 0,
+        added: mediaNow.length ? added.filter(function (m) { return m && m.url; }).length : 0,
         mediaCount: mediaNow.length,
         media: mediaNow,
+        errors: failed,
       });
     }
     var media = saveAttachments_(data.attachments || [], data.folio || data.id || "");
@@ -186,6 +191,12 @@ function deleteRows_(id, folio) {
 
 function setupSheet() {
   ensureSheet_();
+}
+
+/** Ejecutar una vez desde el editor para autorizar Drive (fotos). */
+function authorizeDrive() {
+  var folder = attachmentsFolder_();
+  return folder.getName() + " | id=" + folder.getId();
 }
 
 function resetAllRows_() {
@@ -285,14 +296,21 @@ function appendMediaToRow_(id, folio, newMedia) {
   var wantedFolio = String(folio || "").trim();
   if ((!wantedId && !wantedFolio) || !newMedia || !newMedia.length) return newMedia || [];
 
+  // Solo persistir entradas con URL de Drive (ignorar fallos).
+  var valid = [];
+  for (var i = 0; i < newMedia.length; i++) {
+    if (newMedia[i] && newMedia[i].url) valid.push(newMedia[i]);
+  }
+  if (!valid.length) return [];
+
   var sheet = ensureSheet_();
   var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return newMedia;
+  if (lastRow < 2) return valid;
 
   var idCol = KEYS.indexOf("id");
   var folioCol = KEYS.indexOf("folio");
   var mediaCol = KEYS.indexOf("media");
-  if (mediaCol < 0) return newMedia;
+  if (mediaCol < 0) return valid;
 
   var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getValues();
   for (var r = 0; r < values.length; r++) {
@@ -300,12 +318,12 @@ function appendMediaToRow_(id, folio, newMedia) {
     var rowFolio = folioCol >= 0 ? String(values[r][folioCol] || "").trim() : "";
     if ((wantedId && rowId === wantedId) || (wantedFolio && rowFolio === wantedFolio)) {
       var existing = parseMedia_(values[r][mediaCol]);
-      var merged = existing.concat(newMedia);
+      var merged = existing.concat(valid);
       sheet.getRange(r + 2, mediaCol + 1).setValue(JSON.stringify(merged));
       return merged;
     }
   }
-  return newMedia;
+  return valid;
 }
 
 function attachmentsFolder_() {
@@ -351,7 +369,16 @@ function saveAttachments_(attachments, label) {
                   : "Archivo"),
       });
     } catch (err) {
-      // omitir adjunto fallido
+      // Devolver el error para diagnosticar (p. ej. permisos de Drive).
+      out.push({
+        name: att.name || "archivo",
+        mime: att.mime || "application/octet-stream",
+        kind: att.kind || "archivo",
+        group: att.group || "",
+        label: att.label || "Archivo",
+        error: String(err),
+        url: "",
+      });
     }
   }
   return out;
