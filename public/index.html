@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20260926b2" />
-    <link rel="stylesheet" href="./lona.css?v=20260926b2" />
+    <link rel="stylesheet" href="./styles-base.css?v=20260926c1" />
+    <link rel="stylesheet" href="./lona.css?v=20260926c1" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -186,7 +186,7 @@
                 </a>
               </div>
               <div id="ubicacionPreview" class="ubicacion-preview grid-span-2" hidden></div>
-              <label class="field file-field grid-span-2">
+              <label class="field file-field grid-span-2" id="toldoFotoPvField" hidden>
                 <span>Sube la foto del punto de venta <span class="req">*</span></span>
                 <div class="file-drop">
                   <input type="file" name="toldo_foto" accept=".jpg,.jpeg,.png,image/jpeg,image/png" data-preview />
@@ -289,36 +289,6 @@
           <section class="card-section" data-form-step>
             <header class="section-head">
               <span>6</span>
-              <h2>Fotografía del punto de venta</h2>
-            </header>
-            <label class="field file-field" id="rotulacionFotoPvWrap">
-              <span>Sube la fotografía del punto de venta <span class="req">*</span></span>
-              <p class="multi-hint">Vista general del negocio / local (distinta a la evidencia de fachada).</p>
-              <div class="file-drop">
-                <input
-                  type="file"
-                  name="rotulacion_foto_pv"
-                  accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-                  data-preview
-                />
-                <div class="file-drop-copy">
-                  <strong>Sube o selecciona un archivo</strong>
-                  <small>JPG o PNG</small>
-                </div>
-                <div class="file-preview" hidden>
-                  <div class="file-preview-media"></div>
-                  <div class="file-preview-meta">
-                    <strong class="file-preview-name"></strong>
-                    <small class="file-preview-size"></small>
-                  </div>
-                </div>
-              </div>
-            </label>
-          </section>
-
-          <section class="card-section" data-form-step>
-            <header class="section-head">
-              <span>7</span>
               <h2>Clasificación del punto de venta</h2>
             </header>
             <fieldset class="choice-group" data-required="true">
@@ -616,6 +586,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20260926b2" defer></script>
+    <script src="./app.js?v=20260926c1" defer></script>
   </body>
 </html>

@@ -288,7 +288,11 @@
     flowToldo.hidden = mat !== "Toldo";
     flowCaballete.hidden = mat !== "Caballete";
     if (flowRotulacion) flowRotulacion.hidden = mat !== "Rotulación";
-    if (toldoPuntoVentaExtra) toldoPuntoVentaExtra.hidden = mat !== "Toldo";
+    if (toldoPuntoVentaExtra) {
+      toldoPuntoVentaExtra.hidden = mat !== "Toldo" && mat !== "Rotulación";
+    }
+    const toldoFotoPvField = document.getElementById("toldoFotoPvField");
+    if (toldoFotoPvField) toldoFotoPvField.hidden = mat !== "Toldo";
     renderLonas();
     renderToldos();
     renderCaballetes();
@@ -339,11 +343,11 @@
       if (!section.querySelector(`input[name="${CSS.escape(box.name)}"]:checked`)) return false;
     }
 
-    // Toldo extras inside punto de venta
-    if (isToldo() && section.querySelector("#toldoPuntoVentaExtra")) {
+    // Ubicación (Toldo / Rotulación) y foto solo Toldo
+    if ((isToldo() || isRotulacion()) && section.querySelector("#toldoPuntoVentaExtra")) {
       if (!hasUbicacionPuntoVenta()) return false;
       const foto = section.querySelector('input[name="toldo_foto"]');
-      if (foto && visible(foto) && !foto.files?.length) return false;
+      if (isToldo() && foto && visible(foto) && !foto.files?.length) return false;
     }
 
     // Specs blocks: require at least one filled dimension + logo when present
@@ -359,8 +363,6 @@
     if (f1 && visible(f1) && f1.required && !f1.files?.length) return false;
     const f2 = section.querySelector('input[name="rotulacion_foto_2"]');
     if (f2 && visible(f2) && f2.required && !f2.files?.length) return false;
-    const fpv = section.querySelector('input[name="rotulacion_foto_pv"]');
-    if (fpv && visible(fpv) && !fpv.files?.length) return false;
 
     return true;
   }
@@ -1021,11 +1023,13 @@
       }
     }
 
-    if (isToldo()) {
+    if (isToldo() || isRotulacion()) {
       if (!hasUbicacionPuntoVenta()) {
         errors.push("Indica la ubicación del punto de venta en Google Maps.");
         markInvalid(ubicacionInput);
       }
+    }
+    if (isToldo()) {
       const foto = form.querySelector('input[name="toldo_foto"]');
       if (!foto?.files?.[0]) {
         errors.push("Sube la foto del punto de venta.");
@@ -1105,11 +1109,6 @@
         errors.push("Indica si el punto de venta cuenta con permisos gubernamentales.");
         markInvalid(form.querySelector('input[name="rotulacionPermisos"]'));
       }
-      const fotoPv = form.querySelector('input[name="rotulacion_foto_pv"]');
-      if (!fotoPv?.files?.[0]) {
-        errors.push("Sube la fotografía del punto de venta.");
-        markInvalid(fotoPv);
-      }
       if (!r?.clasificacion) {
         errors.push("Selecciona la clasificación del punto de venta.");
         markInvalid(form.querySelector('input[name="rotulacionClasificacion"]'));
@@ -1149,7 +1148,7 @@
   }
 
   function buildAnswers() {
-    if (isToldo()) syncUbicacionFromInput();
+    if (isToldo() || isRotulacion()) syncUbicacionFromInput();
     const mat = selectedMaterial();
     const base = {
       material: mat,
@@ -1200,8 +1199,6 @@
   }
 
   function appendRotulacionFiles(fd) {
-    const fotoPv = form.querySelector('input[name="rotulacion_foto_pv"]');
-    if (fotoPv?.files?.[0]) fd.append("rotulacion_foto_pv", fotoPv.files[0]);
     const f1 = form.querySelector('input[name="rotulacion_foto_1"]');
     if (f1?.files?.[0]) fd.append("rotulacion_foto_1", f1.files[0]);
     const evidencia = rotulacionEvidenciaTipo();
