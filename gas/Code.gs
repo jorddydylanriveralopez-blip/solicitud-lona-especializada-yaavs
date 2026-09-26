@@ -120,6 +120,19 @@ function doPost(e) {
       var clearedRows = resetAllRows_();
       return jsonOut_({ ok: true, cleared: clearedRows });
     }
+    if (data.action === "addMedia") {
+      var added = saveAttachments_(
+        data.attachment ? [data.attachment] : data.attachments || [],
+        data.folio || data.id || "",
+      );
+      var mediaNow = appendMediaToRow_(data.id, data.folio, added);
+      return jsonOut_({
+        ok: true,
+        added: added.length,
+        mediaCount: mediaNow.length,
+        media: mediaNow,
+      });
+    }
     var media = saveAttachments_(data.attachments || [], data.folio || data.id || "");
     if ((!media || !media.length) && data.media) {
       if (Object.prototype.toString.call(data.media) === "[object Array]") {
@@ -128,7 +141,12 @@ function doPost(e) {
         media = parseMedia_(data.media);
       }
     }
-    data.media = media || [];
+    // No guardar URLs locales de Render: se pierden al redeploy.
+    media = (media || []).filter(function (m) {
+      var url = String((m && m.url) || "");
+      return url && url.indexOf("/uploads/") !== 0;
+    });
+    data.media = media;
     var sheet = ensureSheet_();
     sheet.appendRow(rowFromPayload_(data));
     return jsonOut_({ ok: true, appended: true, mediaCount: (data.media || []).length });
@@ -148,7 +166,7 @@ function deleteRows_(id, folio) {
 
   var idCol = KEYS.indexOf("id");
   var folioCol = KEYS.indexOf("folio");
-  var values = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
+  var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getValues();
   var rowsToDelete = [];
   for (var r = 0; r < values.length; r++) {
     var rowId = idCol >= 0 ? String(values[r][idCol] || "").trim() : "";
@@ -260,6 +278,34 @@ function parseMedia_(raw) {
   } catch (err) {
     return [];
   }
+}
+
+function appendMediaToRow_(id, folio, newMedia) {
+  var wantedId = String(id || "").trim();
+  var wantedFolio = String(folio || "").trim();
+  if ((!wantedId && !wantedFolio) || !newMedia || !newMedia.length) return newMedia || [];
+
+  var sheet = ensureSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return newMedia;
+
+  var idCol = KEYS.indexOf("id");
+  var folioCol = KEYS.indexOf("folio");
+  var mediaCol = KEYS.indexOf("media");
+  if (mediaCol < 0) return newMedia;
+
+  var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getValues();
+  for (var r = 0; r < values.length; r++) {
+    var rowId = idCol >= 0 ? String(values[r][idCol] || "").trim() : "";
+    var rowFolio = folioCol >= 0 ? String(values[r][folioCol] || "").trim() : "";
+    if ((wantedId && rowId === wantedId) || (wantedFolio && rowFolio === wantedFolio)) {
+      var existing = parseMedia_(values[r][mediaCol]);
+      var merged = existing.concat(newMedia);
+      sheet.getRange(r + 2, mediaCol + 1).setValue(JSON.stringify(merged));
+      return merged;
+    }
+  }
+  return newMedia;
 }
 
 function attachmentsFolder_() {

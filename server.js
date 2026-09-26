@@ -403,26 +403,32 @@ function buildAttachments(entry) {
   if (!entryId) return [];
   const answers = entry.answers && typeof entry.answers === "object" ? entry.answers : {};
   const attachments = [];
-  let totalBytes = 0;
-  const maxTotal = 8 * 1024 * 1024;
-  const maxFile = 4 * 1024 * 1024;
+  const maxFile = 3.5 * 1024 * 1024;
 
   const pushFiles = (files, kind, group, label) => {
-    for (const f of files || []) {
+    (files || []).forEach((f, idx) => {
       const storedAs = f.storedAs || path.basename(String(f.url || ""));
-      if (!storedAs) continue;
+      if (!storedAs) return;
       const diskPath = path.join(uploadsRoot, entryId, storedAs);
-      if (!fs.existsSync(diskPath)) continue;
+      if (!fs.existsSync(diskPath)) return;
       const stat = fs.statSync(diskPath);
-      if (stat.size > maxFile || totalBytes + stat.size > maxTotal) continue;
-      totalBytes += stat.size;
+      if (stat.size > maxFile) {
+        console.warn("Adjunto omitido por tamaño:", storedAs, stat.size);
+        return;
+      }
+      let finalLabel = label;
+      if (kind === "foto" && group === "Fachada del punto de venta") {
+        const field = String(f.field || "");
+        if (field.includes("foto_2") || idx >= 1) finalLabel = "Foto del lateral derecho";
+        else if (field.includes("foto_1")) finalLabel = "Foto frontal / lateral izquierdo";
+      }
       attachments.push({
         name: f.name || storedAs,
         mime: f.mime || "application/octet-stream",
         kind,
         group,
         label:
-          label ||
+          finalLabel ||
           (kind === "logo"
             ? "Logotipo"
             : kind === "referencia"
@@ -434,7 +440,7 @@ function buildAttachments(entry) {
                   : "Archivo"),
         data: fs.readFileSync(diskPath).toString("base64"),
       });
-    }
+    });
   };
 
   for (const item of answers.lonas || []) {
@@ -628,44 +634,53 @@ async function postToSheetsRaw(payload) {
 async function forwardToSheets(entry) {
   if (!SHEETS_WEBHOOK_URL) return { skipped: true };
   const flat = flatten(entry);
-  const localMedia = extractMedia(entry);
+  const attachments = buildAttachments(entry);
 
-  const makePayload = (attachments) =>
-    JSON.stringify({
-      ...flat,
-      receivedAt: flat.receivedAt || entry.receivedAt,
-      timestamp: entry.timestamp || flat.receivedAt,
-      id: entry.id,
-      folio: entry.folio,
-      answers: entry.answers,
-      media: localMedia,
-      attachments,
-    });
-
-  let attachments = buildAttachments(entry);
-  let payload = makePayload(attachments);
-  // Apps Script suele fallar con payloads muy grandes (varias fotos en base64).
-  const maxBytes = 3.5 * 1024 * 1024;
-  if (Buffer.byteLength(payload, "utf8") > maxBytes) {
-    console.warn(
-      "Sheets payload too large (%d bytes); reenviando sin binarios",
-      Buffer.byteLength(payload, "utf8"),
-    );
-    attachments = [];
-    payload = makePayload([]);
+  // 1) Crear la fila primero (sin binarios) para no perder la solicitud.
+  const basePayload = {
+    ...flat,
+    receivedAt: flat.receivedAt || entry.receivedAt,
+    timestamp: entry.timestamp || flat.receivedAt,
+    id: entry.id,
+    folio: entry.folio,
+    answers: entry.answers,
+    media: [],
+    attachments: [],
+  };
+  let result = await postToSheetsRaw(JSON.stringify(basePayload));
+  if (!result.ok) {
+    console.error("Sheets append failed:", result.error || result.status, result.body);
+    return result;
   }
 
-  let result = await postToSheetsRaw(payload);
-  if (!result.ok && attachments.length) {
-    console.warn("Sheets webhook failed with attachments; retrying metadata-only");
-    result = await postToSheetsRaw(makePayload([]));
+  // 2) Subir cada archivo a Drive de uno en uno y actualizar la fila.
+  let uploaded = 0;
+  for (const att of attachments) {
+    try {
+      const one = await postToSheetsRaw(
+        JSON.stringify({
+          action: "addMedia",
+          id: entry.id,
+          folio: entry.folio,
+          attachment: att,
+        }),
+      );
+      if (one.ok) uploaded += 1;
+      else {
+        console.warn(
+          "Sheets addMedia failed:",
+          att.name,
+          one.error || one.status,
+          one.body,
+        );
+      }
+    } catch (err) {
+      console.warn("Sheets addMedia error:", att.name, err?.message || err);
+    }
   }
-  if (result.ok) {
-    sheetsListCache = { at: 0, items: null, error: null };
-  } else {
-    console.error("Sheets forward failed:", result.error || result.status, result.body);
-  }
-  return result;
+
+  sheetsListCache = { at: 0, items: null, error: null };
+  return { ok: true, mediaUploaded: uploaded, mediaTotal: attachments.length, body: result.body };
 }
 
 async function deleteFromSheets(id, folio) {
