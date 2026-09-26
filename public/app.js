@@ -17,6 +17,25 @@
   const heroTitle = document.getElementById("heroTitle");
   const heroLede = document.getElementById("heroLede");
   const objetivoLegend = document.getElementById("objetivoLegend");
+  const SUBMITTED_KEY = "yaavs_lona_form_submitted";
+
+  function showThanks(folio) {
+    if (form) form.hidden = true;
+    if (successPanel) {
+      successPanel.hidden = false;
+      const folioEl = document.getElementById("successFolio");
+      if (folioEl) {
+        folioEl.textContent =
+          folio || sessionStorage.getItem(SUBMITTED_KEY) || "—";
+      }
+      successPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  if (sessionStorage.getItem(SUBMITTED_KEY)) {
+    showThanks(sessionStorage.getItem(SUBMITTED_KEY));
+    return;
+  }
 
   const ACABADOS = ["Dobladillo", "Ojillos", "Dobladillo y ojillos", "Sin acabados"];
   const ORIENTACIONES = ["Horizontal", "Vertical", "Cuadrada"];
@@ -1252,10 +1271,11 @@
       const res = await fetch("/api/submit", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo enviar");
-      form.hidden = true;
-      successPanel.hidden = false;
-      document.getElementById("successFolio").textContent = data.folio || "—";
-      successPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      const folio = data.folio || "—";
+      try {
+        sessionStorage.setItem(SUBMITTED_KEY, folio);
+      } catch (_) {}
+      showThanks(folio);
     } catch (err) {
       showToast(err.message || "Error al enviar");
       if (hint) hint.textContent = err.message || "Error al enviar";
@@ -1263,10 +1283,6 @@
       submitBtn.disabled = false;
       submitBtn.textContent = "Enviar solicitud";
     }
-  });
-
-  document.getElementById("newRequestBtn")?.addEventListener("click", () => {
-    window.location.reload();
   });
 
   renderLonas();
