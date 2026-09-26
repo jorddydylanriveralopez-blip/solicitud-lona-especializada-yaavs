@@ -236,6 +236,11 @@
   gap: 0.35rem;
 }
 
+/* display:grid/flex en .field anula el [hidden] del navegador */
+[hidden] {
+  display: none !important;
+}
+
 .card-section[data-form-step][hidden] {
   display: none !important;
 }
