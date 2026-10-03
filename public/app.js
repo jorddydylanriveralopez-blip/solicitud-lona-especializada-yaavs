@@ -1035,6 +1035,7 @@
       ["gerenteTelefono", "Captura el teléfono del gerente."],
       ["yaavserNombre", "Captura el nombre del YAAVSER."],
       ["claveYaavser", "Captura la clave YAAVSER."],
+      ["yaavserTelefono", "Captura el teléfono del YAAVSER."],
       ["puntoVenta", "Captura el nombre del punto de venta."],
     ];
     for (const [name, msg] of requiredText) {
@@ -1049,6 +1050,12 @@
     if (gerenteTel && gerenteTel.value && !/^\d{10}$/.test(gerenteTel.value)) {
       errors.push("El teléfono del gerente debe tener 10 dígitos.");
       markInvalid(gerenteTel);
+    }
+
+    const yaavserTel = form.elements.yaavserTelefono;
+    if (yaavserTel && yaavserTel.value && !/^\d{10}$/.test(yaavserTel.value)) {
+      errors.push("El teléfono del YAAVSER debe tener 10 dígitos.");
+      markInvalid(yaavserTel);
     }
 
     const multiRequired = [
@@ -1197,6 +1204,7 @@
       gerenteTelefono: String(form.gerenteTelefono?.value || "").trim(),
       yaavserNombre: String(form.yaavserNombre.value || "").trim(),
       claveYaavser: String(form.claveYaavser.value || "").trim().toUpperCase(),
+      yaavserTelefono: String(form.yaavserTelefono?.value || "").trim(),
       puntoVenta: String(form.puntoVenta.value || "").trim(),
       puntoVentaUbicacion: String(form.puntoVentaUbicacion?.value || "").trim(),
       puntoVentaUbicacionMaps: String(form.puntoVentaUbicacionMaps?.value || "").trim(),
