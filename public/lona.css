@@ -249,9 +249,95 @@
   display: none !important;
 }
 
-#rotulacionFotosWrap.is-single {
-  grid-template-columns: 1fr;
-  max-width: 420px;
+.evidencia-layout {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.evidencia-uploads {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.foto-guia {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border-radius: 16px;
+  background: #f4f8fc;
+  border: 1px solid rgba(15, 36, 64, 0.08);
+}
+
+.foto-guia-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.foto-guia-item {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.5rem;
+  border-radius: 12px;
+  background: #fff;
+  border: 1.5px solid transparent;
+}
+
+.foto-guia-item img {
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+
+.foto-guia-item figcaption {
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.foto-guia-item strong {
+  font-size: 0.88rem;
+}
+
+.foto-guia-item.is-si {
+  border-color: rgba(31, 122, 58, 0.35);
+}
+
+.foto-guia-item.is-si strong {
+  color: #1f7a3a;
+}
+
+.foto-guia-item.is-si strong::before {
+  content: "✓ ";
+}
+
+.foto-guia-item.is-no {
+  border-color: rgba(192, 57, 43, 0.35);
+}
+
+.foto-guia-item.is-no strong {
+  color: #c0392b;
+}
+
+.foto-guia-item.is-no strong::before {
+  content: "✕ ";
+}
+
+@media (min-width: 640px) {
+  .evidencia-layout {
+    grid-template-columns: minmax(0, 1fr) 250px;
+  }
 }
 
 .field > span {
