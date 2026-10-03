@@ -166,7 +166,9 @@
     }
     if (mat === "Rotulación") {
       return {
-        title: "Solicitud de rotulación multimarca",
+        title: "Solicitud de rotulación",
+        lede:
+          "Completa correctamente este formulario. Verifica las respuestas exactas e información vigente y contéstalo correctamente.",
         objetivo:
           '¿Cuál es el objetivo que se requiere obtener de la rotulación? <span class="req">*</span>',
       };
@@ -308,6 +310,7 @@
     if (heroTitle) heroTitle.textContent = copy.title;
     if (heroLede) {
       heroLede.textContent =
+        copy.lede ||
         "Completa este formulario el ejecutivo de ventas YAAVSTAR junto con el YAAVSER. Verifica medidas exactas e información vigente.";
     }
     if (objetivoLegend) objetivoLegend.innerHTML = copy.objetivo;
