@@ -633,7 +633,7 @@ async function forwardToSheets(entry) {
     }
   }
 
-  sheetsListCache = { at: 0, items: null, error: null };
+  invalidateSheetsCache();
   return { ok: true, mediaUploaded: uploaded, mediaTotal: attachments.length, body: result.body };
 }
 
@@ -644,7 +644,7 @@ async function resyncMissingMedia() {
   if (!SHEETS_WEBHOOK_URL || resyncRunning) return;
   resyncRunning = true;
   try {
-    sheetsListCache = { at: 0, items: null, error: null };
+    invalidateSheetsCache({ hard: true });
     const sheets = await fetchSheetsItems();
     if (!sheets) return;
     const rowById = new Map(sheets.map((s) => [String(s.id || "").trim(), s]));
@@ -669,7 +669,7 @@ async function resyncMissingMedia() {
         console.log("Resync media", entry.folio, att.name, one.ok ? "ok" : one.error || one.status);
       }
     }
-    sheetsListCache = { at: 0, items: null, error: null };
+    invalidateSheetsCache();
   } catch (err) {
     console.error("Resync media error:", err?.message || err);
   } finally {
@@ -709,7 +709,19 @@ function sortedItems() {
 }
 
 let sheetsListCache = { at: 0, items: null, error: null };
-const SHEETS_LIST_CACHE_MS = 800;
+// Apps Script tarda 5–20 s por lectura: se sirve la última copia y se refresca en segundo plano.
+const SHEETS_LIST_CACHE_MS = 4000;
+let sheetsListInFlight = null;
+let sheetsCacheGen = 0;
+
+function invalidateSheetsCache({ hard = false } = {}) {
+  sheetsCacheGen += 1;
+  sheetsListInFlight = null;
+  sheetsListCache =
+    hard || !sheetsListCache.items
+      ? { at: 0, items: null, error: null }
+      : { ...sheetsListCache, at: 1 };
+}
 
 function sheetsListUrl() {
   if (!SHEETS_WEBHOOK_URL) return "";
@@ -719,12 +731,23 @@ function sheetsListUrl() {
 
 async function fetchSheetsItems() {
   if (!SHEETS_WEBHOOK_URL) return null;
-  const now = Date.now();
-  if (sheetsListCache.items && now - sheetsListCache.at < SHEETS_LIST_CACHE_MS) {
-    return sheetsListCache.items;
+  const cached = sheetsListCache;
+  if (cached.items && Date.now() - cached.at < SHEETS_LIST_CACHE_MS) return cached.items;
+  if (!sheetsListInFlight) {
+    const pending = loadSheetsItems().finally(() => {
+      if (sheetsListInFlight === pending) sheetsListInFlight = null;
+    });
+    sheetsListInFlight = pending;
   }
+  if (cached.items && cached.at > 0) return cached.items;
+  return sheetsListInFlight;
+}
+
+async function loadSheetsItems() {
+  const now = Date.now();
+  const gen = sheetsCacheGen;
   try {
-    const res = await fetch(sheetsListUrl(), { redirect: "follow" });
+    const res = await fetch(sheetsListUrl(), { redirect: "follow", signal: AbortSignal.timeout(45000) });
     const text = await res.text();
     let data = null;
     try {
@@ -735,15 +758,13 @@ async function fetchSheetsItems() {
     if (!data?.ok || !Array.isArray(data.items)) {
       throw new Error(data?.error || "Sheets list inválido");
     }
-    sheetsListCache = { at: now, items: data.items, error: null };
+    if (gen === sheetsCacheGen) sheetsListCache = { at: now, items: data.items, error: null };
     return data.items;
   } catch (err) {
     console.error("Sheets list error:", err.message);
-    sheetsListCache = {
-      at: now,
-      items: sheetsListCache.items,
-      error: err.message,
-    };
+    if (gen === sheetsCacheGen) {
+      sheetsListCache = { at: now, items: sheetsListCache.items, error: err.message };
+    }
     return sheetsListCache.items;
   }
 }
@@ -1020,7 +1041,15 @@ app.delete("/api/responses/:id", async (req, res) => {
     }
 
     const sheetsResult = await deleteFromSheets(id, match?.folio || id);
-    sheetsListCache = { at: 0, items: null, error: null };
+    invalidateSheetsCache();
+    if (Array.isArray(sheetsListCache.items)) {
+      const byId = sheetsListCache.items.filter((it) => String(it.id || "") !== id);
+      const folio = match?.folio || id;
+      sheetsListCache.items =
+        byId.length !== sheetsListCache.items.length
+          ? byId
+          : sheetsListCache.items.filter((it) => String(it.folio || "") !== folio);
+    }
 
     res.json({
       ok: true,
