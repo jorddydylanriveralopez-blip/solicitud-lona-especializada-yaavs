@@ -9,6 +9,7 @@
   const lightboxClose = document.getElementById("lightboxClose");
   const lightboxPrev = document.getElementById("lightboxPrev");
   const lightboxNext = document.getElementById("lightboxNext");
+  const lightboxDownload = document.getElementById("lightboxDownload");
 
   let items = [];
   let index = 0;
@@ -301,7 +302,17 @@
     return file?.name || "Archivo";
   }
 
-  function renderMediaGallery(media) {
+  function downloadUrl(file) {
+    const url = String(file?.url || "");
+    const driveId = url.includes("drive.google") ? url.match(/[?&]id=([\w-]+)/)?.[1] : "";
+    return driveId ? `https://drive.google.com/uc?export=download&id=${driveId}` : url;
+  }
+
+  function downloadLink(file) {
+    return `<a class="download-link" href="${escapeAttr(downloadUrl(file))}" download="${escapeAttr(file.name || "")}" target="_blank" rel="noopener">Descargar</a>`;
+  }
+
+  function renderMediaGallery(media, item) {
     if (!media.length) {
       return `
         <section class="panel media-panel">
@@ -335,25 +346,24 @@
             const kindLabel = mediaLabel(file);
             if (isImageMime(file.mime, file.name)) {
               return `
-                <button type="button" class="evidence-item image-tile" data-media-index="${globalIdx}">
-                  <img src="${escapeAttr(file.url)}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
-                  <span>${escapeHtml(kindLabel)}</span>
-                </button>`;
+                <div class="evidence-tile-wrap">
+                  <button type="button" class="evidence-item image-tile" data-media-index="${globalIdx}">
+                    <img src="${escapeAttr(file.url)}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
+                    <span>${escapeHtml(kindLabel)}</span>
+                  </button>
+                  ${downloadLink(file)}
+                </div>`;
             }
-            if (isPdf(file.mime, file.name)) {
-              return `
+            const badge = isPdf(file.mime, file.name) ? "PDF" : "DOC";
+            return `
+              <div class="evidence-tile-wrap">
                 <a class="evidence-item file-tile" href="${escapeAttr(file.url)}" target="_blank" rel="noopener">
-                  <div class="evidence-file-tile">PDF</div>
+                  <div class="evidence-file-tile">${badge}</div>
                   <span>${escapeHtml(kindLabel)}</span>
                   <small>${escapeHtml(file.name || "")}</small>
-                </a>`;
-            }
-            return `
-              <a class="evidence-item file-tile" href="${escapeAttr(file.url)}" target="_blank" rel="noopener">
-                <div class="evidence-file-tile">DOC</div>
-                <span>${escapeHtml(kindLabel)}</span>
-                <small>${escapeHtml(file.name || "")}</small>
-              </a>`;
+                </a>
+                ${downloadLink(file)}
+              </div>`;
           })
           .join("");
         return `
@@ -369,6 +379,11 @@
         <div class="panel-head">
           <h3>Archivos adjuntos</h3>
           <span class="pill">${media.length} archivo${media.length === 1 ? "" : "s"}</span>
+          ${
+            item
+              ? `<a class="zip-link" href="./api/responses/${encodeURIComponent(item.id || item.folio || "")}/archivos.zip">Descargar todo (ZIP)</a>`
+              : ""
+          }
         </div>
         <p class="media-note">Se muestran todos los archivos enviados: permisos, fotos de fachada, logotipos y referencias.</p>
         <div class="evidence-blocks">${blocks}</div>
@@ -821,7 +836,7 @@
           ${item.gerenteTerritorial ? `<span class="chip">${escapeHtml(item.gerenteTerritorial)}</span>` : ""}
         </div>
 
-        ${renderMediaGallery(media)}
+        ${renderMediaGallery(media, item)}
 
         ${SECTIONS.map((section) => {
           const body = fieldGrid(section.fields, item);
@@ -962,6 +977,10 @@
     const kind =
       file.label || (file.kind === "logo" ? "Logotipo" : file.kind === "referencia" ? "Referencia" : "Archivo");
     lightboxCaption.textContent = `${kind}${file.group ? ` · ${file.group}` : ""}${file.name ? ` · ${file.name}` : ""}`;
+    if (lightboxDownload) {
+      lightboxDownload.href = downloadUrl(file);
+      lightboxDownload.setAttribute("download", file.name || "");
+    }
     lightboxPrev.disabled = lightboxMedia.length <= 1;
     lightboxNext.disabled = lightboxMedia.length <= 1;
   }

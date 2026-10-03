@@ -120,6 +120,9 @@ function doPost(e) {
       var clearedRows = resetAllRows_();
       return jsonOut_({ ok: true, cleared: clearedRows });
     }
+    if (data.action === "cleanupEmpty") {
+      return jsonOut_({ ok: true, removed: cleanupEmptyRows_() });
+    }
     if (data.action === "addMedia") {
       var added = saveAttachments_(
         data.attachment ? [data.attachment] : data.attachments || [],
@@ -137,6 +140,12 @@ function doPost(e) {
         media: mediaNow,
         errors: failed,
       });
+    }
+    if (data.action) {
+      return jsonOut_({ ok: false, error: "Acción desconocida: " + data.action });
+    }
+    if (!String(data.material || "").trim() && !String(data.puntoVenta || "").trim()) {
+      return jsonOut_({ ok: false, error: "Solicitud vacía: no se agrega fila" });
     }
     var media = saveAttachments_(data.attachments || [], data.folio || data.id || "");
     if ((!media || !media.length) && data.media) {
@@ -169,17 +178,10 @@ function deleteRows_(id, folio) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return 0;
 
-  var idCol = KEYS.indexOf("id");
-  var folioCol = KEYS.indexOf("folio");
   var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getValues();
-  var rowsToDelete = [];
-  for (var r = 0; r < values.length; r++) {
-    var rowId = idCol >= 0 ? String(values[r][idCol] || "").trim() : "";
-    var rowFolio = folioCol >= 0 ? String(values[r][folioCol] || "").trim() : "";
-    if ((wantedId && rowId === wantedId) || (wantedFolio && rowFolio === wantedFolio)) {
-      rowsToDelete.push(r + 2);
-    }
-  }
+  var rowsToDelete = matchRows_(values, wantedId, wantedFolio).map(function (r) {
+    return r + 2;
+  });
   rowsToDelete.sort(function (a, b) {
     return b - a;
   });
@@ -307,23 +309,55 @@ function appendMediaToRow_(id, folio, newMedia) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return valid;
 
-  var idCol = KEYS.indexOf("id");
-  var folioCol = KEYS.indexOf("folio");
   var mediaCol = KEYS.indexOf("media");
+  var materialCol = KEYS.indexOf("material");
   if (mediaCol < 0) return valid;
 
   var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getValues();
+  var matches = matchRows_(values, wantedId, wantedFolio).filter(function (r) {
+    return materialCol < 0 || String(values[r][materialCol] || "").trim() !== "";
+  });
+  if (!matches.length) return valid;
+  var row = matches[0];
+  var existing = parseMedia_(values[row][mediaCol]);
+  var merged = existing.concat(valid);
+  sheet.getRange(row + 2, mediaCol + 1).setValue(JSON.stringify(merged));
+  return merged;
+}
+
+/** Filas por id; el folio solo se usa si no hay id que coincida (los folios pueden repetirse). */
+function matchRows_(values, wantedId, wantedFolio) {
+  var idCol = KEYS.indexOf("id");
+  var folioCol = KEYS.indexOf("folio");
+  var byId = [];
+  var byFolio = [];
   for (var r = 0; r < values.length; r++) {
     var rowId = idCol >= 0 ? String(values[r][idCol] || "").trim() : "";
     var rowFolio = folioCol >= 0 ? String(values[r][folioCol] || "").trim() : "";
-    if ((wantedId && rowId === wantedId) || (wantedFolio && rowFolio === wantedFolio)) {
-      var existing = parseMedia_(values[r][mediaCol]);
-      var merged = existing.concat(valid);
-      sheet.getRange(r + 2, mediaCol + 1).setValue(JSON.stringify(merged));
-      return merged;
+    if (wantedId && rowId === wantedId) byId.push(r);
+    else if (wantedFolio && rowFolio === wantedFolio) byFolio.push(r);
+  }
+  return byId.length ? byId : byFolio;
+}
+
+/** Borra filas sin material ni punto de venta (creadas por versiones viejas al subir fotos). */
+function cleanupEmptyRows_() {
+  var sheet = ensureSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+  var materialCol = KEYS.indexOf("material");
+  var pvCol = KEYS.indexOf("puntoVenta");
+  var values = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
+  var removed = 0;
+  for (var r = values.length - 1; r >= 0; r--) {
+    var material = String(values[r][materialCol] || "").trim();
+    var pv = String(values[r][pvCol] || "").trim();
+    if (!material && !pv) {
+      sheet.deleteRow(r + 2);
+      removed++;
     }
   }
-  return valid;
+  return removed;
 }
 
 function attachmentsFolder_() {

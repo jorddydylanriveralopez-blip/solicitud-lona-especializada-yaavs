@@ -3,6 +3,7 @@ const path = require("path");
 const express = require("express");
 const multer = require("multer");
 const ExcelJS = require("exceljs");
+const archiver = require("archiver");
 
 (() => {
   try {
@@ -197,9 +198,15 @@ function writeResponses(list) {
   fs.writeFileSync(dataFile, JSON.stringify(list, null, 2), "utf8");
 }
 
-function nextFolio(material) {
-  const n = readResponses().length + 1;
+function nextFolio(material, knownItems) {
   const y = new Date().getFullYear().toString().slice(-2);
+  // El disco de Render se borra en cada deploy: el consecutivo debe considerar también Sheets.
+  let maxSeq = 0;
+  for (const item of [...readResponses(), ...(knownItems || [])]) {
+    const match = String(item?.folio || "").match(new RegExp(`-${y}-(\\d+)$`));
+    if (match) maxSeq = Math.max(maxSeq, Number(match[1]));
+  }
+  const n = Math.max(maxSeq, readResponses().length) + 1;
   const m = String(material || "").toLowerCase();
   let prefix = "LONA";
   if (m.startsWith("toldo")) prefix = "TOLDO";
@@ -403,7 +410,7 @@ function buildAttachments(entry) {
   if (!entryId) return [];
   const answers = entry.answers && typeof entry.answers === "object" ? entry.answers : {};
   const attachments = [];
-  const maxFile = 3.5 * 1024 * 1024;
+  const maxFile = MAX_UPLOAD_BYTES;
 
   const pushFiles = (files, kind, group, label) => {
     (files || []).forEach((f, idx) => {
@@ -568,13 +575,13 @@ function flatten(entry) {
   return out;
 }
 
-function normalize(body) {
+function normalize(body, knownItems) {
   const now = new Date().toISOString();
   const answers = body && typeof body.answers === "object" ? body.answers : body || {};
   const clean = { ...answers };
   delete clean.website;
   const id = body?.id || `lona_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const folio = body?.folio || clean.folio || nextFolio(clean.material);
+  const folio = body?.folio || clean.folio || nextFolio(clean.material, knownItems);
   clean.folio = folio;
   return {
     id,
@@ -665,7 +672,10 @@ async function forwardToSheets(entry) {
           attachment: att,
         }),
       );
-      if (one.ok) uploaded += 1;
+      const savedToDrive = (one.body?.media || []).some((m) =>
+        String(m?.url || "").includes("drive.google"),
+      );
+      if (one.ok && savedToDrive) uploaded += 1;
       else {
         console.warn(
           "Sheets addMedia failed:",
@@ -681,6 +691,44 @@ async function forwardToSheets(entry) {
 
   sheetsListCache = { at: 0, items: null, error: null };
   return { ok: true, mediaUploaded: uploaded, mediaTotal: attachments.length, body: result.body };
+}
+
+const RESYNC_MIN_AGE_MS = 5 * 60 * 1000;
+let resyncRunning = false;
+
+async function resyncMissingMedia() {
+  if (!SHEETS_WEBHOOK_URL || resyncRunning) return;
+  resyncRunning = true;
+  try {
+    sheetsListCache = { at: 0, items: null, error: null };
+    const sheets = await fetchSheetsItems();
+    if (!sheets) return;
+    const rowById = new Map(sheets.map((s) => [String(s.id || "").trim(), s]));
+    const mediaKey = (m) => `${m?.name || ""}|${m?.label || ""}`;
+    for (const entry of readResponses()) {
+      const age = Date.now() - new Date(entry.receivedAt || 0).getTime();
+      if (!(age > RESYNC_MIN_AGE_MS)) continue;
+      const row = rowById.get(String(entry.id || "").trim());
+      if (!row) continue;
+      const inDrive = new Set(
+        parseMediaField(row.media)
+          .filter((m) => String(m?.url || "").includes("drive.google"))
+          .map(mediaKey),
+      );
+      const pending = buildAttachments(entry).filter((att) => !inDrive.has(mediaKey(att)));
+      for (const att of pending) {
+        const one = await postToSheetsRaw(
+          JSON.stringify({ action: "addMedia", id: entry.id, folio: entry.folio, attachment: att }),
+        );
+        console.log("Resync media", entry.folio, att.name, one.ok ? "ok" : one.error || one.status);
+      }
+    }
+    sheetsListCache = { at: 0, items: null, error: null };
+  } catch (err) {
+    console.error("Resync media error:", err?.message || err);
+  } finally {
+    resyncRunning = false;
+  }
 }
 
 async function deleteFromSheets(id, folio) {
@@ -939,6 +987,57 @@ app.get("/api/responses", async (_req, res) => {
   });
 });
 
+function driveDownloadUrl(url) {
+  const id = String(url || "").match(/[?&]id=([\w-]+)/)?.[1];
+  return id ? `https://drive.google.com/uc?export=download&id=${id}` : url;
+}
+
+app.get("/api/responses/:id/archivos.zip", async (req, res) => {
+  try {
+    const id = String(req.params.id || "").trim();
+    const { items } = await boardItems();
+    const item = items.find((it) => it.id === id || it.folio === id);
+    if (!item) return res.status(404).json({ ok: false, error: "Solicitud no encontrada" });
+    const media = (Array.isArray(item.media) ? item.media : []).filter((f) => f?.url);
+    if (!media.length) return res.status(404).json({ ok: false, error: "Sin archivos" });
+
+    const zipName = safeFilename(`${item.folio || id}_${item.puntoVenta || "archivos"}`) + ".zip";
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", `attachment; filename="${zipName}"`);
+    const zip = archiver("zip", { zlib: { level: 1 } });
+    zip.on("error", (err) => {
+      console.error("Zip error:", err.message);
+      res.destroy(err);
+    });
+    zip.pipe(res);
+
+    const used = new Set();
+    for (const [idx, file] of media.entries()) {
+      let name = safeFilename(`${idx + 1}_${file.label || file.kind || "archivo"}_${file.name || "archivo"}`);
+      while (used.has(name)) name = `x_${name}`;
+      used.add(name);
+      const url = String(file.url);
+      if (url.startsWith("/uploads/")) {
+        const diskPath = path.join(uploadsRoot, url.replace(/^\/uploads\//, ""));
+        if (diskPath.startsWith(uploadsRoot) && fs.existsSync(diskPath)) {
+          zip.file(diskPath, { name });
+        }
+        continue;
+      }
+      try {
+        const r = await fetch(driveDownloadUrl(url), { redirect: "follow" });
+        if (r.ok) zip.append(Buffer.from(await r.arrayBuffer()), { name });
+        else console.warn("Zip: no se pudo bajar", url, r.status);
+      } catch (err) {
+        console.warn("Zip: error al bajar", url, err.message);
+      }
+    }
+    await zip.finalize();
+  } catch (err) {
+    if (!res.headersSent) res.status(500).json({ ok: false, error: err.message || "Error al generar ZIP" });
+  }
+});
+
 app.delete("/api/responses/:id", async (req, res) => {
   try {
     const id = String(req.params.id || "").trim();
@@ -1020,7 +1119,8 @@ app.post("/api/submit", (req, res) => {
       if (body.answers?.website) {
         return res.json({ ok: true, ignored: true });
       }
-      const entry = normalize(body);
+      const sheetItems = SHEETS_WEBHOOK_URL ? await fetchSheetsItems().catch(() => null) : null;
+      const entry = normalize(body, sheetItems);
       const files = req.files || [];
       if (Array.isArray(entry.answers.lonas)) {
         entry.answers.lonas = attachItemFiles(entry.id, entry.answers.lonas, "lona", files);
@@ -1125,4 +1225,8 @@ app.listen(PORT, "0.0.0.0", () => {
       ? "Google Sheets webhook: configurado"
       : "Google Sheets webhook: pendiente (SHEETS_WEBHOOK_URL)",
   );
+  if (SHEETS_WEBHOOK_URL) {
+    setTimeout(resyncMissingMedia, 60 * 1000);
+    setInterval(resyncMissingMedia, 10 * 60 * 1000);
+  }
 });

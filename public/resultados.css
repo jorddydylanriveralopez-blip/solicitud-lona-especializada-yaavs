@@ -848,6 +848,55 @@ body.lightbox-open {
   font-size: 0.92rem;
 }
 
+.lightbox-download {
+  display: table;
+  margin: 10px auto 0;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--navy);
+  font-weight: 800;
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+
+.evidence-tile-wrap {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.download-link,
+.zip-link {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.download-link {
+  justify-self: start;
+  padding: 2px 0;
+}
+
+.download-link::before,
+.zip-link::before {
+  content: "↓ ";
+}
+
+.zip-link {
+  margin-left: auto;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0, 151, 178, 0.35);
+  background: #fff;
+}
+
+.download-link:hover,
+.zip-link:hover {
+  text-decoration: underline;
+}
+
 .lightbox-close,
 .lightbox-nav {
   position: absolute;
