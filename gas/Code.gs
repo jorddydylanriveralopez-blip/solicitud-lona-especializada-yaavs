@@ -388,6 +388,8 @@ function saveAttachments_(attachments, label) {
         name: att.name || file.getName(),
         mime: att.mime || blob.getContentType(),
         url: "https://drive.google.com/uc?export=view&id=" + file.getId(),
+        storedAs: att.storedAs || "",
+        field: att.field || "",
         kind: att.kind || "archivo",
         group: att.group || "",
         label:

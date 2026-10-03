@@ -408,84 +408,28 @@ function parseMediaField(raw) {
 function buildAttachments(entry) {
   const entryId = entry?.id;
   if (!entryId) return [];
-  const answers = entry.answers && typeof entry.answers === "object" ? entry.answers : {};
   const attachments = [];
-  const maxFile = MAX_UPLOAD_BYTES;
-
-  const pushFiles = (files, kind, group, label) => {
-    (files || []).forEach((f, idx) => {
-      const storedAs = f.storedAs || path.basename(String(f.url || ""));
-      if (!storedAs) return;
-      const diskPath = path.join(uploadsRoot, entryId, storedAs);
-      if (!fs.existsSync(diskPath)) return;
-      const stat = fs.statSync(diskPath);
-      if (stat.size > maxFile) {
-        console.warn("Adjunto omitido por tamaño:", storedAs, stat.size);
-        return;
-      }
-      let finalLabel = label;
-      if (kind === "foto" && group === "Fachada del punto de venta") {
-        const field = String(f.field || "");
-        if (field.includes("foto_2") || idx >= 1) finalLabel = "Foto del lateral derecho";
-        else if (field.includes("foto_1")) finalLabel = "Foto frontal / lateral izquierdo";
-      }
-      attachments.push({
-        name: f.name || storedAs,
-        mime: f.mime || "application/octet-stream",
-        kind,
-        group,
-        label:
-          finalLabel ||
-          (kind === "logo"
-            ? "Logotipo"
-            : kind === "referencia"
-              ? "Referencia de diseño"
-              : kind === "permiso"
-                ? "Evidencia de permiso"
-                : kind === "foto"
-                  ? "Foto del punto de venta"
-                  : "Archivo"),
-        data: fs.readFileSync(diskPath).toString("base64"),
-      });
+  for (const f of extractMedia(entry)) {
+    const storedAs = f.storedAs || path.basename(String(f.url || ""));
+    if (!storedAs) continue;
+    const diskPath = path.join(uploadsRoot, entryId, storedAs);
+    if (!fs.existsSync(diskPath)) continue;
+    const stat = fs.statSync(diskPath);
+    if (stat.size > MAX_UPLOAD_BYTES) {
+      console.warn("Adjunto omitido por tamaño:", storedAs, stat.size);
+      continue;
+    }
+    attachments.push({
+      name: f.name || storedAs,
+      mime: f.mime || "application/octet-stream",
+      kind: f.kind || "archivo",
+      group: f.group || "",
+      label: f.label || "Archivo",
+      storedAs,
+      field: f.field || "",
+      data: fs.readFileSync(diskPath).toString("base64"),
     });
-  };
-
-  for (const item of answers.lonas || []) {
-    const group = item.lona || "Lona";
-    pushFiles(item.logoFiles, "logo", group, "Logotipo");
-    pushFiles(item.referenciaFiles, "referencia", group, "Referencia de diseño");
   }
-  for (const item of answers.toldos || []) {
-    const group = item.toldo || "Toldo";
-    pushFiles(item.logoFiles, "logo", group, "Logotipo");
-    pushFiles(item.referenciaFiles, "referencia", group, "Referencia de diseño");
-  }
-  for (const item of answers.caballetes || []) {
-    const group = item.caballete || "Caballete";
-    pushFiles(item.logoFiles, "logo", group, "Logotipo");
-    pushFiles(item.referenciaFiles, "referencia", group, "Referencia de diseño");
-  }
-  pushFiles(answers.toldoFotoFile, "foto", "Punto de venta", "Foto del punto de venta");
-  const rotDetail =
-    answers.rotulacion && typeof answers.rotulacion === "object" ? answers.rotulacion : {};
-  pushFiles(
-    [...(answers.rotulacionPermisoFile || []), ...(rotDetail.permisoFiles || [])],
-    "permiso",
-    "Permisos gubernamentales",
-    "Evidencia de permiso",
-  );
-  pushFiles(
-    [...(answers.rotulacionFotoPvFile || []), ...(rotDetail.fotoPvFiles || [])],
-    "foto",
-    "Punto de venta",
-    "Foto del punto de venta",
-  );
-  pushFiles(
-    [...(answers.rotulacionFotoFiles || []), ...(rotDetail.fotoFiles || [])],
-    "foto",
-    "Fachada del punto de venta",
-    "Foto de fachada",
-  );
   return attachments;
 }
 
@@ -704,7 +648,7 @@ async function resyncMissingMedia() {
     const sheets = await fetchSheetsItems();
     if (!sheets) return;
     const rowById = new Map(sheets.map((s) => [String(s.id || "").trim(), s]));
-    const mediaKey = (m) => `${m?.name || ""}|${m?.label || ""}`;
+    const mediaKey = (m) => m?.storedAs || `${m?.name || ""}|${m?.group || ""}`;
     for (const entry of readResponses()) {
       const age = Date.now() - new Date(entry.receivedAt || 0).getTime();
       if (!(age > RESYNC_MIN_AGE_MS)) continue;
@@ -715,7 +659,9 @@ async function resyncMissingMedia() {
           .filter((m) => String(m?.url || "").includes("drive.google"))
           .map(mediaKey),
       );
-      const pending = buildAttachments(entry).filter((att) => !inDrive.has(mediaKey(att)));
+      const pending = buildAttachments(entry).filter(
+        (att) => !inDrive.has(att.storedAs) && !inDrive.has(`${att.name}|${att.group}`),
+      );
       for (const att of pending) {
         const one = await postToSheetsRaw(
           JSON.stringify({ action: "addMedia", id: entry.id, folio: entry.folio, attachment: att }),
@@ -838,7 +784,25 @@ function mergeMediaLists(localMedia, sheetMedia) {
   };
 
   for (const f of localMedia || []) upsert(f);
-  for (const f of sheetMedia || []) upsert(f);
+  // Copias en Drive anteriores a storedAs: emparejar con la local por nombre + grupo.
+  const nameGroup = (f) => `${String(f?.name || "").toLowerCase()}|${String(f?.group || "").toLowerCase()}`;
+  const replaced = new Set();
+  for (const f of sheetMedia || []) {
+    if (!f?.storedAs && String(f?.url || "").includes("drive.google")) {
+      const idx = out.findIndex(
+        (prev, i) =>
+          !replaced.has(i) &&
+          String(prev.url || "").startsWith("/uploads/") &&
+          nameGroup(prev) === nameGroup(f),
+      );
+      if (idx >= 0) {
+        out[idx] = { ...out[idx], url: f.url };
+        replaced.add(idx);
+        continue;
+      }
+    }
+    upsert(f);
+  }
   return out;
 }
 
