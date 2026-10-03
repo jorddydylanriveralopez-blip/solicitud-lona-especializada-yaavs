@@ -652,7 +652,7 @@
           <span>Ingresa el texto que quieres comunicar en tu ${mat}</span>
           <textarea name="texto_${prefix}_${i}" rows="3" placeholder="Opcional. Mercadotecnia podrá ajustar el texto."></textarea>
         </label>
-        <fieldset class="choice-group" data-multi="true">
+        <fieldset class="choice-group" data-multi="true" data-required="true">
           <legend>Datos de contacto que deberán aparecer en tu ${mat} <span class="req">*</span></legend>
           <p class="multi-hint">Puedes elegir más de una respuesta.</p>
           ${CONTACTO_OPTS.map(
@@ -662,7 +662,7 @@
         </fieldset>
         <label class="field" data-contacto-detalle="${prefix}_${i}" hidden>
           <span>Captura los datos de contacto de tu ${mat} <span class="req">*</span></span>
-          <textarea name="contactoDetalle_${prefix}_${i}" rows="3" placeholder="Teléfono, WhatsApp, redes…"></textarea>
+          <textarea name="contactoDetalle_${prefix}_${i}" rows="3" required placeholder="Teléfono, WhatsApp, redes…"></textarea>
         </label>
         <fieldset class="choice-group compact">
           <legend>¿Existe un diseño anterior como referencia para tu ${mat}? <span class="req">*</span></legend>
@@ -748,14 +748,14 @@
               <input type="number" min="1" step="1" inputmode="numeric" data-k="alto" />
             </label>
           </div>
-          <fieldset class="choice-group compact">
+          <fieldset class="choice-group compact" data-required="true">
             <legend>Orientación del diseño <span class="req">*</span></legend>
             ${ORIENTACIONES.map(
               (o) =>
                 `<label class="choice"><input type="radio" name="orientacion_${i}" value="${escapeHtml(o)}" /><span>${escapeHtml(o)}</span></label>`,
             ).join("")}
           </fieldset>
-          <fieldset class="choice-group" data-multi="true">
+          <fieldset class="choice-group" data-multi="true" data-required="true">
             <legend>Acabados requeridos <span class="req">*</span></legend>
             <p class="multi-hint">Puedes elegir más de una respuesta.</p>
             ${ACABADOS.map(
@@ -780,7 +780,7 @@
       blocks.push(`
         <div class="lona-block" data-toldo="${i}">
           <h3>${escapeHtml(title)}</h3>
-          <fieldset class="choice-group compact">
+          <fieldset class="choice-group compact" data-required="true">
             <legend>Tipo <span class="req">*</span></legend>
             ${TIPOS_TOLDO.map(
               (t) =>
@@ -800,7 +800,7 @@
               <span>Alto (cm) <span class="req">*</span></span>
               <input type="number" min="1" step="1" inputmode="numeric" data-k="alto" />
             </label>
-            <fieldset class="choice-group compact">
+            <fieldset class="choice-group compact" data-required="true">
               <legend>¿Incluye estructura? <span class="req">*</span></legend>
               <label class="choice"><input type="radio" name="estructura_${i}" value="Sí" /><span>Sí</span></label>
               <label class="choice"><input type="radio" name="estructura_${i}" value="No" checked /><span>No</span></label>
@@ -833,15 +833,14 @@
               <input type="number" min="1" step="1" inputmode="numeric" data-k="alto" />
             </label>
           </div>
-          <fieldset class="choice-group compact">
-            <fieldset class="choice-group" data-multi="true">
+          <fieldset class="choice-group compact" data-required="true">
             <legend>Caras a imprimir <span class="req">*</span></legend>
             ${CARAS_CABALLETE.map(
               (c) =>
                 `<label class="choice"><input type="radio" name="caras_${i}" value="${escapeHtml(c)}" /><span>${escapeHtml(c)}</span></label>`,
             ).join("")}
           </fieldset>
-          <fieldset class="choice-group compact">
+          <fieldset class="choice-group compact" data-required="true">
             <legend>Orientación del diseño <span class="req">*</span></legend>
             ${ORIENTACIONES.map(
               (o) =>
