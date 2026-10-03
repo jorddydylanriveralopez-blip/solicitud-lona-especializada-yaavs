@@ -178,40 +178,7 @@
       }
     }
     syncRotulacionColorPreviews();
-    syncRotulacionBastidorPreviews();
     syncFormSteps();
-  }
-
-  function syncRotulacionBastidorPreviews() {
-    const colorRaw = form.querySelector('input[name="rotulacionColor"]:checked')?.value || "";
-    const color = String(colorRaw).trim().toLowerCase();
-    const picker = document.getElementById("bastidorPicker");
-    const hint = document.getElementById("bastidorHint");
-    const colorKeyMap = {
-      verde: "verde",
-      azul: "azul",
-      rosa: "rosa",
-      anaranjado: "anaranjado",
-      amarillo: "amarillo",
-    };
-    const colorKey = colorKeyMap[color] || "verde";
-    const colorLabel = colorRaw || "Verde";
-
-    if (picker) picker.hidden = false;
-    if (hint) {
-      hint.hidden = false;
-      hint.textContent = colorKeyMap[color]
-        ? `Elige una versión de bastidor para el color ${colorLabel}.`
-        : "Elige un color arriba; aquí verás las dos versiones de bastidor (se actualizan con tu color).";
-    }
-
-    document.querySelectorAll(".bastidor-preview-img[data-bastidor]").forEach((img) => {
-      const key = img.getAttribute("data-bastidor");
-      const next = `./assets/rotulacion-colores/${colorKey}/${key}.jpg`;
-      img.setAttribute("src", next);
-      img.removeAttribute("hidden");
-      img.style.display = "block";
-    });
   }
 
   const ROTULACION_CLASSIF_PREVIEW = {
@@ -905,8 +872,6 @@
       clasificacion:
         form.querySelector('input[name="rotulacionClasificacion"]:checked')?.value || "",
       color: form.querySelector('input[name="rotulacionColor"]:checked')?.value || "",
-      versionBastidor:
-        form.querySelector('input[name="rotulacionBastidor"]:checked')?.value || "",
       evidenciaTipo: rotulacionEvidenciaTipo(),
     };
   }
@@ -981,7 +946,7 @@
   function markInvalid(el) {
     if (!el) return;
     el.classList.add("is-invalid");
-    const group = el.closest(".choice-group, .field, .lona-block, .color-picker, .bastidor-picker");
+    const group = el.closest(".choice-group, .field, .lona-block, .color-picker");
     if (group) group.classList.add("is-invalid");
   }
 
@@ -1118,10 +1083,6 @@
         errors.push("Selecciona el color de la rotulación.");
         markInvalid(form.querySelector('input[name="rotulacionColor"]'));
       }
-      if (!r?.versionBastidor) {
-        errors.push("Selecciona la versión de bastidor.");
-        markInvalid(form.querySelector('input[name="rotulacionBastidor"]'));
-      }
       if (!r?.evidenciaTipo) {
         errors.push("Selecciona la clasificación del punto de venta para definir la evidencia fotográfica.");
         markInvalid(form.querySelector('input[name="rotulacionClasificacion"]'));
@@ -1232,7 +1193,6 @@
     if (t.name === "rotulacionPermisos" || t.name === "rotulacionClasificacion") {
       syncRotulacionUi();
     }
-    if (t.name === "rotulacionColor") syncRotulacionBastidorPreviews();
     if (t.hasAttribute("data-contacto")) syncContacto();
     if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
     syncFormSteps();
@@ -1291,7 +1251,6 @@
   initUbicacionPicker();
   syncMaterial();
   syncRotulacionUi();
-  syncRotulacionBastidorPreviews();
   syncContacto();
   syncReferencia();
   syncFormSteps();
