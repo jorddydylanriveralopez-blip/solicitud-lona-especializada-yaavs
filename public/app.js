@@ -291,7 +291,7 @@
       const img = opt.querySelector(".color-preview-img");
       const label = opt.querySelector("[data-preview-label]");
       if (img && color) {
-        const next = `./assets/rotulacion-colores/${color}/${preview.key}.jpg?v=20261003f`;
+        const next = `./assets/rotulacion-colores/${color}/${preview.key}.jpg?v=20261003k`;
         if (img.getAttribute("src") !== next) img.setAttribute("src", next);
       }
       if (label) label.textContent = preview.label;
