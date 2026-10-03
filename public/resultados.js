@@ -302,9 +302,21 @@
     return file?.name || "Archivo";
   }
 
+  function driveIdOf(url) {
+    const value = String(url || "");
+    return value.includes("drive.google") ? value.match(/[?&]id=([\w-]+)/)?.[1] || "" : "";
+  }
+
+  // Drive ya no permite incrustar uc?export=view en <img>; la miniatura sí carga.
+  function viewUrl(fileOrUrl) {
+    const url = String(typeof fileOrUrl === "string" ? fileOrUrl : fileOrUrl?.url || "");
+    const driveId = driveIdOf(url);
+    return driveId ? `https://drive.google.com/thumbnail?id=${driveId}&sz=w1600` : url;
+  }
+
   function downloadUrl(file) {
     const url = String(file?.url || "");
-    const driveId = url.includes("drive.google") ? url.match(/[?&]id=([\w-]+)/)?.[1] : "";
+    const driveId = driveIdOf(url);
     return driveId ? `https://drive.google.com/uc?export=download&id=${driveId}` : url;
   }
 
@@ -348,7 +360,7 @@
               return `
                 <div class="evidence-tile-wrap">
                   <button type="button" class="evidence-item image-tile" data-media-index="${globalIdx}">
-                    <img src="${escapeAttr(file.url)}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
+                    <img src="${escapeAttr(viewUrl(file))}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
                     <span>${escapeHtml(kindLabel)}</span>
                   </button>
                   ${downloadLink(file)}
@@ -396,9 +408,9 @@
 
   function firstThumb(item) {
     const preferred = puntoVentaMedia(item).find((f) => isImageMime(f.mime, f.name) && f.url);
-    if (preferred?.url) return preferred.url;
+    if (preferred?.url) return viewUrl(preferred);
     const img = mediaOf(item).find((f) => isImageMime(f.mime, f.name) && f.url);
-    return img?.url || "";
+    return img?.url ? viewUrl(img) : "";
   }
 
   function renderPuntoVentaPhotos(item, media) {
@@ -412,7 +424,7 @@
         if (isImageMime(file.mime, file.name)) {
           return `
             <button type="button" class="evidence-item image-tile pv-photo" data-media-index="${globalIdx}">
-              <img src="${escapeAttr(file.url)}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
+              <img src="${escapeAttr(viewUrl(file))}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
               <span>${escapeHtml(kindLabel)}</span>
             </button>`;
         }
@@ -441,7 +453,7 @@
         if (isImageMime(file.mime, file.name)) {
           return `
             <button type="button" class="evidence-item image-tile pv-photo" data-media-index="${globalIdx}">
-              <img src="${escapeAttr(file.url)}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
+              <img src="${escapeAttr(viewUrl(file))}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
               <span>${escapeHtml(kindLabel)}</span>
             </button>`;
         }
@@ -972,7 +984,7 @@
   function updateLightbox() {
     const file = lightboxMedia[lightboxIndex];
     if (!file) return closeLightbox();
-    lightboxImg.src = file.url;
+    lightboxImg.src = viewUrl(file);
     lightboxImg.alt = file.name || "Imagen adjunta";
     const kind =
       file.label || (file.kind === "logo" ? "Logotipo" : file.kind === "referencia" ? "Referencia" : "Archivo");
