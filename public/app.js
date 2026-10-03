@@ -202,6 +202,11 @@
       label: "Esquina / doble entrada",
       hint: "Ejemplo según tu clasificación: negocio en esquina con doble entrada.",
     },
+    "Puesto de lámina.": {
+      key: "2",
+      label: "Puesto de lámina",
+      hint: "Ejemplo de referencia para puesto de lámina.",
+    },
   };
 
   function syncRotulacionColorPreviews() {
