@@ -68,20 +68,20 @@
 
   const SECTIONS = [
     {
-      title: "Autorización",
-      fields: [
-        ["autorizada", "Estado"],
-        ["gerenteTerritorial", "Gerente"],
-        ["gerenteTelefono", "Teléfono gerente"],
-        ["territorioGerente", "Territorio"],
-      ],
-    },
-    {
       title: "Ejecutivo de ventas",
       fields: [
         ["ejecutivoNombre", "Nombre"],
         ["ejecutivoTelefono", "Teléfono"],
         ["ejecutivoCorreo", "Correo"],
+      ],
+    },
+    {
+      title: "Gerente",
+      fields: [
+        ["autorizada", "Estado"],
+        ["gerenteTerritorial", "Gerente territorial"],
+        ["territorioGerente", "Gerente regional"],
+        ["gerenteTelefono", "Teléfono gerente"],
       ],
     },
     {

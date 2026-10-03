@@ -19,6 +19,70 @@
   const objetivoLegend = document.getElementById("objetivoLegend");
   const SUBMITTED_KEY = "yaavs_lona_form_submitted";
 
+  // Matriz ventas centro: [ejecutivo, gerente territorial, gerente regional]
+  const MATRIZ_VENTAS = [
+    ["Octavio Arturo Flores Nieto", "Luis Daniel Ugalde Welsh", "Rodolfo Reynoso Castelan"],
+    ["Carlos Ignacio Salazar Leyva", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
+    ["Edgar David Reyes Plata", "Rodolfo Reynoso Castelan", "Rodolfo Reynoso Castelan"],
+    ["Fernando Noria Hernandez", "Luis Eduardo Vazquez Hernandez", "Vacante Territorial Centro"],
+    ["Jose Carlos Martinez Miranda", "Luis Eduardo Vazquez Hernandez", "Vacante Territorial Centro"],
+    ["Fernando Jimenez Vazquez", "Luis Eduardo Vazquez Hernandez", "Vacante Territorial Centro"],
+    ["Juan Carlos Utrera Hernandez", "Luis Eduardo Vazquez Hernandez", "Vacante Territorial Centro"],
+    ["Yeimi Lizama Mendoza", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
+    ["Cesar Alberto Banderilla Gonzalez", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
+    ["Jesus Sanchez Enriquez", "Erick Perez Galindo", "Rodolfo Reynoso Castelan"],
+    ["Enrique Robledo Montero", "Rodolfo Reynoso Castelan", "Rodolfo Reynoso Castelan"],
+    ["Marco Antonio Salgado Perez", "Luis Daniel Ugalde Welsh", "Rodolfo Reynoso Castelan"],
+    ["Omar David Sanchez Jaramillo", "Juan Fernando Garcia Aguilar", "Vacante Territorial Centro"],
+    ["Christian Alan Ramirez Meza", "Juan Fernando Garcia Aguilar", "Vacante Territorial Centro"],
+    ["Carlos Alberto Silva Razo", "Rodolfo Reynoso Castelan", "Rodolfo Reynoso Castelan"],
+    ["Jose Alejandro Reyes Santos", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
+    ["Abel Rosas Diaz", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
+    ["Lizett Karina Mendez Corona", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
+    ["Daniel Perez De Jesus", "Juan Fernando Garcia Aguilar", "Vacante Territorial Centro"],
+    ["Emerson Mauricio Cordova Lopez", "Luis Daniel Ugalde Welsh", "Rodolfo Reynoso Castelan"],
+    ["Esteban Gomez Luis", "Juan Fernando Garcia Aguilar", "Vacante Territorial Centro"],
+    ["Norma Cristina Miravete Montoya", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
+    ["Juan Carlos Suarez Hernandez", "Luis Daniel Ugalde Welsh", "Rodolfo Reynoso Castelan"],
+    ["Jose Alva Mireles", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
+    ["Jazmin Valenzuela Santana", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
+    ["Jose Daniel Rodriguez Flores", "Juan Fernando Garcia Aguilar", "Vacante Territorial Centro"],
+    ["Ivan Martin Gamero Hernandez", "Juan Fernando Garcia Aguilar", "Vacante Territorial Centro"],
+    ["Jose Luis Ramirez Araujo", "Luis Daniel Ugalde Welsh", "Rodolfo Reynoso Castelan"],
+    ["Luis Enrique Najera Hernandez", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
+    ["Jorge Mandujano Martinez", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
+    ["Diego Fernando Solorio Anaya", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
+    ["Celso Hernandez Hernandez", "Rodolfo Reynoso Castelan", "Rodolfo Reynoso Castelan"],
+    ["Jean Eduardo Romero Romero", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
+    ["Jose Arzaluz Mejia", "Erick Perez Galindo", "Rodolfo Reynoso Castelan"],
+    ["Jose Luis Lopez Gonzalez", "Erick Perez Galindo", "Rodolfo Reynoso Castelan"],
+    ["Daniel De Jesus Chapa Mendoza", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
+    ["Victor Manuel Martinez Osorio", "Erick Perez Galindo", "Rodolfo Reynoso Castelan"],
+  ];
+
+  const ejecutivoSelect = document.getElementById("ejecutivoNombre");
+  const gerenteTerritorialInput = document.getElementById("gerenteTerritorial");
+  const gerenteRegionalInput = document.getElementById("territorioGerente");
+
+  if (ejecutivoSelect) {
+    [...MATRIZ_VENTAS]
+      .sort((a, b) => a[0].localeCompare(b[0], "es"))
+      .forEach(([nombre]) => ejecutivoSelect.add(new Option(nombre, nombre)));
+    ejecutivoSelect.addEventListener("change", () => {
+      const row = MATRIZ_VENTAS.find((r) => r[0] === ejecutivoSelect.value);
+      if (gerenteTerritorialInput) gerenteTerritorialInput.value = row ? row[1] : "";
+      if (gerenteRegionalInput) gerenteRegionalInput.value = row ? row[2] : "";
+    });
+  }
+
+  form?.querySelectorAll("input[data-digits]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const max = Number(input.dataset.digits) || 10;
+      const clean = input.value.replace(/\D/g, "").slice(0, max);
+      if (clean !== input.value) input.value = clean;
+    });
+  });
+
   function showThanks(folio) {
     if (form) form.hidden = true;
     if (successPanel) {
@@ -297,6 +361,7 @@
         continue;
       }
       if (!String(el.value || "").trim()) return false;
+      if (el.dataset.digits && !new RegExp(`^\\d{${el.dataset.digits}}$`).test(el.value)) return false;
     }
 
     const radioNames = new Set();
@@ -968,6 +1033,7 @@
     const requiredText = [
       ["ejecutivoNombre", "Captura el nombre del ejecutivo."],
       ["ejecutivoTelefono", "Captura el teléfono del ejecutivo."],
+      ["gerenteTelefono", "Captura el teléfono del gerente."],
       ["yaavserNombre", "Captura el nombre del YAAVSER."],
       ["claveYaavser", "Captura la clave YAAVSER."],
       ["puntoVenta", "Captura el nombre del punto de venta."],
@@ -978,6 +1044,12 @@
         errors.push(msg);
         markInvalid(el);
       }
+    }
+
+    const gerenteTel = form.elements.gerenteTelefono;
+    if (gerenteTel && gerenteTel.value && !/^\d{10}$/.test(gerenteTel.value)) {
+      errors.push("El teléfono del gerente debe tener 10 dígitos.");
+      markInvalid(gerenteTel);
     }
 
     const multiRequired = [
@@ -1121,6 +1193,9 @@
       material: mat,
       ejecutivoNombre: String(form.ejecutivoNombre.value || "").trim(),
       ejecutivoTelefono: String(form.ejecutivoTelefono.value || "").trim(),
+      gerenteTerritorial: String(form.gerenteTerritorial?.value || "").trim(),
+      territorioGerente: String(form.territorioGerente?.value || "").trim(),
+      gerenteTelefono: String(form.gerenteTelefono?.value || "").trim(),
       yaavserNombre: String(form.yaavserNombre.value || "").trim(),
       claveYaavser: String(form.claveYaavser.value || "").trim().toUpperCase(),
       puntoVenta: String(form.puntoVenta.value || "").trim(),

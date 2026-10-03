@@ -16,8 +16,8 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles-base.css?v=20261003d" />
-    <link rel="stylesheet" href="./lona.css?v=20261003d" />
+    <link rel="stylesheet" href="./styles-base.css?v=20261003e" />
+    <link rel="stylesheet" href="./lona.css?v=20261003e" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -99,11 +99,45 @@
             <div class="grid-2">
               <label class="field">
                 <span>Nombre completo del ejecutivo <span class="req">*</span></span>
-                <input type="text" name="ejecutivoNombre" required autocomplete="name" />
+                <select name="ejecutivoNombre" id="ejecutivoNombre" required>
+                  <option value="">Selecciona tu nombre</option>
+                </select>
               </label>
               <label class="field">
                 <span>Número telefónico de contacto <span class="req">*</span></span>
                 <input type="tel" name="ejecutivoTelefono" inputmode="tel" required placeholder="10 dígitos" />
+              </label>
+            </div>
+          </section>
+
+          <section class="card-section" data-form-step>
+            <header class="section-head">
+              <span>3</span>
+              <h2>Datos del gerente</h2>
+            </header>
+            <div class="grid-2">
+              <label class="field">
+                <span>Gerente territorial</span>
+                <input type="text" name="gerenteTerritorial" id="gerenteTerritorial" readonly tabindex="-1" />
+              </label>
+              <label class="field">
+                <span>Gerente regional</span>
+                <input type="text" name="territorioGerente" id="territorioGerente" readonly tabindex="-1" />
+              </label>
+              <label class="field grid-span-2">
+                <span>Número telefónico del gerente <span class="req">*</span></span>
+                <input
+                  type="tel"
+                  name="gerenteTelefono"
+                  id="gerenteTelefono"
+                  inputmode="numeric"
+                  maxlength="10"
+                  pattern="\d{10}"
+                  data-digits="10"
+                  required
+                  placeholder="10 dígitos"
+                />
+                <small class="help">Captura los 10 dígitos, sin espacios ni guiones.</small>
               </label>
             </div>
           </section>
@@ -354,7 +388,7 @@
                     <span class="color-option-preview">
                       <img
                         class="color-preview-img"
-                        src="./assets/rotulacion-colores/verde/2.jpg?v=20261003d"
+                        src="./assets/rotulacion-colores/verde/2.jpg?v=20261003e"
                         alt="Ejemplo rotulación verde"
                         loading="lazy"
                       />
@@ -373,7 +407,7 @@
                     <span class="color-option-preview">
                       <img
                         class="color-preview-img"
-                        src="./assets/rotulacion-colores/azul/2.jpg?v=20261003d"
+                        src="./assets/rotulacion-colores/azul/2.jpg?v=20261003e"
                         alt="Ejemplo rotulación azul"
                         loading="lazy"
                       />
@@ -392,7 +426,7 @@
                     <span class="color-option-preview">
                       <img
                         class="color-preview-img"
-                        src="./assets/rotulacion-colores/rosa/2.jpg?v=20261003d"
+                        src="./assets/rotulacion-colores/rosa/2.jpg?v=20261003e"
                         alt="Ejemplo rotulación rosa"
                         loading="lazy"
                       />
@@ -411,7 +445,7 @@
                     <span class="color-option-preview">
                       <img
                         class="color-preview-img"
-                        src="./assets/rotulacion-colores/anaranjado/2.jpg?v=20261003d"
+                        src="./assets/rotulacion-colores/anaranjado/2.jpg?v=20261003e"
                         alt="Ejemplo rotulación anaranjado"
                         loading="lazy"
                       />
@@ -430,7 +464,7 @@
                     <span class="color-option-preview">
                       <img
                         class="color-preview-img"
-                        src="./assets/rotulacion-colores/amarillo/2.jpg?v=20261003d"
+                        src="./assets/rotulacion-colores/amarillo/2.jpg?v=20261003e"
                         alt="Ejemplo rotulación amarillo"
                         loading="lazy"
                       />
@@ -502,14 +536,14 @@
               <aside class="foto-guia" aria-label="Cómo tomar la foto">
                 <p class="foto-guia-title">¿Cómo debe verse tu foto?</p>
                 <figure class="foto-guia-item is-si">
-                  <img src="./assets/foto-guia/si.jpg?v=20261003d" alt="Ejemplo correcto: foto nítida y derecha" loading="lazy" />
+                  <img src="./assets/foto-guia/si.jpg?v=20261003e" alt="Ejemplo correcto: foto nítida y derecha" loading="lazy" />
                   <figcaption>
                     <strong>Así sí</strong>
                     <span>Nítida, enfocada y derecha. Que se vea toda la fachada de frente.</span>
                   </figcaption>
                 </figure>
                 <figure class="foto-guia-item is-no">
-                  <img src="./assets/foto-guia/no.jpg?v=20261003d" alt="Ejemplo incorrecto: foto borrosa y chueca" loading="lazy" />
+                  <img src="./assets/foto-guia/no.jpg?v=20261003e" alt="Ejemplo incorrecto: foto borrosa y chueca" loading="lazy" />
                   <figcaption>
                     <strong>Así no</strong>
                     <span>Borrosa, movida o chueca. Tampoco cortada ni a contraluz.</span>
@@ -558,6 +592,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20261003d" defer></script>
+    <script src="./app.js?v=20261003e" defer></script>
   </body>
 </html>
