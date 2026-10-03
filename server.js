@@ -180,7 +180,7 @@ app.set("trust proxy", 1);
 app.use(express.json({ limit: "2mb" }));
 
 // Acceso al tablero. El repo es público: solo se guardan hashes scrypt ("salt:hash");
-// en Render se pueden sustituir con BOARD_PASSWORD_MARKETING / BOARD_PASSWORD_ROTULACION.
+// en Render se pueden sustituir con BOARD_PASSWORD_MARKETING / BOARD_PASSWORD_ROTULACION / BOARD_PASSWORD_EJECUTIVO.
 const BOARD_ROLES = {
   marketing: {
     label: "Marketing",
@@ -195,6 +195,13 @@ const BOARD_ROLES = {
     canDelete: false,
     envPassword: "BOARD_PASSWORD_ROTULACION",
     hash: "027aa9c9b2e048233f0e322a4a106eae:f41028090bc1d6027308afc7c3fd952abf23268b3a3a619daed11e76b17b8a25",
+  },
+  ejecutivo: {
+    label: "Ejecutivo de ventas · Rotulación",
+    seesAll: false,
+    canDelete: false,
+    envPassword: "BOARD_PASSWORD_EJECUTIVO",
+    hash: "102d46f591c1ec63ba75e79340bbda4f:9aaac3482ca9368c40f3d8bbe9660865de40322a708e7a79cb3c94eec5e2e55b",
   },
 };
 const BOARD_COOKIE = "yaavs_board";
