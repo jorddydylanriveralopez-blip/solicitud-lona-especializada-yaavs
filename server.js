@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const express = require("express");
 const multer = require("multer");
 const ExcelJS = require("exceljs");
@@ -175,7 +176,143 @@ function lookupYaavser(claveRaw) {
 }
 
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
 app.use(express.json({ limit: "2mb" }));
+
+// Acceso al tablero. El repo es público: solo se guardan hashes scrypt ("salt:hash");
+// en Render se pueden sustituir con BOARD_PASSWORD_MARKETING / BOARD_PASSWORD_ROTULACION.
+const BOARD_ROLES = {
+  marketing: {
+    label: "Marketing",
+    seesAll: true,
+    canDelete: true,
+    envPassword: "BOARD_PASSWORD_MARKETING",
+    hash: "f6e81b05c57f0ac3cf952436c015ccaf:204820d4156c6f638a5471588f47ae67c05631bb8d4c6c301126e6c3407b710b",
+  },
+  rotulacion: {
+    label: "Dirección comercial · Rotulación",
+    seesAll: false,
+    canDelete: false,
+    envPassword: "BOARD_PASSWORD_ROTULACION",
+    hash: "027aa9c9b2e048233f0e322a4a106eae:f41028090bc1d6027308afc7c3fd952abf23268b3a3a619daed11e76b17b8a25",
+  },
+};
+const BOARD_COOKIE = "yaavs_board";
+const BOARD_SESSION_DAYS = 30;
+const BOARD_SESSION_SECRET = String(
+  process.env.BOARD_SESSION_SECRET ||
+    (SHEETS_WEBHOOK_URL
+      ? crypto.createHash("sha256").update(`board-session:${SHEETS_WEBHOOK_URL}`).digest("hex")
+      : crypto.randomBytes(32).toString("hex")),
+);
+
+function safeEqual(a, b) {
+  const ba = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  return ba.length === bb.length && crypto.timingSafeEqual(ba, bb);
+}
+
+function passwordMatchesRole(password, role) {
+  const plain = String(process.env[role.envPassword] || "");
+  if (plain) return safeEqual(password, plain);
+  const [salt, hash] = role.hash.split(":");
+  const derived = crypto.scryptSync(String(password), salt, 32, { N: 16384, r: 8, p: 1 });
+  return crypto.timingSafeEqual(derived, Buffer.from(hash, "hex"));
+}
+
+function roleForPassword(password) {
+  if (!password) return null;
+  for (const [key, role] of Object.entries(BOARD_ROLES)) {
+    if (passwordMatchesRole(password, role)) return key;
+  }
+  return null;
+}
+
+function signSession(roleKey) {
+  const exp = Date.now() + BOARD_SESSION_DAYS * 86400000;
+  const payload = `${roleKey}.${exp}`;
+  const sig = crypto.createHmac("sha256", BOARD_SESSION_SECRET).update(payload).digest("hex");
+  return `${payload}.${sig}`;
+}
+
+function readCookie(req, name) {
+  for (const part of String(req.headers.cookie || "").split(";")) {
+    const idx = part.indexOf("=");
+    if (idx > 0 && part.slice(0, idx).trim() === name) return decodeURIComponent(part.slice(idx + 1).trim());
+  }
+  return "";
+}
+
+function boardRoleKey(req) {
+  const [roleKey, exp, sig] = readCookie(req, BOARD_COOKIE).split(".");
+  if (!roleKey || !exp || !sig || !BOARD_ROLES[roleKey]) return null;
+  if (!(Number(exp) > Date.now())) return null;
+  const expected = crypto.createHmac("sha256", BOARD_SESSION_SECRET).update(`${roleKey}.${exp}`).digest("hex");
+  return safeEqual(sig, expected) ? roleKey : null;
+}
+
+function boardRole(req) {
+  const key = boardRoleKey(req);
+  return key ? { key, ...BOARD_ROLES[key] } : null;
+}
+
+function requireBoard(req, res, next) {
+  const role = boardRole(req);
+  if (!role) return res.status(401).json({ ok: false, error: "Inicia sesión para ver el tablero" });
+  req.boardRole = role;
+  next();
+}
+
+function isRotulacionItem(item) {
+  return String(item?.material || "").toLowerCase().includes("rotul");
+}
+
+function scopeItems(items, role) {
+  return role?.seesAll ? items : (items || []).filter(isRotulacionItem);
+}
+
+const loginAttempts = new Map();
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_FAILS = 10;
+
+app.post("/api/login", (req, res) => {
+  const ip = req.ip || "?";
+  const now = Date.now();
+  const rec = loginAttempts.get(ip);
+  if (rec && now - rec.first < LOGIN_WINDOW_MS && rec.fails >= LOGIN_MAX_FAILS) {
+    return res.status(429).json({ ok: false, error: "Demasiados intentos. Espera unos minutos." });
+  }
+  const roleKey = roleForPassword(String(req.body?.password || ""));
+  if (!roleKey) {
+    const next = rec && now - rec.first < LOGIN_WINDOW_MS ? rec : { first: now, fails: 0 };
+    next.fails += 1;
+    loginAttempts.set(ip, next);
+    return res.status(401).json({ ok: false, error: "Contraseña incorrecta" });
+  }
+  loginAttempts.delete(ip);
+  res.setHeader(
+    "Set-Cookie",
+    `${BOARD_COOKIE}=${encodeURIComponent(signSession(roleKey))}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${
+      BOARD_SESSION_DAYS * 86400
+    }${req.secure ? "; Secure" : ""}`,
+  );
+  res.json({ ok: true, role: roleKey, label: BOARD_ROLES[roleKey].label });
+});
+
+app.post("/api/logout", (req, res) => {
+  res.setHeader(
+    "Set-Cookie",
+    `${BOARD_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${req.secure ? "; Secure" : ""}`,
+  );
+  res.json({ ok: true });
+});
+
+app.get("/api/session", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const role = boardRole(req);
+  if (!role) return res.status(401).json({ ok: false });
+  res.json({ ok: true, role: role.key, label: role.label, seesAll: role.seesAll, canDelete: role.canDelete });
+});
 
 function ensureStore() {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -958,13 +1095,14 @@ app.get("/api/yaavser/:clave", (req, res) => {
   });
 });
 
-app.get("/api/responses", async (_req, res) => {
+app.get("/api/responses", requireBoard, async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   const board = await boardItems();
+  const items = scopeItems(board.items, req.boardRole);
   res.json({
     ok: true,
-    items: board.items,
-    total: board.items.length,
+    items,
+    total: items.length,
     source: board.source,
     sheetsConfigured: Boolean(SHEETS_WEBHOOK_URL),
     sheetsError: board.sheetsError || null,
@@ -977,10 +1115,10 @@ function driveDownloadUrl(url) {
   return id ? `https://drive.google.com/uc?export=download&id=${id}` : url;
 }
 
-app.get("/api/responses/:id/archivos.zip", async (req, res) => {
+app.get("/api/responses/:id/archivos.zip", requireBoard, async (req, res) => {
   try {
     const id = String(req.params.id || "").trim();
-    const { items } = await boardItems();
+    const items = scopeItems((await boardItems()).items, req.boardRole);
     const item = items.find((it) => it.id === id || it.folio === id);
     if (!item) return res.status(404).json({ ok: false, error: "Solicitud no encontrada" });
     const media = (Array.isArray(item.media) ? item.media : []).filter((f) => f?.url);
@@ -1023,7 +1161,10 @@ app.get("/api/responses/:id/archivos.zip", async (req, res) => {
   }
 });
 
-app.delete("/api/responses/:id", async (req, res) => {
+app.delete("/api/responses/:id", requireBoard, async (req, res) => {
+  if (!req.boardRole.canDelete) {
+    return res.status(403).json({ ok: false, error: "Tu acceso no permite eliminar solicitudes" });
+  }
   try {
     const id = String(req.params.id || "").trim();
     if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
@@ -1061,9 +1202,9 @@ app.delete("/api/responses/:id", async (req, res) => {
   }
 });
 
-app.get("/api/export.xlsx", async (_req, res) => {
+app.get("/api/export.xlsx", requireBoard, async (req, res) => {
   try {
-    const { items } = await boardItems();
+    const items = scopeItems((await boardItems()).items, req.boardRole);
     const wb = await buildWorkbook(items);
     res.setHeader(
       "Content-Type",
@@ -1081,8 +1222,8 @@ app.get("/api/export.xlsx", async (_req, res) => {
   }
 });
 
-app.get("/api/export.csv", async (_req, res) => {
-  const { items } = await boardItems();
+app.get("/api/export.csv", requireBoard, async (req, res) => {
+  const items = scopeItems((await boardItems()).items, req.boardRole);
   const headers = ["#", ...FIELD_ORDER.map(([, label]) => label)];
   const keys = FIELD_ORDER.map(([key]) => key);
   const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -1175,8 +1316,17 @@ app.get("/", (_req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
 
-app.get("/resultados", (_req, res) => {
-  res.sendFile(path.join(publicDir, "resultados.html"));
+app.get(["/resultados", "/resultados.html"], (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(path.join(publicDir, boardRole(req) ? "resultados.html" : "acceso.html"));
+});
+
+app.use("/uploads", requireBoard, (req, res, next) => {
+  if (req.boardRole.seesAll) return next();
+  const entryId = decodeURIComponent(req.path.split("/")[1] || "");
+  const entry = readResponses().find((e) => e.id === entryId);
+  if (entry && isRotulacionItem(entry.answers || entry)) return next();
+  res.status(404).json({ ok: false, error: "Not found" });
 });
 
 app.use(

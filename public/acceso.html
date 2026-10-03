@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f7fbff" />
+    <meta name="robots" content="noindex" />
+    <title>Acceso · Tablero de material especializado YAAVS</title>
+    <link rel="icon" href="./favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./resultados.css?v=20261003d" />
+  </head>
+  <body class="login-page">
+    <div class="atmosphere" aria-hidden="true">
+      <div class="scene-photo"></div>
+      <div class="scene-overlay"></div>
+    </div>
+
+    <main class="login-shell">
+      <form class="login-card" id="loginForm" novalidate>
+        <img src="./assets/logo-yaavs.png" alt="YAAVS" width="160" height="56" class="brand-logo" />
+        <h1>Tablero de solicitudes</h1>
+        <p class="login-lede">Escribe la contraseña que te dio Mercadotecnia para entrar.</p>
+        <label class="login-field">
+          <span>Contraseña</span>
+          <input type="password" name="password" id="loginPassword" autocomplete="current-password" required autofocus />
+        </label>
+        <p class="login-error" id="loginError" role="alert" hidden></p>
+        <button type="submit" class="login-btn" id="loginBtn">Entrar</button>
+      </form>
+    </main>
+
+    <script>
+      (() => {
+        const form = document.getElementById("loginForm");
+        const input = document.getElementById("loginPassword");
+        const errorEl = document.getElementById("loginError");
+        const btn = document.getElementById("loginBtn");
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          errorEl.hidden = true;
+          if (!input.value) {
+            errorEl.textContent = "Escribe la contraseña.";
+            errorEl.hidden = false;
+            return;
+          }
+          btn.disabled = true;
+          btn.textContent = "Entrando…";
+          try {
+            const res = await fetch("/api/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ password: input.value }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.ok) {
+              location.replace("/resultados");
+              return;
+            }
+            errorEl.textContent = data.error || "No se pudo entrar. Intenta de nuevo.";
+            errorEl.hidden = false;
+            input.select();
+          } catch (_) {
+            errorEl.textContent = "Sin conexión. Intenta de nuevo.";
+            errorEl.hidden = false;
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "Entrar";
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

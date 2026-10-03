@@ -20,6 +20,7 @@
   let materialFilter = "all";
   let lastFingerprint = null;
   let refreshInFlight = false;
+  let session = null;
 
   const MATERIAL_FILTERS = [
     { key: "all", label: "Todos" },
@@ -837,7 +838,7 @@
             <div class="nav">
               <button type="button" id="prevBtn">← Anterior</button>
               <button type="button" id="nextBtn">Siguiente →</button>
-              <button type="button" id="deleteBtn" class="delete-btn">Eliminar</button>
+              ${session?.canDelete ? `<button type="button" id="deleteBtn" class="delete-btn">Eliminar</button>` : ""}
             </div>
           </div>
         </header>
@@ -928,7 +929,8 @@
       renderDetail();
     };
 
-    document.getElementById("deleteBtn").onclick = async () => {
+    const deleteBtn = document.getElementById("deleteBtn");
+    if (deleteBtn) deleteBtn.onclick = async () => {
       const label = item.folio || item.puntoVenta || "esta solicitud";
       if (!window.confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer.`)) return;
       const btn = document.getElementById("deleteBtn");
@@ -1021,6 +1023,10 @@
     refreshInFlight = true;
     try {
       const res = await fetch(`/api/responses?ts=${Date.now()}`, { cache: "no-store" });
+      if (res.status === 401) {
+        location.replace("/resultados");
+        return;
+      }
       const data = await res.json();
       const next = Array.isArray(data.items) ? data.items : [];
       sheetsConfigured = Boolean(data.sheetsConfigured);
@@ -1118,8 +1124,34 @@
     renderDetail();
   });
 
-  refresh();
-  setInterval(refresh, 1000);
+  async function loadSession() {
+    const res = await fetch("/api/session", { cache: "no-store" });
+    if (!res.ok) {
+      location.replace("/resultados");
+      return false;
+    }
+    session = await res.json();
+    const roleChip = document.getElementById("roleChip");
+    if (roleChip) {
+      roleChip.textContent = session.label || "";
+      roleChip.hidden = false;
+    }
+    if (!session.seesAll) {
+      const filters = document.getElementById("materialFilters");
+      if (filters) filters.hidden = true;
+    }
+    document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+      await fetch("/api/logout", { method: "POST" }).catch(() => {});
+      location.replace("/resultados");
+    });
+    return true;
+  }
+
+  loadSession().then((ok) => {
+    if (!ok) return;
+    refresh();
+    setInterval(refresh, 1000);
+  });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") refresh();
   });
