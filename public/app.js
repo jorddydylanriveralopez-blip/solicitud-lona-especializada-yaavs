@@ -267,7 +267,7 @@
       hint: "Ejemplo según tu clasificación: negocio en esquina con doble entrada.",
     },
     "Puesto de lámina.": {
-      key: "2",
+      key: "6",
       label: "Puesto de lámina",
       hint: "Ejemplo de referencia para puesto de lámina.",
     },
@@ -289,7 +289,7 @@
       const img = opt.querySelector(".color-preview-img");
       const label = opt.querySelector("[data-preview-label]");
       if (img && color) {
-        const next = `./assets/rotulacion-colores/${color}/${preview.key}.jpg?v=20261003a`;
+        const next = `./assets/rotulacion-colores/${color}/${preview.key}.jpg?v=20261003f`;
         if (img.getAttribute("src") !== next) img.setAttribute("src", next);
       }
       if (label) label.textContent = preview.label;
