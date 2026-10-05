@@ -312,7 +312,7 @@
       const img = opt.querySelector(".color-preview-img");
       const label = opt.querySelector("[data-preview-label]");
       if (img && color) {
-        const next = `./assets/rotulacion-colores/${color}/${preview.key}.jpg?v=20261003m`;
+        const next = `./assets/rotulacion-colores/${color}/${preview.key}.jpg?v=20261005a`;
         if (img.getAttribute("src") !== next) {
           img.setAttribute("decoding", "async");
           img.setAttribute("loading", "lazy");
@@ -487,175 +487,191 @@
   const ubicacionPreview = document.getElementById("ubicacionPreview");
   const btnDetectarUbicacion = document.getElementById("btnDetectarUbicacion");
 
-  function isMapsUrl(value) {
-    return /google\.(com|[a-z.]{2,})\/maps|maps\.google\.com|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(
-      String(value || ""),
-    );
-  }
-
-  function isShortMapsUrl(value) {
-    return /maps\.app\.goo\.gl|goo\.gl\/maps/i.test(String(value || ""));
-  }
+  let ubicacionTimer = 0;
+  let ubicacionRequest = 0;
+  let lastPreviewKey = "";
+  let appliedUbicacionInput = "";
 
   function mapsUrlFromCoords(lat, lng) {
     return `https://www.google.com/maps?q=${lat},${lng}`;
   }
 
-  function mapsUrlFromQuery(query) {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  function pastedMapsUrl(text) {
+    const match = String(text || "").match(/https?:\/\/\S+/i);
+    return match ? match[0].replace(/[)\].,;]+$/g, "") : "";
   }
 
-  function parseGoogleMapsInput(raw) {
-    const text = String(raw || "").trim();
-    if (!text) return null;
+  function isMapsUrl(value) {
+    return /google\.[a-z.]{2,}\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|share\.google\//i.test(
+      String(value || ""),
+    );
+  }
 
-    const coords = text.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
-    if (coords) {
-      const lat = coords[1];
-      const lng = coords[2];
-      return {
-        label: text,
-        mapsUrl: mapsUrlFromCoords(lat, lng),
-        lat,
-        lng,
-        embedQ: `${lat},${lng}`,
-      };
-    }
+  function isShortMapsUrl(url) {
+    return /maps\.app\.goo\.gl|goo\.gl\/maps|share\.google\//i.test(String(url || ""));
+  }
 
-    const candidate = /^https?:\/\//i.test(text) ? text : isMapsUrl(text) ? `https://${text}` : "";
-    if (candidate) {
-      const at = candidate.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
-      if (at) {
-        const placeName = candidate.match(/\/place\/([^/@?]+)/);
-        const label = placeName
-          ? decodeURIComponent(placeName[1].replace(/\+/g, " "))
-          : `${at[1]}, ${at[2]}`;
-        return {
-          label,
-          mapsUrl: candidate,
-          lat: at[1],
-          lng: at[2],
-          embedQ: `${at[1]},${at[2]}`,
-        };
+  function coordsFromText(text) {
+    const value = String(text || "");
+    const patterns = [
+      /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+      /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/,
+      /[?&](?:q|query|ll|center|destination)=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/,
+      /(?:^|\s)(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)(?:\s|$)/,
+    ];
+    for (const re of patterns) {
+      const match = value.match(re);
+      if (!match) continue;
+      const lat = Number(match[1]);
+      const lng = Number(match[2]);
+      if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+        return { lat: match[1], lng: match[2] };
       }
-
-      const qParam = candidate.match(/[?&](?:q|query)=([^&]+)/i);
-      if (qParam) {
-        const decoded = decodeURIComponent(qParam[1].replace(/\+/g, " "));
-        const qCoords = decoded.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
-        if (qCoords) {
-          return {
-            label: decoded,
-            mapsUrl: candidate,
-            lat: qCoords[1],
-            lng: qCoords[2],
-            embedQ: `${qCoords[1]},${qCoords[2]}`,
-          };
-        }
-        return { label: decoded, mapsUrl: candidate, lat: "", lng: "", embedQ: decoded };
-      }
-
-      const place = candidate.match(/\/place\/([^/@?]+)/);
-      if (place) {
-        const name = decodeURIComponent(place[1].replace(/\+/g, " "));
-        return { label: name, mapsUrl: candidate, lat: "", lng: "", embedQ: name };
-      }
-
-      const data3d = candidate.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
-      if (data3d) {
-        return {
-          label: text,
-          mapsUrl: candidate,
-          lat: data3d[1],
-          lng: data3d[2],
-          embedQ: `${data3d[1]},${data3d[2]}`,
-        };
-      }
-
-      if (isMapsUrl(candidate)) {
-        return { label: text, mapsUrl: candidate, lat: "", lng: "", embedQ: "" };
-      }
-    }
-
-    if (text.length >= 5) {
-      return { label: text, mapsUrl: mapsUrlFromQuery(text), lat: "", lng: "", embedQ: text };
     }
     return null;
   }
 
-  function setUbicacion({ label, mapsUrl, lat = "", lng = "", embedQ = "" }) {
-    if (ubicacionInput && label != null) ubicacionInput.value = label;
-    if (ubicacionMaps) ubicacionMaps.value = mapsUrl || "";
-    if (ubicacionLat) ubicacionLat.value = lat === "" ? "" : String(lat);
-    if (ubicacionLng) ubicacionLng.value = lng === "" ? "" : String(lng);
-    const q =
-      String(embedQ || "").trim() ||
-      (lat !== "" && lng !== "" ? `${lat},${lng}` : String(label || "").trim());
-    renderUbicacionPreview(mapsUrl, label, q);
-    scheduleSyncFormSteps(false);
+  function placeQueryFromUrl(url) {
+    try {
+      const parsed = new URL(url);
+      const q = parsed.searchParams.get("q") || parsed.searchParams.get("query") || "";
+      if (q && !coordsFromText(q)) return q.replace(/\+/g, " ");
+      const place = decodeURIComponent(parsed.pathname).match(/\/place\/([^/]+)/);
+      if (place) return place[1].replace(/\+/g, " ");
+    } catch (_) {}
+    return "";
   }
 
-  function renderUbicacionPreview(mapsUrl, label, embedQ) {
+  function embedSrc({ lat, lng, query }) {
+    if (lat && lng) {
+      return `https://maps.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}&z=17&hl=es&output=embed`;
+    }
+    if (query) {
+      return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=16&hl=es&output=embed`;
+    }
+    return "";
+  }
+
+  function renderUbicacionPreview(mapsUrl, label, extra = {}) {
     if (!ubicacionPreview) return;
-    if (!mapsUrl) {
+    const lat = extra.lat || "";
+    const lng = extra.lng || "";
+    const query = extra.query || "";
+    const src = embedSrc({ lat, lng, query });
+    const key = `${mapsUrl}|${lat}|${lng}|${query}|${src}`;
+    if (!mapsUrl && !src) {
+      lastPreviewKey = "";
       ubicacionPreview.hidden = true;
       ubicacionPreview.innerHTML = "";
       return;
     }
-    const query = String(embedQ || "").trim();
-    const mapLink = `<a href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer">Ver en Google Maps</a>`;
-    ubicacionPreview.hidden = false;
-    if (!query || /^https?:\/\//i.test(query)) {
-      ubicacionPreview.innerHTML = `
-        <p>${escapeHtml(label || "Ubicación confirmada")}</p>
-        ${mapLink}
-        <p class="help">Si no ves el mapa embebido, abre el enlace en Google Maps.</p>
-      `;
-      return;
-    }
-    const embedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed`;
+    if (key === lastPreviewKey) return;
+    lastPreviewKey = key;
+    const nice =
+      query || (label && !/^https?:/i.test(label) ? label : "Ubicación del punto de venta");
     ubicacionPreview.hidden = false;
     ubicacionPreview.innerHTML = `
-      <p>${escapeHtml(label || "Ubicación confirmada")}</p>
-      ${mapLink}
-      <iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${escapeHtml(embedSrc)}" title="Vista previa de ubicación"></iframe>
+      <p>${escapeHtml(nice)}</p>
+      ${
+        mapsUrl
+          ? `<a href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer">Abrir en Google Maps</a>`
+          : ""
+      }
+      ${
+        src
+          ? `<iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${escapeHtml(src)}" title="Mapa del punto de venta"></iframe>`
+          : `<p class="help">No se pudo dibujar el mapa. Abre el enlace para verlo.</p>`
+      }
     `;
   }
 
-  let ubicacionSyncInFlight = null;
+  function applyUbicacion({ mapsUrl, lat = "", lng = "", query = "", label = "" }) {
+    appliedUbicacionInput = String(ubicacionInput?.value || "").trim();
+    if (ubicacionMaps) ubicacionMaps.value = mapsUrl || "";
+    if (ubicacionLat) ubicacionLat.value = lat ? String(lat) : "";
+    if (ubicacionLng) ubicacionLng.value = lng ? String(lng) : "";
+    renderUbicacionPreview(mapsUrl, label, { lat, lng, query });
+    scheduleSyncFormSteps(true);
+  }
+
+  function setUbicacion({ label, mapsUrl, lat = "", lng = "" }) {
+    if (ubicacionInput && label != null) ubicacionInput.value = label;
+    applyUbicacion({
+      mapsUrl,
+      lat,
+      lng,
+      label,
+      query: lat && lng ? "" : label && !/^https?:/i.test(label) ? label : "",
+    });
+  }
 
   async function syncUbicacionFromInput() {
-    let raw = String(ubicacionInput?.value || "").trim();
+    const raw = String(ubicacionInput?.value || "").trim();
     if (!raw) {
-      if (ubicacionMaps) ubicacionMaps.value = "";
-      if (ubicacionLat) ubicacionLat.value = "";
-      if (ubicacionLng) ubicacionLng.value = "";
-      renderUbicacionPreview("", "", "");
-      scheduleSyncFormSteps(false);
+      applyUbicacion({ mapsUrl: "" });
+      return;
+    }
+    if (raw === appliedUbicacionInput && String(ubicacionMaps?.value || "").trim()) return;
+
+    const foundUrl = pastedMapsUrl(raw);
+    const coords = coordsFromText(foundUrl || raw) || coordsFromText(raw);
+    if (coords) {
+      applyUbicacion({
+        mapsUrl: foundUrl || mapsUrlFromCoords(coords.lat, coords.lng),
+        lat: coords.lat,
+        lng: coords.lng,
+        label: raw,
+      });
       return;
     }
 
-    if (isShortMapsUrl(raw)) {
+    if (foundUrl && isShortMapsUrl(foundUrl)) {
+      const reqId = ++ubicacionRequest;
+      if (ubicacionMaps) ubicacionMaps.value = foundUrl;
+      lastPreviewKey = "";
+      ubicacionPreview.hidden = false;
+      ubicacionPreview.innerHTML = `<p>Cargando el mapa…</p>`;
       try {
-        const res = await fetch(`/api/maps/resolve?${new URLSearchParams({ url: raw })}`);
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.ok && data.url) raw = String(data.url);
-      } catch (_) {
-        // Sigue con el enlace corto; al menos guardamos el enlace.
-      }
+        const res = await fetch(`/api/maps-resolve?url=${encodeURIComponent(foundUrl)}`);
+        const data = await res.json();
+        if (reqId !== ubicacionRequest) return;
+        if (data?.ok) {
+          applyUbicacion({
+            mapsUrl: data.url || foundUrl,
+            lat: data.lat || "",
+            lng: data.lng || "",
+            query: data.query || "",
+            label: data.query || raw,
+          });
+          return;
+        }
+      } catch (_) {}
+      if (reqId !== ubicacionRequest) return;
+      applyUbicacion({ mapsUrl: foundUrl, label: raw });
+      return;
     }
 
-    const parsed = parseGoogleMapsInput(raw);
-    if (!parsed) return;
-    setUbicacion(parsed);
+    if (foundUrl && isMapsUrl(foundUrl)) {
+      const query = placeQueryFromUrl(foundUrl);
+      applyUbicacion({ mapsUrl: foundUrl, query, label: query || raw });
+      return;
+    }
+
+    if (!foundUrl && raw.length >= 8) {
+      applyUbicacion({
+        mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(raw)}`,
+        query: raw,
+        label: raw,
+      });
+    }
   }
 
-  function queueUbicacionSync() {
-    if (ubicacionSyncInFlight) return ubicacionSyncInFlight;
-    ubicacionSyncInFlight = syncUbicacionFromInput().finally(() => {
-      ubicacionSyncInFlight = null;
-    });
-    return ubicacionSyncInFlight;
+  function queueUbicacionSync(delay = 350) {
+    if (ubicacionTimer) clearTimeout(ubicacionTimer);
+    ubicacionTimer = setTimeout(() => {
+      ubicacionTimer = 0;
+      syncUbicacionFromInput();
+    }, delay);
   }
 
   function hasUbicacionPuntoVenta() {
@@ -738,21 +754,15 @@
     );
   });
 
-  ubicacionInput?.addEventListener("blur", () => {
-    queueUbicacionSync();
-  });
-  ubicacionInput?.addEventListener("change", () => {
-    queueUbicacionSync();
+  ubicacionInput?.addEventListener("input", () => {
+    const raw = String(ubicacionInput.value || "");
+    queueUbicacionSync(pastedMapsUrl(raw) || coordsFromText(raw) ? 200 : 700);
   });
   ubicacionInput?.addEventListener("paste", () => {
-    setTimeout(() => queueUbicacionSync(), 0);
+    setTimeout(() => queueUbicacionSync(80), 0);
   });
-  ubicacionInput?.addEventListener("input", () => {
-    const raw = String(ubicacionInput.value || "").trim();
-    if (isMapsUrl(raw) || isShortMapsUrl(raw) || /^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/.test(raw)) {
-      queueUbicacionSync();
-    }
-  });
+  ubicacionInput?.addEventListener("blur", () => syncUbicacionFromInput());
+  ubicacionInput?.addEventListener("change", () => syncUbicacionFromInput());
 
   function lonaCount() {
     return 1;
@@ -1492,8 +1502,10 @@
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (ubicacionInput && (isToldo() || isRotulacion())) {
+      await syncUbicacionFromInput();
+    }
     if (hint) hint.textContent = "";
-    await queueUbicacionSync();
     const errors = validate();
     if (errors.length) {
       if (hint) hint.textContent = errors[0];

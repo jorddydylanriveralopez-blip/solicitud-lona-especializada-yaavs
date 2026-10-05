@@ -1062,45 +1062,86 @@ async function buildWorkbook(items) {
   return workbook;
 }
 
-function isAllowedMapsResolveUrl(url) {
+function mapsCoordsFromText(text) {
+  const value = String(text || "");
+  const patterns = [
+    /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+    /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/,
+    /[?&](?:q|query|ll|center|destination)=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/,
+  ];
+  for (const re of patterns) {
+    const match = value.match(re);
+    if (!match) continue;
+    const lat = Number(match[1]);
+    const lng = Number(match[2]);
+    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat: match[1], lng: match[2] };
+  }
+  return null;
+}
+
+function mapsQueryFromUrl(url) {
   try {
-    const u = new URL(String(url));
-    const host = u.hostname.toLowerCase();
-    return (
-      host === "maps.app.goo.gl" ||
-      host === "goo.gl" ||
-      host.endsWith(".google.com") ||
-      host.endsWith(".google.com.mx") ||
-      host === "google.com" ||
-      host === "google.com.mx"
-    );
+    const parsed = new URL(url);
+    const q = parsed.searchParams.get("q") || parsed.searchParams.get("query") || "";
+    if (q && !mapsCoordsFromText(q)) return q.replace(/\+/g, " ");
+    const place = decodeURIComponent(parsed.pathname).match(/\/place\/([^/]+)/);
+    if (place) return place[1].replace(/\+/g, " ");
+  } catch (_) {}
+  return "";
+}
+
+function isAllowedMapsUrl(urlString) {
+  let parsed;
+  try {
+    parsed = new URL(urlString);
   } catch {
     return false;
   }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+  const host = parsed.hostname.toLowerCase();
+  const pathName = parsed.pathname.toLowerCase();
+  if (host === "maps.app.goo.gl" || host === "maps.google.com" || host === "share.google") return true;
+  if (host === "goo.gl") return pathName.startsWith("/maps");
+  return host.includes("google.") && pathName.startsWith("/maps");
 }
-
-app.get("/api/maps/resolve", async (req, res) => {
-  const url = String(req.query.url || "").trim();
-  if (!url || !isAllowedMapsResolveUrl(url)) {
-    return res.status(400).json({ ok: false, error: "URL de Maps no válida" });
-  }
-  try {
-    const resp = await fetch(url, {
-      method: "GET",
-      redirect: "follow",
-      signal: AbortSignal.timeout(12000),
-      headers: { "User-Agent": "YAAVS-Form/1.0" },
-    });
-    res.json({ ok: true, url: resp.url || url });
-  } catch (err) {
-    res.status(502).json({ ok: false, error: String(err.message || err) });
-  }
-});
 
 app.get("/api/config", (_req, res) => {
   res.json({
     mapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
   });
+});
+
+app.get("/api/maps-resolve", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const raw = String(req.query.url || "").trim();
+  if (!isAllowedMapsUrl(raw)) {
+    return res.status(400).json({ ok: false, error: "Solo enlaces de Google Maps" });
+  }
+  try {
+    const response = await fetch(raw, {
+      redirect: "follow",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; YaavsForm/1.0)",
+        Accept: "text/html",
+        "Accept-Language": "es-MX,es;q=0.9",
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    const finalUrl = response.url || raw;
+    if (!isAllowedMapsUrl(finalUrl) && !/google\./i.test(finalUrl)) {
+      return res.status(400).json({ ok: false, error: "El enlace no llevó a Google Maps" });
+    }
+    const coords = mapsCoordsFromText(finalUrl);
+    return res.json({
+      ok: true,
+      url: finalUrl,
+      lat: coords?.lat || "",
+      lng: coords?.lng || "",
+      query: mapsQueryFromUrl(finalUrl),
+    });
+  } catch (_) {
+    return res.status(502).json({ ok: false, error: "No se pudo abrir el enlace de Maps" });
+  }
 });
 
 app.get("/api/health", async (_req, res) => {
