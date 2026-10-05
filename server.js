@@ -1178,6 +1178,14 @@ function mapsCoordsFromText(text) {
   return mapsPinFromText(text);
 }
 
+function pinInMexico(pin) {
+  if (!pin) return null;
+  const lat = Number(pin.lat);
+  const lng = Number(pin.lng);
+  if (lat < 14.5 || lat > 32.8 || lng < -118.5 || lng > -86.5) return null;
+  return pin;
+}
+
 function mapsQueryFromUrl(url) {
   try {
     const parsed = new URL(url);
@@ -1230,10 +1238,10 @@ app.get("/api/maps-resolve", async (req, res) => {
     if (!isAllowedMapsUrl(finalUrl) && !/google\./i.test(finalUrl)) {
       return res.status(400).json({ ok: false, error: "El enlace no llevó a Google Maps" });
     }
-    let coords = mapsPinFromText(finalUrl);
+    let coords = pinInMexico(mapsPinFromText(finalUrl));
     if (!coords) {
       const html = await response.text().catch(() => "");
-      coords = mapsPinFromText(html.slice(0, 400000));
+      coords = pinInMexico(mapsPinFromText(html.slice(0, 400000)));
     }
     return res.json({
       ok: true,
@@ -1255,7 +1263,7 @@ app.get("/api/maps-geocode", async (req, res) => {
   if (q.length < 6) {
     return res.status(400).json({ ok: false, error: "Escribe una dirección más completa" });
   }
-  const direct = mapsPinFromText(q);
+  const direct = pinInMexico(mapsPinFromText(q));
   if (direct) return res.json({ ok: true, lat: direct.lat, lng: direct.lng });
 
   const key = q.toLowerCase();
@@ -1273,11 +1281,7 @@ app.get("/api/maps-geocode", async (req, res) => {
       },
       signal: AbortSignal.timeout(8000),
     });
-    coords = mapsPinFromText(response.url || "");
-    if (!coords) {
-      const html = await response.text().catch(() => "");
-      coords = mapsPinFromText(html.slice(0, 400000));
-    }
+    coords = pinInMexico(mapsPinFromText(response.url || ""));
   } catch (_) {}
 
   if (!coords) {
@@ -1296,7 +1300,7 @@ app.get("/api/maps-geocode", async (req, res) => {
       });
       const rows = await response.json();
       if (rows?.[0]?.lat && rows?.[0]?.lon) {
-        coords = { lat: String(rows[0].lat), lng: String(rows[0].lon) };
+        coords = pinInMexico({ lat: String(rows[0].lat), lng: String(rows[0].lon) });
       }
     } catch (_) {}
   }
