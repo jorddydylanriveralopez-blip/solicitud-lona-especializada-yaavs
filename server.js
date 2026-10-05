@@ -51,6 +51,32 @@ function safeFilename(name) {
   return base.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "archivo";
 }
 
+function isAllowedUpload(file) {
+  const mime = String(file?.mimetype || "").toLowerCase();
+  const name = String(file?.originalname || "").toLowerCase();
+  if (/^image\/(p?jpeg|jpg|png|webp|heic|heif)/.test(mime)) return true;
+  if (mime === "application/pdf") return true;
+  // Algunos celulares mandan la foto sin tipo, o como octet-stream.
+  if (!mime || mime === "application/octet-stream") {
+    return /\.(jpe?g|png|webp|heic|heif|pdf)$/.test(name);
+  }
+  return false;
+}
+
+function uploadErrorMessage(err) {
+  if (err?.code === "LIMIT_FILE_SIZE") {
+    return "Una foto pesa más de 12 MB. Elige una más ligera o tómala de nuevo.";
+  }
+  if (err?.code === "LIMIT_FILE_COUNT" || err?.code === "LIMIT_UNEXPECTED_FILE") {
+    return "Hay demasiados archivos en la solicitud.";
+  }
+  const msg = String(err?.message || "");
+  if (/solo se permiten/i.test(msg)) {
+    return "Solo se permiten fotos JPG, PNG, HEIC o un PDF.";
+  }
+  return msg || "No se pudo subir el archivo.";
+}
+
 const upload = multer({
   storage: multer.diskStorage({
     destination(_req, _file, cb) {
@@ -67,8 +93,8 @@ const upload = multer({
   }),
   limits: { fileSize: MAX_UPLOAD_BYTES, files: MAX_FILES },
   fileFilter(_req, file, cb) {
-    const ok = /^(image\/(jpeg|png|jpg|webp)|application\/pdf)$/i.test(file.mimetype || "");
-    cb(ok ? null : new Error("Solo se permiten JPG, PNG o PDF"), ok);
+    const ok = isAllowedUpload(file);
+    cb(ok ? null : new Error("Solo se permiten JPG, PNG, HEIC o PDF"), ok);
   },
 });
 
@@ -680,6 +706,21 @@ function normalize(body, knownItems) {
   };
 }
 
+function logLine(level, message, extra) {
+  const row = {
+    timestamp: new Date().toISOString(),
+    level: String(level || "info"),
+    message: String(message || ""),
+  };
+  if (extra && typeof extra === "object") {
+    for (const [key, value] of Object.entries(extra)) {
+      if (value == null) continue;
+      row[key] = typeof value === "string" ? value.slice(0, 300) : value;
+    }
+  }
+  console.log(JSON.stringify(row));
+}
+
 async function postToSheetsRaw(payload) {
   if (!SHEETS_WEBHOOK_URL) return { skipped: true };
   try {
@@ -690,6 +731,7 @@ async function postToSheetsRaw(payload) {
       headers: { "Content-Type": "application/json" },
       body: payload,
       redirect: "manual",
+      signal: AbortSignal.timeout(90000),
     });
 
     let text = "";
@@ -744,40 +786,61 @@ async function forwardToSheets(entry) {
   };
   let result = await postToSheetsRaw(JSON.stringify(basePayload));
   if (!result.ok) {
-    console.error("Sheets append failed:", result.error || result.status, result.body);
+    logLine("error", "Sheets append failed", {
+      folio: entry.folio,
+      status: result.status || "",
+      error: result.error || JSON.stringify(result.body || {}).slice(0, 240),
+    });
     return result;
   }
 
   // 2) Subir cada archivo a Drive de uno en uno y actualizar la fila.
   let uploaded = 0;
   for (const att of attachments) {
-    try {
-      const one = await postToSheetsRaw(
-        JSON.stringify({
-          action: "addMedia",
-          id: entry.id,
-          folio: entry.folio,
-          attachment: att,
-        }),
-      );
-      const savedToDrive = (one.body?.media || []).some((m) =>
-        String(m?.url || "").includes("drive.google"),
-      );
-      if (one.ok && savedToDrive) uploaded += 1;
-      else {
-        console.warn(
-          "Sheets addMedia failed:",
-          att.name,
-          one.error || one.status,
-          one.body,
+    let saved = false;
+    for (let attempt = 1; attempt <= 3 && !saved; attempt += 1) {
+      try {
+        const one = await postToSheetsRaw(
+          JSON.stringify({
+            action: "addMedia",
+            id: entry.id,
+            folio: entry.folio,
+            attachment: att,
+          }),
         );
+        const savedToDrive = (one.body?.media || []).some((m) =>
+          String(m?.url || "").includes("drive.google"),
+        );
+        if (one.ok && savedToDrive) {
+          uploaded += 1;
+          saved = true;
+        } else if (attempt === 3) {
+          logLine("warn", "Sheets addMedia failed", {
+            folio: entry.folio,
+            file: att.name,
+            status: one.status || "",
+            error: one.error || JSON.stringify(one.body || {}).slice(0, 240),
+          });
+        }
+      } catch (err) {
+        if (attempt === 3) {
+          logLine("warn", "Sheets addMedia error", {
+            folio: entry.folio,
+            file: att.name,
+            error: err?.message || String(err),
+          });
+        }
       }
-    } catch (err) {
-      console.warn("Sheets addMedia error:", att.name, err?.message || err);
+      if (!saved && attempt < 3) await new Promise((r) => setTimeout(r, 1500 * attempt));
     }
   }
 
   invalidateSheetsCache();
+  logLine("info", "Sheets forward done", {
+    folio: entry.folio,
+    mediaUploaded: uploaded,
+    mediaTotal: attachments.length,
+  });
   return { ok: true, mediaUploaded: uploaded, mediaTotal: attachments.length, body: result.body };
 }
 
@@ -885,6 +948,21 @@ async function fetchSheetsItems() {
   }
   if (cached.items && cached.at > 0) return cached.items;
   return sheetsListInFlight;
+}
+
+/** Folio sin bloquear el envío: usa la copia ya cargada y, si no hay, espera poco. */
+async function sheetsItemsForSubmit() {
+  if (!SHEETS_WEBHOOK_URL) return null;
+  if (sheetsListCache.items) {
+    if (Date.now() - sheetsListCache.at >= SHEETS_LIST_CACHE_MS) {
+      fetchSheetsItems().catch(() => null);
+    }
+    return sheetsListCache.items;
+  }
+  return Promise.race([
+    fetchSheetsItems().catch(() => null),
+    new Promise((resolve) => setTimeout(() => resolve(sheetsListCache.items || null), 12000)),
+  ]);
 }
 
 async function loadSheetsItems() {
@@ -1329,14 +1407,20 @@ app.get("/api/export.csv", requireBoard, async (req, res) => {
 app.post("/api/submit", (req, res) => {
   upload.any()(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ ok: false, error: err.message || "Error al subir archivos" });
+      return res.status(400).json({ ok: false, error: uploadErrorMessage(err) });
     }
     try {
       const body = parseSubmitBody(req);
       if (body.answers?.website) {
         return res.json({ ok: true, ignored: true });
       }
-      const sheetItems = SHEETS_WEBHOOK_URL ? await fetchSheetsItems().catch(() => null) : null;
+      const sheetItems = await sheetsItemsForSubmit();
+      if (SHEETS_WEBHOOK_URL && !sheetItems && readResponses().length === 0) {
+        return res.status(503).json({
+          ok: false,
+          error: "No pudimos conectar con el registro. Espera unos segundos e inténtalo de nuevo.",
+        });
+      }
       const entry = normalize(body, sheetItems);
       const files = req.files || [];
       if (Array.isArray(entry.answers.lonas)) {
@@ -1389,8 +1473,10 @@ app.post("/api/submit", (req, res) => {
         );
       }
     } catch (e) {
-      console.error(e);
-      res.status(500).json({ ok: false, error: "No se pudo guardar la solicitud" });
+      logLine("error", "Submit failed", { error: e?.message || String(e) });
+      if (!res.headersSent) {
+        res.status(500).json({ ok: false, error: "No se pudo guardar la solicitud" });
+      }
     }
   });
 });
@@ -1452,6 +1538,9 @@ app.listen(PORT, "0.0.0.0", () => {
       : "Google Sheets webhook: pendiente (SHEETS_WEBHOOK_URL)",
   );
   if (SHEETS_WEBHOOK_URL) {
+    loadSheetsItems().catch((err) =>
+      logLine("error", "Sheets prefetch failed", { error: err?.message || String(err) }),
+    );
     setTimeout(resyncMissingMedia, 60 * 1000);
     setInterval(resyncMissingMedia, 10 * 60 * 1000);
   }

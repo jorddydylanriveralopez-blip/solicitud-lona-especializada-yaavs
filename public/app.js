@@ -632,8 +632,19 @@
       ubicacionPreview.hidden = false;
       ubicacionPreview.innerHTML = `<p>Cargando el mapa…</p>`;
       try {
-        const res = await fetch(`/api/maps-resolve?url=${encodeURIComponent(foundUrl)}`);
-        const data = await res.json();
+        const res = await fetch(`/api/maps-resolve?url=${encodeURIComponent(foundUrl)}`, {
+          signal:
+            typeof AbortSignal !== "undefined" && AbortSignal.timeout
+              ? AbortSignal.timeout(8000)
+              : undefined,
+        });
+        const rawMaps = await res.text();
+        let data = null;
+        try {
+          data = JSON.parse(rawMaps);
+        } catch (_) {
+          data = null;
+        }
         if (reqId !== ubicacionRequest) return;
         if (data?.ok) {
           applyUbicacion({
@@ -788,7 +799,7 @@
       <label class="field file-field">
         <span>${label}${required ? ' <span class="req">*</span>' : ""}</span>
         <div class="file-drop">
-          <input type="file" name="${name}" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" data-preview />
+          <input type="file" name="${name}" accept=".jpg,.jpeg,.png,.heic,.heif,.pdf,image/jpeg,image/png,image/heic,image/heif,application/pdf" data-preview />
           <div class="file-drop-copy">
             <strong>Sube o selecciona un archivo</strong>
             <small>JPG, PNG o PDF</small>
@@ -1396,7 +1407,6 @@
   }
 
   function buildAnswers() {
-    if (isToldo() || isRotulacion()) syncUbicacionFromInput();
     const mat = selectedMaterial();
     const base = {
       material: mat,
@@ -1500,24 +1510,41 @@
     scheduleSyncFormSteps(false);
   });
 
+  let sending = false;
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (ubicacionInput && (isToldo() || isRotulacion())) {
-      await syncUbicacionFromInput();
+    if (sending) return;
+    sending = true;
+    let succeeded = false;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Enviando…";
     }
-    if (hint) hint.textContent = "";
-    const errors = validate();
-    if (errors.length) {
-      if (hint) hint.textContent = errors[0];
-      showToast(errors[0]);
-      const first = form.querySelector(".is-invalid");
-      first?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Enviando…";
     try {
+      if (ubicacionInput && (isToldo() || isRotulacion())) {
+        await syncUbicacionFromInput();
+      }
+      if (hint) hint.textContent = "";
+      const errors = validate();
+      if (errors.length) {
+        if (hint) hint.textContent = errors[0];
+        showToast(errors[0]);
+        const first = form.querySelector(".is-invalid");
+        first?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+
+      const heavy = [...form.querySelectorAll('input[type="file"]')].some((input) =>
+        [...(input.files || [])].some((file) => file.size > 12 * 1024 * 1024),
+      );
+      if (heavy) {
+        const msg = "Una foto pesa más de 12 MB. Elige una más ligera o tómala de nuevo.";
+        if (hint) hint.textContent = msg;
+        showToast(msg);
+        return;
+      }
+
       const fd = new FormData();
       fd.append("answers", JSON.stringify(buildAnswers()));
       if (isLona()) appendItemFiles(fd, "lona", lonaCount());
@@ -1527,20 +1554,51 @@
       }
       if (isCaballete()) appendItemFiles(fd, "caballete", caballeteCount());
       if (isRotulacion()) appendRotulacionFiles(fd);
-      const res = await fetch("/api/submit", { method: "POST", body: fd });
-      const data = await res.json();
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 90000);
+      let res;
+      try {
+        res = await fetch("/api/submit", { method: "POST", body: fd, signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+      const raw = await res.text();
+      let data = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch (_) {
+        data = null;
+      }
+      if (!data || typeof data !== "object") {
+        throw new Error(
+          res.status === 413
+            ? "Las fotos pesan demasiado. Elige imágenes más ligeras."
+            : "No se pudo completar el envío. Revisa tu conexión e inténtalo otra vez.",
+        );
+      }
       if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo enviar");
       const folio = data.folio || "—";
       try {
         sessionStorage.setItem(SUBMITTED_KEY, folio);
       } catch (_) {}
+      succeeded = true;
+      if (submitBtn) submitBtn.textContent = "Enviado";
       showThanks(folio);
     } catch (err) {
-      showToast(err.message || "Error al enviar");
-      if (hint) hint.textContent = err.message || "Error al enviar";
+      const msg =
+        err?.name === "AbortError"
+          ? "El envío tardó demasiado. Revisa tu conexión e inténtalo otra vez."
+          : err?.message || "Error al enviar";
+      showToast(msg);
+      if (hint) hint.textContent = msg;
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = "Enviar solicitud";
+      if (!succeeded) {
+        sending = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Enviar solicitud";
+        }
+      }
     }
   });
 
