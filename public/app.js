@@ -18,6 +18,27 @@
   const heroLede = document.getElementById("heroLede");
   const objetivoLegend = document.getElementById("objetivoLegend");
   const SUBMITTED_KEY = "yaavs_lona_form_submitted";
+  const MAX_PREVIEW_EDGE = 900;
+  const WARN_FILE_MB = 8;
+  let syncStepsTimer = 0;
+  let lastScrolledStep = null;
+
+  function scheduleSyncFormSteps(immediate = false) {
+    if (immediate) {
+      if (syncStepsTimer) {
+        clearTimeout(syncStepsTimer);
+        syncStepsTimer = 0;
+      }
+      syncFormSteps();
+      return;
+    }
+    if (syncStepsTimer) clearTimeout(syncStepsTimer);
+    syncStepsTimer = setTimeout(() => {
+      syncStepsTimer = 0;
+      syncFormSteps();
+    }, 160);
+  }
+
 
   // Matriz ventas centro: [ejecutivo, gerente territorial, gerente regional]
   const MATRIZ_VENTAS = [
@@ -291,8 +312,12 @@
       const img = opt.querySelector(".color-preview-img");
       const label = opt.querySelector("[data-preview-label]");
       if (img && color) {
-        const next = `./assets/rotulacion-colores/${color}/${preview.key}.jpg?v=20261003k`;
-        if (img.getAttribute("src") !== next) img.setAttribute("src", next);
+        const next = `./assets/rotulacion-colores/${color}/${preview.key}.jpg?v=20261003m`;
+        if (img.getAttribute("src") !== next) {
+          img.setAttribute("decoding", "async");
+          img.setAttribute("loading", "lazy");
+          img.setAttribute("src", next);
+        }
       }
       if (label) label.textContent = preview.label;
     });
@@ -448,8 +473,10 @@
       actions.hidden = !showActions;
     }
 
-    if (newlyOpened) {
-      newlyOpened.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (newlyOpened && newlyOpened !== lastScrolledStep) {
+      lastScrolledStep = newlyOpened;
+      // Instant scroll avoids jank on mid-range Android while typing/selecting.
+      newlyOpened.scrollIntoView({ behavior: "auto", block: "start" });
     }
   }
 
@@ -686,6 +713,33 @@
     return `${(n / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  async function makeLightPreviewUrl(file) {
+    // Phone cameras often shoot 3–12 MB; showing the original freezes mid-range Android.
+    if (file.size < 350 * 1024) return URL.createObjectURL(file);
+    let bitmap;
+    try {
+      bitmap = await createImageBitmap(file);
+    } catch (_) {
+      return URL.createObjectURL(file);
+    }
+    const scale = Math.min(1, MAX_PREVIEW_EDGE / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) {
+      bitmap.close?.();
+      return URL.createObjectURL(file);
+    }
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close?.();
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.72));
+    if (!blob) return URL.createObjectURL(file);
+    return URL.createObjectURL(blob);
+  }
+
   function bindFilePreviews(root = form) {
     root.querySelectorAll('input[type="file"][data-preview]').forEach((input) => {
       if (input.dataset.previewBound === "1") return;
@@ -709,17 +763,24 @@
         drop?.classList.remove("has-file");
       };
 
-      input.addEventListener("change", () => {
+      input.addEventListener("change", async () => {
         clearPreview();
         const file = input.files?.[0];
         if (!file || !preview || !media || !nameEl || !sizeEl) return;
         nameEl.textContent = file.name;
         sizeEl.textContent = formatBytes(file.size);
+        if (file.size > WARN_FILE_MB * 1024 * 1024) {
+          showToast(`La foto pesa ${formatBytes(file.size)}. Si puedes, súbela más liviana para evitar traba en el celular.`);
+        }
         const isImage = /^image\//.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
         const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
         if (isImage) {
-          objectUrl = URL.createObjectURL(file);
-          media.innerHTML = `<img src="${objectUrl}" alt="Vista previa" />`;
+          try {
+            objectUrl = await makeLightPreviewUrl(file);
+          } catch (_) {
+            objectUrl = URL.createObjectURL(file);
+          }
+          media.innerHTML = `<img src="${objectUrl}" alt="Vista previa" decoding="async" />`;
         } else if (isPdf) {
           media.innerHTML = `<div class="file-doc-badge" aria-hidden="true">PDF</div>`;
         } else {
@@ -1279,17 +1340,25 @@
   form.addEventListener("change", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
-    if (t.name === "material") syncMaterial();
+    let alreadySynced = false;
+    if (t.name === "material") {
+      syncMaterial();
+      alreadySynced = true;
+    }
     if (t.name === "rotulacionPermisos" || t.name === "rotulacionClasificacion") {
       syncRotulacionUi();
+      alreadySynced = true;
     }
     if (t.hasAttribute("data-contacto")) syncContacto();
     if (t.hasAttribute("data-ref") || t.name?.startsWith("referencia_")) syncReferencia();
-    syncFormSteps();
+    if (!alreadySynced) scheduleSyncFormSteps(true);
   });
 
-  form.addEventListener("input", () => {
-    syncFormSteps();
+  // Debounce: each keystroke used to rescan the whole form and freeze mid-range phones.
+  form.addEventListener("input", (e) => {
+    const t = e.target;
+    if (t instanceof HTMLInputElement && t.type === "file") return;
+    scheduleSyncFormSteps(false);
   });
 
   form.addEventListener("submit", async (e) => {

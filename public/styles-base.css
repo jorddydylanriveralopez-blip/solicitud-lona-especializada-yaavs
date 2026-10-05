@@ -716,3 +716,18 @@ h1,
     color: #1a3a5c;
   }
 }
+
+
+/* mobile-perf */
+@media (max-width: 820px) {
+  .atmosphere::before,
+  .atmosphere::after {
+    filter: none;
+    opacity: 0.28;
+  }
+
+  .brand-logo {
+    filter: none;
+    animation: none;
+  }
+}
