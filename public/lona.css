@@ -739,6 +739,10 @@ textarea.is-invalid {
   border-radius: 10px;
 }
 
+.ubicacion-preview[hidden] {
+  display: none;
+}
+
 .pac-container {
   z-index: 10000;
 }

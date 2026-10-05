@@ -1062,6 +1062,41 @@ async function buildWorkbook(items) {
   return workbook;
 }
 
+function isAllowedMapsResolveUrl(url) {
+  try {
+    const u = new URL(String(url));
+    const host = u.hostname.toLowerCase();
+    return (
+      host === "maps.app.goo.gl" ||
+      host === "goo.gl" ||
+      host.endsWith(".google.com") ||
+      host.endsWith(".google.com.mx") ||
+      host === "google.com" ||
+      host === "google.com.mx"
+    );
+  } catch {
+    return false;
+  }
+}
+
+app.get("/api/maps/resolve", async (req, res) => {
+  const url = String(req.query.url || "").trim();
+  if (!url || !isAllowedMapsResolveUrl(url)) {
+    return res.status(400).json({ ok: false, error: "URL de Maps no válida" });
+  }
+  try {
+    const resp = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      signal: AbortSignal.timeout(12000),
+      headers: { "User-Agent": "YAAVS-Form/1.0" },
+    });
+    res.json({ ok: true, url: resp.url || url });
+  } catch (err) {
+    res.status(502).json({ ok: false, error: String(err.message || err) });
+  }
+});
+
 app.get("/api/config", (_req, res) => {
   res.json({
     mapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",

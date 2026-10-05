@@ -488,61 +488,177 @@
   const btnDetectarUbicacion = document.getElementById("btnDetectarUbicacion");
 
   function isMapsUrl(value) {
-    return /google\.(com|[a-z.]{2,})\/maps|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(String(value || ""));
+    return /google\.(com|[a-z.]{2,})\/maps|maps\.google\.com|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(
+      String(value || ""),
+    );
+  }
+
+  function isShortMapsUrl(value) {
+    return /maps\.app\.goo\.gl|goo\.gl\/maps/i.test(String(value || ""));
   }
 
   function mapsUrlFromCoords(lat, lng) {
     return `https://www.google.com/maps?q=${lat},${lng}`;
   }
 
-  function setUbicacion({ label, mapsUrl, lat = "", lng = "" }) {
+  function mapsUrlFromQuery(query) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  }
+
+  function parseGoogleMapsInput(raw) {
+    const text = String(raw || "").trim();
+    if (!text) return null;
+
+    const coords = text.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+    if (coords) {
+      const lat = coords[1];
+      const lng = coords[2];
+      return {
+        label: text,
+        mapsUrl: mapsUrlFromCoords(lat, lng),
+        lat,
+        lng,
+        embedQ: `${lat},${lng}`,
+      };
+    }
+
+    const candidate = /^https?:\/\//i.test(text) ? text : isMapsUrl(text) ? `https://${text}` : "";
+    if (candidate) {
+      const at = candidate.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+      if (at) {
+        const placeName = candidate.match(/\/place\/([^/@?]+)/);
+        const label = placeName
+          ? decodeURIComponent(placeName[1].replace(/\+/g, " "))
+          : `${at[1]}, ${at[2]}`;
+        return {
+          label,
+          mapsUrl: candidate,
+          lat: at[1],
+          lng: at[2],
+          embedQ: `${at[1]},${at[2]}`,
+        };
+      }
+
+      const qParam = candidate.match(/[?&](?:q|query)=([^&]+)/i);
+      if (qParam) {
+        const decoded = decodeURIComponent(qParam[1].replace(/\+/g, " "));
+        const qCoords = decoded.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+        if (qCoords) {
+          return {
+            label: decoded,
+            mapsUrl: candidate,
+            lat: qCoords[1],
+            lng: qCoords[2],
+            embedQ: `${qCoords[1]},${qCoords[2]}`,
+          };
+        }
+        return { label: decoded, mapsUrl: candidate, lat: "", lng: "", embedQ: decoded };
+      }
+
+      const place = candidate.match(/\/place\/([^/@?]+)/);
+      if (place) {
+        const name = decodeURIComponent(place[1].replace(/\+/g, " "));
+        return { label: name, mapsUrl: candidate, lat: "", lng: "", embedQ: name };
+      }
+
+      const data3d = candidate.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+      if (data3d) {
+        return {
+          label: text,
+          mapsUrl: candidate,
+          lat: data3d[1],
+          lng: data3d[2],
+          embedQ: `${data3d[1]},${data3d[2]}`,
+        };
+      }
+
+      if (isMapsUrl(candidate)) {
+        return { label: text, mapsUrl: candidate, lat: "", lng: "", embedQ: "" };
+      }
+    }
+
+    if (text.length >= 5) {
+      return { label: text, mapsUrl: mapsUrlFromQuery(text), lat: "", lng: "", embedQ: text };
+    }
+    return null;
+  }
+
+  function setUbicacion({ label, mapsUrl, lat = "", lng = "", embedQ = "" }) {
     if (ubicacionInput && label != null) ubicacionInput.value = label;
     if (ubicacionMaps) ubicacionMaps.value = mapsUrl || "";
     if (ubicacionLat) ubicacionLat.value = lat === "" ? "" : String(lat);
     if (ubicacionLng) ubicacionLng.value = lng === "" ? "" : String(lng);
-    renderUbicacionPreview(mapsUrl, label);
-    syncFormSteps();
+    const q =
+      String(embedQ || "").trim() ||
+      (lat !== "" && lng !== "" ? `${lat},${lng}` : String(label || "").trim());
+    renderUbicacionPreview(mapsUrl, label, q);
+    scheduleSyncFormSteps(false);
   }
 
-  function renderUbicacionPreview(mapsUrl, label) {
+  function renderUbicacionPreview(mapsUrl, label, embedQ) {
     if (!ubicacionPreview) return;
     if (!mapsUrl) {
       ubicacionPreview.hidden = true;
       ubicacionPreview.innerHTML = "";
       return;
     }
-    const embedMatch = mapsUrl.match(/[?&]q=([^&]+)/);
-    const embedSrc = embedMatch
-      ? `https://maps.google.com/maps?q=${encodeURIComponent(decodeURIComponent(embedMatch[1]))}&z=16&output=embed`
-      : `https://maps.google.com/maps?q=${encodeURIComponent(mapsUrl)}&z=16&output=embed`;
+    const query = String(embedQ || "").trim();
+    const mapLink = `<a href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer">Ver en Google Maps</a>`;
+    ubicacionPreview.hidden = false;
+    if (!query || /^https?:\/\//i.test(query)) {
+      ubicacionPreview.innerHTML = `
+        <p>${escapeHtml(label || "Ubicación confirmada")}</p>
+        ${mapLink}
+        <p class="help">Si no ves el mapa embebido, abre el enlace en Google Maps.</p>
+      `;
+      return;
+    }
+    const embedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed`;
     ubicacionPreview.hidden = false;
     ubicacionPreview.innerHTML = `
       <p>${escapeHtml(label || "Ubicación confirmada")}</p>
-      <a href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer">Ver en Google Maps</a>
+      ${mapLink}
       <iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${escapeHtml(embedSrc)}" title="Vista previa de ubicación"></iframe>
     `;
   }
 
-  function syncUbicacionFromInput() {
-    const raw = String(ubicacionInput?.value || "").trim();
-    if (!raw) return;
-    if (isMapsUrl(raw)) {
-      setUbicacion({ label: raw, mapsUrl: raw });
+  let ubicacionSyncInFlight = null;
+
+  async function syncUbicacionFromInput() {
+    let raw = String(ubicacionInput?.value || "").trim();
+    if (!raw) {
+      if (ubicacionMaps) ubicacionMaps.value = "";
+      if (ubicacionLat) ubicacionLat.value = "";
+      if (ubicacionLng) ubicacionLng.value = "";
+      renderUbicacionPreview("", "", "");
+      scheduleSyncFormSteps(false);
       return;
     }
-    const coords = raw.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
-    if (coords) {
-      setUbicacion({
-        label: raw,
-        mapsUrl: mapsUrlFromCoords(coords[1], coords[2]),
-        lat: coords[1],
-        lng: coords[2],
-      });
+
+    if (isShortMapsUrl(raw)) {
+      try {
+        const res = await fetch(`/api/maps/resolve?${new URLSearchParams({ url: raw })}`);
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok && data.url) raw = String(data.url);
+      } catch (_) {
+        // Sigue con el enlace corto; al menos guardamos el enlace.
+      }
     }
+
+    const parsed = parseGoogleMapsInput(raw);
+    if (!parsed) return;
+    setUbicacion(parsed);
+  }
+
+  function queueUbicacionSync() {
+    if (ubicacionSyncInFlight) return ubicacionSyncInFlight;
+    ubicacionSyncInFlight = syncUbicacionFromInput().finally(() => {
+      ubicacionSyncInFlight = null;
+    });
+    return ubicacionSyncInFlight;
   }
 
   function hasUbicacionPuntoVenta() {
-    syncUbicacionFromInput();
     return Boolean(String(ubicacionMaps?.value || "").trim() || String(ubicacionInput?.value || "").trim());
   }
 
@@ -622,8 +738,21 @@
     );
   });
 
-  ubicacionInput?.addEventListener("blur", syncUbicacionFromInput);
-  ubicacionInput?.addEventListener("change", syncUbicacionFromInput);
+  ubicacionInput?.addEventListener("blur", () => {
+    queueUbicacionSync();
+  });
+  ubicacionInput?.addEventListener("change", () => {
+    queueUbicacionSync();
+  });
+  ubicacionInput?.addEventListener("paste", () => {
+    setTimeout(() => queueUbicacionSync(), 0);
+  });
+  ubicacionInput?.addEventListener("input", () => {
+    const raw = String(ubicacionInput.value || "").trim();
+    if (isMapsUrl(raw) || isShortMapsUrl(raw) || /^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/.test(raw)) {
+      queueUbicacionSync();
+    }
+  });
 
   function lonaCount() {
     return 1;
@@ -1364,6 +1493,7 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (hint) hint.textContent = "";
+    await queueUbicacionSync();
     const errors = validate();
     if (errors.length) {
       if (hint) hint.textContent = errors[0];
