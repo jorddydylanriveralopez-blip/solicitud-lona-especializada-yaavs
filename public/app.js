@@ -486,6 +486,7 @@
   const ubicacionLng = document.getElementById("puntoVentaLng");
   const ubicacionPreview = document.getElementById("ubicacionPreview");
   const btnDetectarUbicacion = document.getElementById("btnDetectarUbicacion");
+  const btnAbrirGoogleMaps = document.getElementById("btnAbrirGoogleMaps");
 
   let ubicacionTimer = 0;
   let ubicacionRequest = 0;
@@ -493,7 +494,25 @@
   let appliedUbicacionInput = "";
 
   function mapsUrlFromCoords(lat, lng) {
-    return `https://www.google.com/maps?q=${lat},${lng}`;
+    const pair = `${lat},${lng}`;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pair)}`;
+  }
+
+  function decodeMapsText(text) {
+    const value = String(text || "");
+    try {
+      return decodeURIComponent(value);
+    } catch (_) {
+      return value;
+    }
+  }
+
+  function validCoord(lat, lng) {
+    const a = Number(lat);
+    const b = Number(lng);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    if (Math.abs(a) > 90 || Math.abs(b) > 180) return null;
+    return { lat: String(lat), lng: String(lng) };
   }
 
   function pastedMapsUrl(text) {
@@ -512,21 +531,24 @@
   }
 
   function coordsFromText(text) {
-    const value = String(text || "");
+    const value = decodeMapsText(text);
+    const pins = [...value.matchAll(/!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/g)];
+    if (pins.length) {
+      const last = pins[pins.length - 1];
+      const pin = validCoord(last[1], last[2]);
+      if (pin) return pin;
+    }
     const patterns = [
-      /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
-      /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/,
       /[?&](?:q|query|ll|center|destination)=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/,
-      /(?:^|\s)(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)(?:\s|$)/,
+      /\/(?:place|search)\/(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+      /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+      /(?:^|[^\d.-])(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)(?:[^\d.]|$)/,
     ];
     for (const re of patterns) {
       const match = value.match(re);
       if (!match) continue;
-      const lat = Number(match[1]);
-      const lng = Number(match[2]);
-      if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
-        return { lat: match[1], lng: match[2] };
-      }
+      const pin = validCoord(match[1], match[2]);
+      if (pin) return pin;
     }
     return null;
   }
@@ -542,24 +564,20 @@
     return "";
   }
 
-  function embedSrc({ lat, lng, query }) {
-    if (lat && lng) {
-      return `https://maps.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}&z=17&hl=es&output=embed`;
-    }
-    if (query) {
-      return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=16&hl=es&output=embed`;
-    }
-    return "";
+  function embedSrc(lat, lng) {
+    if (!lat || !lng) return "";
+    const pair = `${lat},${lng}`;
+    return `https://maps.google.com/maps?q=${encodeURIComponent(pair)}&z=18&hl=es&output=embed`;
   }
 
   function renderUbicacionPreview(mapsUrl, label, extra = {}) {
     if (!ubicacionPreview) return;
     const lat = extra.lat || "";
     const lng = extra.lng || "";
-    const query = extra.query || "";
-    const src = embedSrc({ lat, lng, query });
-    const key = `${mapsUrl}|${lat}|${lng}|${query}|${src}`;
-    if (!mapsUrl && !src) {
+    const src = embedSrc(lat, lng);
+    const openUrl = lat && lng ? mapsUrlFromCoords(lat, lng) : mapsUrl;
+    const key = `${openUrl}|${lat}|${lng}|${src}`;
+    if (!openUrl && !src) {
       lastPreviewKey = "";
       ubicacionPreview.hidden = true;
       ubicacionPreview.innerHTML = "";
@@ -567,41 +585,80 @@
     }
     if (key === lastPreviewKey) return;
     lastPreviewKey = key;
-    const nice =
-      query || (label && !/^https?:/i.test(label) ? label : "Ubicación del punto de venta");
+    const nice = label && !/^https?:/i.test(label) ? label : "Ubicación del punto de venta";
     ubicacionPreview.hidden = false;
     ubicacionPreview.innerHTML = `
       <p>${escapeHtml(nice)}</p>
       ${
-        mapsUrl
-          ? `<a href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer">Abrir en Google Maps</a>`
+        openUrl
+          ? `<a href="${escapeHtml(openUrl)}" target="_blank" rel="noopener noreferrer">Abrir este punto en Google Maps</a>`
           : ""
       }
       ${
         src
           ? `<iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${escapeHtml(src)}" title="Mapa del punto de venta"></iframe>`
-          : `<p class="help">No se pudo dibujar el mapa. Abre el enlace para verlo.</p>`
+          : `<p class="help">No se pudo marcar el punto exacto. Prueba con el enlace de compartir de Google Maps.</p>`
       }
     `;
   }
 
-  function applyUbicacion({ mapsUrl, lat = "", lng = "", query = "", label = "" }) {
+  function applyUbicacion({ mapsUrl, lat = "", lng = "", label = "" }) {
+    const pinUrl = lat && lng ? mapsUrlFromCoords(lat, lng) : mapsUrl || "";
     appliedUbicacionInput = String(ubicacionInput?.value || "").trim();
-    if (ubicacionMaps) ubicacionMaps.value = mapsUrl || "";
+    if (ubicacionMaps) ubicacionMaps.value = pinUrl;
     if (ubicacionLat) ubicacionLat.value = lat ? String(lat) : "";
     if (ubicacionLng) ubicacionLng.value = lng ? String(lng) : "";
-    renderUbicacionPreview(mapsUrl, label, { lat, lng, query });
+    if (btnAbrirGoogleMaps) {
+      btnAbrirGoogleMaps.href = pinUrl || "https://www.google.com/maps";
+    }
+    renderUbicacionPreview(pinUrl, label, { lat, lng });
     scheduleSyncFormSteps(true);
   }
 
   function setUbicacion({ label, mapsUrl, lat = "", lng = "" }) {
     if (ubicacionInput && label != null) ubicacionInput.value = label;
+    applyUbicacion({ mapsUrl, lat, lng, label });
+  }
+
+  function showUbicacionLoading() {
+    if (!ubicacionPreview) return;
+    lastPreviewKey = "";
+    ubicacionPreview.hidden = false;
+    ubicacionPreview.innerHTML = `<p>Buscando el punto exacto…</p>`;
+  }
+
+  function showUbicacionMiss() {
+    if (!ubicacionPreview) return;
+    lastPreviewKey = "";
+    ubicacionPreview.hidden = false;
+    ubicacionPreview.innerHTML = `<p class="help">No se pudo marcar el punto exacto. Pega el enlace de compartir de Google Maps.</p>`;
+  }
+
+  async function readJson(res) {
+    const rawBody = await res.text();
+    try {
+      return JSON.parse(rawBody);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function geocodeQuery(query) {
+    const res = await fetch(`/api/maps-geocode?q=${encodeURIComponent(query)}`, {
+      signal:
+        typeof AbortSignal !== "undefined" && AbortSignal.timeout
+          ? AbortSignal.timeout(8000)
+          : undefined,
+    });
+    return readJson(res);
+  }
+
+  function applyPin(coords, label) {
     applyUbicacion({
-      mapsUrl,
-      lat,
-      lng,
+      mapsUrl: mapsUrlFromCoords(coords.lat, coords.lng),
+      lat: coords.lat,
+      lng: coords.lng,
       label,
-      query: lat && lng ? "" : label && !/^https?:/i.test(label) ? label : "",
     });
   }
 
@@ -611,26 +668,24 @@
       applyUbicacion({ mapsUrl: "" });
       return;
     }
-    if (raw === appliedUbicacionInput && String(ubicacionMaps?.value || "").trim()) return;
-
-    const foundUrl = pastedMapsUrl(raw);
-    const coords = coordsFromText(foundUrl || raw) || coordsFromText(raw);
-    if (coords) {
-      applyUbicacion({
-        mapsUrl: foundUrl || mapsUrlFromCoords(coords.lat, coords.lng),
-        lat: coords.lat,
-        lng: coords.lng,
-        label: raw,
-      });
+    if (
+      raw === appliedUbicacionInput &&
+      String(ubicacionLat?.value || "").trim() &&
+      String(ubicacionLng?.value || "").trim()
+    ) {
       return;
     }
 
-    if (foundUrl && isShortMapsUrl(foundUrl)) {
+    const foundUrl = pastedMapsUrl(raw);
+    let coords = coordsFromText(foundUrl || raw) || coordsFromText(raw);
+    if (coords) {
+      applyPin(coords, raw);
+      return;
+    }
+
+    if (foundUrl && isMapsUrl(foundUrl)) {
       const reqId = ++ubicacionRequest;
-      if (ubicacionMaps) ubicacionMaps.value = foundUrl;
-      lastPreviewKey = "";
-      ubicacionPreview.hidden = false;
-      ubicacionPreview.innerHTML = `<p>Cargando el mapa…</p>`;
+      showUbicacionLoading();
       try {
         const res = await fetch(`/api/maps-resolve?url=${encodeURIComponent(foundUrl)}`, {
           signal:
@@ -638,42 +693,41 @@
               ? AbortSignal.timeout(8000)
               : undefined,
         });
-        const rawMaps = await res.text();
-        let data = null;
-        try {
-          data = JSON.parse(rawMaps);
-        } catch (_) {
-          data = null;
-        }
+        const data = await readJson(res);
         if (reqId !== ubicacionRequest) return;
-        if (data?.ok) {
-          applyUbicacion({
-            mapsUrl: data.url || foundUrl,
-            lat: data.lat || "",
-            lng: data.lng || "",
-            query: data.query || "",
-            label: data.query || raw,
-          });
-          return;
+        if (data?.lat && data?.lng) coords = { lat: String(data.lat), lng: String(data.lng) };
+        else if (data?.url) coords = coordsFromText(data.url);
+        if (!coords && data?.query) {
+          const geo = await geocodeQuery(data.query);
+          if (reqId !== ubicacionRequest) return;
+          if (geo?.ok && geo.lat && geo.lng) coords = { lat: String(geo.lat), lng: String(geo.lng) };
         }
       } catch (_) {}
       if (reqId !== ubicacionRequest) return;
-      applyUbicacion({ mapsUrl: foundUrl, label: raw });
-      return;
-    }
-
-    if (foundUrl && isMapsUrl(foundUrl)) {
-      const query = placeQueryFromUrl(foundUrl);
-      applyUbicacion({ mapsUrl: foundUrl, query, label: query || raw });
+      if (coords) {
+        applyPin(coords, placeQueryFromUrl(foundUrl) || raw);
+        return;
+      }
+      applyUbicacion({ mapsUrl: "", label: raw });
+      showUbicacionMiss();
       return;
     }
 
     if (!foundUrl && raw.length >= 8) {
-      applyUbicacion({
-        mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(raw)}`,
-        query: raw,
-        label: raw,
-      });
+      const reqId = ++ubicacionRequest;
+      showUbicacionLoading();
+      try {
+        const geo = await geocodeQuery(raw);
+        if (reqId !== ubicacionRequest) return;
+        if (geo?.ok && geo.lat && geo.lng) {
+          applyPin({ lat: String(geo.lat), lng: String(geo.lng) }, raw);
+          return;
+        }
+      } catch (_) {
+        if (reqId !== ubicacionRequest) return;
+      }
+      applyUbicacion({ mapsUrl: "", label: raw });
+      showUbicacionMiss();
     }
   }
 

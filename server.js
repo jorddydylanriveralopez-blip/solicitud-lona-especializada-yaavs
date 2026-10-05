@@ -1140,21 +1140,42 @@ async function buildWorkbook(items) {
   return workbook;
 }
 
-function mapsCoordsFromText(text) {
-  const value = String(text || "");
+function mapsPinFromText(text) {
+  let value = String(text || "");
+  try {
+    value = decodeURIComponent(value);
+  } catch (_) {}
+  const valid = (lat, lng) => {
+    const a = Number(lat);
+    const b = Number(lng);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    if (Math.abs(a) > 90 || Math.abs(b) > 180) return null;
+    return { lat: String(lat), lng: String(lng) };
+  };
+  // !3d/!4d es el pin del lugar. @lat,lng es solo el centro de la cámara y puede ser otra zona.
+  const pins = [...value.matchAll(/!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/g)];
+  if (pins.length) {
+    const last = pins[pins.length - 1];
+    const pin = valid(last[1], last[2]);
+    if (pin) return pin;
+  }
   const patterns = [
-    /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
-    /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/,
     /[?&](?:q|query|ll|center|destination)=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/,
+    /\/(?:place|search)\/(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+    /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+    /(?:^|[^\d.-])(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)(?:[^\d.]|$)/,
   ];
   for (const re of patterns) {
     const match = value.match(re);
     if (!match) continue;
-    const lat = Number(match[1]);
-    const lng = Number(match[2]);
-    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat: match[1], lng: match[2] };
+    const pin = valid(match[1], match[2]);
+    if (pin) return pin;
   }
   return null;
+}
+
+function mapsCoordsFromText(text) {
+  return mapsPinFromText(text);
 }
 
 function mapsQueryFromUrl(url) {
@@ -1209,7 +1230,11 @@ app.get("/api/maps-resolve", async (req, res) => {
     if (!isAllowedMapsUrl(finalUrl) && !/google\./i.test(finalUrl)) {
       return res.status(400).json({ ok: false, error: "El enlace no llevó a Google Maps" });
     }
-    const coords = mapsCoordsFromText(finalUrl);
+    let coords = mapsPinFromText(finalUrl);
+    if (!coords) {
+      const html = await response.text().catch(() => "");
+      coords = mapsPinFromText(html.slice(0, 400000));
+    }
     return res.json({
       ok: true,
       url: finalUrl,
@@ -1220,6 +1245,68 @@ app.get("/api/maps-resolve", async (req, res) => {
   } catch (_) {
     return res.status(502).json({ ok: false, error: "No se pudo abrir el enlace de Maps" });
   }
+});
+
+const geocodeCache = new Map();
+
+app.get("/api/maps-geocode", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const q = String(req.query.q || "").trim().slice(0, 180);
+  if (q.length < 6) {
+    return res.status(400).json({ ok: false, error: "Escribe una dirección más completa" });
+  }
+  const direct = mapsPinFromText(q);
+  if (direct) return res.json({ ok: true, lat: direct.lat, lng: direct.lng });
+
+  const key = q.toLowerCase();
+  if (geocodeCache.has(key)) return res.json(geocodeCache.get(key));
+
+  let coords = null;
+  try {
+    const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+    const response = await fetch(searchUrl, {
+      redirect: "follow",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; YaavsForm/1.0)",
+        Accept: "text/html",
+        "Accept-Language": "es-MX,es;q=0.9",
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    coords = mapsPinFromText(response.url || "");
+    if (!coords) {
+      const html = await response.text().catch(() => "");
+      coords = mapsPinFromText(html.slice(0, 400000));
+    }
+  } catch (_) {}
+
+  if (!coords) {
+    try {
+      const nom = new URL("https://nominatim.openstreetmap.org/search");
+      nom.searchParams.set("q", q);
+      nom.searchParams.set("format", "jsonv2");
+      nom.searchParams.set("limit", "1");
+      nom.searchParams.set("countrycodes", "mx");
+      const response = await fetch(nom, {
+        headers: {
+          "User-Agent": "YaavsForm/1.0 (solicitudes especializadas)",
+          "Accept-Language": "es",
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      const rows = await response.json();
+      if (rows?.[0]?.lat && rows?.[0]?.lon) {
+        coords = { lat: String(rows[0].lat), lng: String(rows[0].lon) };
+      }
+    } catch (_) {}
+  }
+
+  if (!coords) {
+    return res.status(404).json({ ok: false, error: "No se encontró el punto exacto" });
+  }
+  const payload = { ok: true, lat: coords.lat, lng: coords.lng };
+  geocodeCache.set(key, payload);
+  res.json(payload);
 });
 
 app.get("/api/health", async (_req, res) => {
