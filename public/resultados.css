@@ -1154,6 +1154,16 @@ button.ghost-link {
   border-color: transparent;
 }
 
+.status-filter[data-tone="diseno"].is-active { background: #2f6fed; }
+.status-filter[data-tone="proceso"].is-active { background: #e0a100; color: #1a1a1a; }
+.status-filter[data-tone="revision"].is-active { background: #ef7d32; }
+.status-filter[data-tone="terminado"].is-active { background: #1f9d55; }
+
+.status-filter.is-active .status-light {
+  background: #fff;
+  box-shadow: none;
+}
+
 .status-light,
 .semaphore-dot {
   width: 0.72rem;
@@ -1165,69 +1175,129 @@ button.ghost-link {
 }
 
 .status-filter[data-tone="diseno"] .status-light,
+.semaphore-choice[data-tone="diseno"] .status-light,
 .semaphore-dot[data-tone="diseno"],
 .estado-pill[data-tone="diseno"] .status-light {
   background: #2f6fed;
 }
 
 .status-filter[data-tone="proceso"] .status-light,
+.semaphore-choice[data-tone="proceso"] .status-light,
 .semaphore-dot[data-tone="proceso"],
 .estado-pill[data-tone="proceso"] .status-light {
   background: #f5b400;
 }
 
 .status-filter[data-tone="revision"] .status-light,
+.semaphore-choice[data-tone="revision"] .status-light,
 .semaphore-dot[data-tone="revision"],
 .estado-pill[data-tone="revision"] .status-light {
   background: #ef7d32;
 }
 
 .status-filter[data-tone="terminado"] .status-light,
+.semaphore-choice[data-tone="terminado"] .status-light,
 .semaphore-dot[data-tone="terminado"],
 .estado-pill[data-tone="terminado"] .status-light {
   background: #1f9d55;
 }
 
-.semaphore-dot:not(.is-on) {
-  opacity: 0.38;
-}
-
-.semaphore-dot.is-on {
-  opacity: 1;
-  transform: scale(1.12);
-}
-
 .semaphore {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #f4f8fb;
+  border: 1px solid rgba(15, 36, 64, 0.06);
 }
 
-.semaphore-dot {
-  appearance: none;
+.semaphore.is-compact {
+  margin: 0;
+  padding: 8px;
+  background: transparent;
   border: 0;
-  padding: 0;
+}
+
+.semaphore-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  color: var(--navy);
+}
+
+.semaphore-choices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.semaphore.is-compact .semaphore-choices {
+  grid-template-columns: 1fr 1fr;
+}
+
+.semaphore-choice {
+  appearance: none;
+  border: 1.5px solid rgba(15, 36, 64, 0.14);
+  background: #fff;
+  color: var(--navy);
+  border-radius: 999px;
+  padding: 0.45rem 0.55rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
   cursor: pointer;
-  width: 1.05rem;
-  height: 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  text-align: center;
 }
 
-.semaphore-dot:disabled {
-  cursor: progress;
+.semaphore-choice[data-tone="diseno"].is-on {
+  background: #2f6fed;
+  color: #fff;
+  border-color: transparent;
 }
 
-.semaphore-dot.is-on {
-  box-shadow: 0 0 0 3px rgba(15, 36, 64, 0.12);
+.semaphore-choice[data-tone="proceso"].is-on {
+  background: #f5b400;
+  color: #1a1a1a;
+  border-color: transparent;
+}
+
+.semaphore-choice[data-tone="revision"].is-on {
+  background: #ef7d32;
+  color: #fff;
+  border-color: transparent;
+}
+
+.semaphore-choice[data-tone="terminado"].is-on {
+  background: #1f9d55;
+  color: #fff;
+  border-color: transparent;
+}
+
+.semaphore-choice.is-on .status-light {
+  background: currentColor;
+  box-shadow: none;
 }
 
 .estado-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.78rem;
+  margin: 0 0 12px;
+  font-size: 0.9rem;
   font-weight: 750;
   color: var(--navy);
+}
+
+@media (max-width: 820px) {
+  .semaphore-choices {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .request-card {

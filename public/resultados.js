@@ -126,25 +126,28 @@
     const tone = estadoTone(current);
     if (!session?.seesAll) {
       if (!current) return "";
-      return `<span class="estado-pill" data-tone="${tone}"><span class="status-light" aria-hidden="true"></span>${escapeHtml(current)}</span>`;
+      return `<p class="estado-pill" data-tone="${tone}"><span class="status-light" aria-hidden="true"></span>${escapeHtml(current)}</p>`;
     }
-    const dots = ESTADOS.map(
+    const choices = ESTADOS.map(
       (estado) => `
         <button
           type="button"
-          class="semaphore-dot${current === estado.key ? " is-on" : ""}"
+          class="semaphore-choice${current === estado.key ? " is-on" : ""}"
           data-tone="${estado.tone}"
           data-estado="${escapeAttr(estado.key)}"
           data-id="${escapeAttr(item.id || item.folio || "")}"
-          aria-label="${escapeAttr(estado.key)}"
           aria-pressed="${current === estado.key ? "true" : "false"}"
-          title="${escapeAttr(estado.key)}"
-        ></button>`,
+        >
+          <span class="status-light" aria-hidden="true"></span>
+          ${escapeHtml(estado.key)}
+        </button>`,
     ).join("");
-    const label = current
-      ? `<span class="estado-pill" data-tone="${tone}">${escapeHtml(current)}</span>`
-      : `<span class="estado-pill">Sin estado</span>`;
-    return `<div class="semaphore${compact ? " is-compact" : ""}">${dots}${label}</div>`;
+    const hint = current ? `Va en: ${current}` : "Elige el estado:";
+    return `
+      <section class="semaphore${compact ? " is-compact" : ""}" aria-label="Estado de la solicitud">
+        <p class="semaphore-hint">${escapeHtml(hint)}</p>
+        <div class="semaphore-choices">${choices}</div>
+      </section>`;
   }
 
   function filterLabel() {
@@ -933,7 +936,6 @@
           </div>
           <div class="detail-hero-actions">
             <span class="badge large ${kind}">${escapeHtml(materialLabel(item))}</span>
-            ${semaphoreHtml(item)}
             <div class="nav">
               <button type="button" id="prevBtn">← Anterior</button>
               <button type="button" id="nextBtn">Siguiente →</button>
@@ -941,6 +943,8 @@
             </div>
           </div>
         </header>
+
+        ${semaphoreHtml(item)}
 
         <div class="chip-row">
           ${item.puntoVenta ? `<span class="chip">${escapeHtml(item.puntoVenta)}</span>` : ""}
@@ -1091,7 +1095,7 @@
 
   function bindSemaphore(root) {
     if (!session?.seesAll) return;
-    root.querySelectorAll(".semaphore-dot").forEach((btn) => {
+    root.querySelectorAll(".semaphore-choice").forEach((btn) => {
       btn.onclick = (event) => {
         event.preventDefault();
         event.stopPropagation();
