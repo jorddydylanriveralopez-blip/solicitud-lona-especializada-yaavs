@@ -51,6 +51,7 @@ var HEADERS = [
   "Especificaciones por caballete",
   "Especificaciones de rotulación",
   "Observaciones adicionales",
+  "Estado de producción",
 ];
 
 var KEYS = [
@@ -84,6 +85,7 @@ var KEYS = [
   "caballetes",
   "rotulacion",
   "observacionesAdicionales",
+  "estadoProduccion",
 ];
 
 function doGet(e) {
@@ -112,6 +114,12 @@ function doPost(e) {
   try {
     var raw = (e && e.postData && e.postData.contents) || "{}";
     var data = JSON.parse(raw);
+    if (data.action === "setEstado") {
+      var estado = normalizeEstado_(data.estado);
+      if (!estado) return jsonOut_({ ok: false, error: "Estado no válido" });
+      var updated = setEstado_(data.id, data.folio, estado);
+      return jsonOut_({ ok: updated > 0, updated: updated, estado: estado });
+    }
     if (data.action === "delete") {
       var deleted = deleteRows_(data.id, data.folio);
       return jsonOut_({ ok: true, deleted: deleted });
@@ -453,5 +461,33 @@ function rowFromPayload_(data) {
     asText_(pick_(data, "caballetes")),
     asText_(pick_(data, "rotulacion")),
     pick_(data, "observacionesAdicionales"),
+    normalizeEstado_(pick_(data, "estadoProduccion")),
   ];
+}
+
+function normalizeEstado_(raw) {
+  var value = String(raw || "").trim().toLowerCase();
+  if (value === "en diseño" || value === "en diseno") return "En diseño";
+  if (value === "en proceso") return "En proceso";
+  if (value === "en revisión" || value === "en revision") return "En revisión";
+  if (value === "terminado") return "Terminado";
+  return "";
+}
+
+function setEstado_(id, folio, estado) {
+  var wantedId = String(id || "").trim();
+  var wantedFolio = String(folio || "").trim();
+  if (!wantedId && !wantedFolio) return 0;
+  var sheet = ensureSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+  var estadoCol = KEYS.indexOf("estadoProduccion");
+  if (estadoCol < 0) return 0;
+  var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getValues();
+  var matches = matchRows_(values, wantedId, wantedFolio);
+  if (!matches.length) return 0;
+  for (var i = 0; i < matches.length; i++) {
+    sheet.getRange(matches[i] + 2, estadoCol + 1).setValue(estado);
+  }
+  return matches.length;
 }

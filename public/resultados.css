@@ -1119,7 +1119,135 @@ button.ghost-link {
 }
 
 .role-chip[hidden],
+.role-chip[hidden],
 .material-filters[hidden],
+.status-filters[hidden],
 .login-error[hidden] {
   display: none;
+}
+
+.status-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.status-filter {
+  appearance: none;
+  border: 1.5px solid rgba(15, 36, 64, 0.12);
+  background: #fff;
+  color: var(--navy);
+  border-radius: 999px;
+  padding: 0.5rem 0.85rem;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.status-filter.is-active {
+  background: #0b1f38;
+  color: #fff;
+  border-color: transparent;
+}
+
+.status-light,
+.semaphore-dot {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 50%;
+  background: #c5ced6;
+  box-shadow: inset 0 0 0 1px rgba(15, 36, 64, 0.12);
+  flex: none;
+}
+
+.status-filter[data-tone="diseno"] .status-light,
+.semaphore-dot[data-tone="diseno"],
+.estado-pill[data-tone="diseno"] .status-light {
+  background: #2f6fed;
+}
+
+.status-filter[data-tone="proceso"] .status-light,
+.semaphore-dot[data-tone="proceso"],
+.estado-pill[data-tone="proceso"] .status-light {
+  background: #f5b400;
+}
+
+.status-filter[data-tone="revision"] .status-light,
+.semaphore-dot[data-tone="revision"],
+.estado-pill[data-tone="revision"] .status-light {
+  background: #ef7d32;
+}
+
+.status-filter[data-tone="terminado"] .status-light,
+.semaphore-dot[data-tone="terminado"],
+.estado-pill[data-tone="terminado"] .status-light {
+  background: #1f9d55;
+}
+
+.semaphore-dot:not(.is-on) {
+  opacity: 0.38;
+}
+
+.semaphore-dot.is-on {
+  opacity: 1;
+  transform: scale(1.12);
+}
+
+.semaphore {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.semaphore-dot {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.semaphore-dot:disabled {
+  cursor: progress;
+}
+
+.semaphore-dot.is-on {
+  box-shadow: 0 0 0 3px rgba(15, 36, 64, 0.12);
+}
+
+.estado-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 750;
+  color: var(--navy);
+}
+
+.request-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.request-card-open {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
 }

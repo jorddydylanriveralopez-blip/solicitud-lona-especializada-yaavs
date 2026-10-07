@@ -18,9 +18,40 @@
   let lightboxMedia = [];
   let lightboxIndex = 0;
   let materialFilter = "all";
+  let statusFilter = "all";
   let lastFingerprint = null;
   let refreshInFlight = false;
   let session = null;
+
+  const ESTADOS = [
+    { key: "En diseño", tone: "diseno" },
+    { key: "En proceso", tone: "proceso" },
+    { key: "En revisión", tone: "revision" },
+    { key: "Terminado", tone: "terminado" },
+  ];
+  const ESTADO_RANK = {
+    "En diseño": 1,
+    "En proceso": 2,
+    "En revisión": 3,
+    Terminado: 4,
+  };
+
+  function normalizeEstado(raw) {
+    const value = String(raw || "").trim().toLowerCase();
+    if (value === "en diseño" || value === "en diseno") return "En diseño";
+    if (value === "en proceso") return "En proceso";
+    if (value === "en revisión" || value === "en revision") return "En revisión";
+    if (value === "terminado") return "Terminado";
+    return "";
+  }
+
+  function estadoOf(item) {
+    return normalizeEstado(item?.estadoProduccion);
+  }
+
+  function estadoTone(estado) {
+    return ESTADOS.find((item) => item.key === estado)?.tone || "";
+  }
 
   const MATERIAL_FILTERS = [
     { key: "all", label: "Todos" },
@@ -49,8 +80,71 @@
   }
 
   function filteredItems() {
-    if (materialFilter === "all") return items;
-    return items.filter((it) => materialKind(it) === materialFilter);
+    const byMaterial =
+      materialFilter === "all" ? items : items.filter((it) => materialKind(it) === materialFilter);
+    const byStatus =
+      statusFilter === "all"
+        ? byMaterial
+        : byMaterial.filter((it) => estadoOf(it) === statusFilter);
+    if (!session?.seesAll) return byStatus;
+    return [...byStatus].sort((a, b) => {
+      const rankA = ESTADO_RANK[estadoOf(a)] || 0;
+      const rankB = ESTADO_RANK[estadoOf(b)] || 0;
+      if (rankA !== rankB) return rankA - rankB;
+      return new Date(b.receivedAt || 0).getTime() - new Date(a.receivedAt || 0).getTime();
+    });
+  }
+
+  function statusCounts() {
+    const base = materialFilter === "all" ? items : items.filter((it) => materialKind(it) === materialFilter);
+    const counts = { all: base.length };
+    for (const estado of ESTADOS) counts[estado.key] = 0;
+    for (const item of base) {
+      const estado = estadoOf(item);
+      if (counts[estado] != null) counts[estado] += 1;
+    }
+    return counts;
+  }
+
+  function renderStatusFilters() {
+    const nav = document.getElementById("statusFilters");
+    if (!nav) return;
+    const show = Boolean(session?.seesAll);
+    nav.hidden = !show;
+    if (!show) return;
+    const counts = statusCounts();
+    nav.querySelectorAll(".status-filter").forEach((btn) => {
+      const key = btn.dataset.status || "all";
+      btn.classList.toggle("is-active", key === statusFilter);
+      const countEl = btn.querySelector("[data-status-count]");
+      if (countEl) countEl.textContent = String(counts[key] ?? 0);
+    });
+  }
+
+  function semaphoreHtml(item, { compact = false } = {}) {
+    const current = estadoOf(item);
+    const tone = estadoTone(current);
+    if (!session?.seesAll) {
+      if (!current) return "";
+      return `<span class="estado-pill" data-tone="${tone}"><span class="status-light" aria-hidden="true"></span>${escapeHtml(current)}</span>`;
+    }
+    const dots = ESTADOS.map(
+      (estado) => `
+        <button
+          type="button"
+          class="semaphore-dot${current === estado.key ? " is-on" : ""}"
+          data-tone="${estado.tone}"
+          data-estado="${escapeAttr(estado.key)}"
+          data-id="${escapeAttr(item.id || item.folio || "")}"
+          aria-label="${escapeAttr(estado.key)}"
+          aria-pressed="${current === estado.key ? "true" : "false"}"
+          title="${escapeAttr(estado.key)}"
+        ></button>`,
+    ).join("");
+    const label = current
+      ? `<span class="estado-pill" data-tone="${tone}">${escapeHtml(current)}</span>`
+      : `<span class="estado-pill">Sin estado</span>`;
+    return `<div class="semaphore${compact ? " is-compact" : ""}">${dots}${label}</div>`;
   }
 
   function filterLabel() {
@@ -633,41 +727,45 @@
         const kind = materialKind(item);
         const mediaCount = mediaOf(item).length;
         return `
-          <button type="button" class="request-card${active}" data-index="${i}">
-            <div class="request-card-thumb">
-              ${
-                thumb
-                  ? `<img src="${escapeAttr(thumb)}" alt="" loading="lazy" />`
-                  : `<span class="request-card-placeholder ${kind}">${
-                      kind === "toldo"
-                        ? "T"
-                        : kind === "caballete"
-                          ? "C"
-                          : kind === "rotulacion"
-                            ? "R"
-                            : "L"
-                    }</span>`
-              }
-            </div>
-            <div class="request-card-body">
-              <div class="request-card-top">
-                <strong>${escapeHtml(item.folio || "Sin folio")}</strong>
-                <span class="badge ${kind}">${escapeHtml(materialLabel(item))}</span>
+          <article class="request-card${active}">
+            <button type="button" class="request-card-open" data-index="${i}">
+              <div class="request-card-thumb">
+                ${
+                  thumb
+                    ? `<img src="${escapeAttr(thumb)}" alt="" loading="lazy" />`
+                    : `<span class="request-card-placeholder ${kind}">${
+                        kind === "toldo"
+                          ? "T"
+                          : kind === "caballete"
+                            ? "C"
+                            : kind === "rotulacion"
+                              ? "R"
+                              : "L"
+                      }</span>`
+                }
               </div>
-              <p>${escapeHtml(item.puntoVenta || item.yaavserNombre || "—")}</p>
-              <small>${escapeHtml(formatDate(item.receivedAt))}${mediaCount ? ` · ${mediaCount} archivo${mediaCount === 1 ? "" : "s"}` : ""}</small>
-            </div>
-          </button>`;
+              <div class="request-card-body">
+                <div class="request-card-top">
+                  <strong>${escapeHtml(item.folio || "Sin folio")}</strong>
+                  <span class="badge ${kind}">${escapeHtml(materialLabel(item))}</span>
+                </div>
+                <p>${escapeHtml(item.puntoVenta || item.yaavserNombre || "—")}</p>
+                <small>${escapeHtml(formatDate(item.receivedAt))}${mediaCount ? ` · ${mediaCount} archivo${mediaCount === 1 ? "" : "s"}` : ""}</small>
+              </div>
+            </button>
+            ${session?.seesAll ? semaphoreHtml(item, { compact: true }) : ""}
+          </article>`;
       })
       .join("");
 
-    listEl.querySelectorAll(".request-card").forEach((btn) => {
+    listEl.querySelectorAll(".request-card-open").forEach((btn) => {
       btn.onclick = () => {
         index = Number(btn.dataset.index) || 0;
         renderList();
         renderDetail();
       };
     });
+    bindSemaphore(listEl);
   }
 
   function fieldValueHtml(key, val) {
@@ -835,6 +933,7 @@
           </div>
           <div class="detail-hero-actions">
             <span class="badge large ${kind}">${escapeHtml(materialLabel(item))}</span>
+            ${semaphoreHtml(item)}
             <div class="nav">
               <button type="button" id="prevBtn">← Anterior</button>
               <button type="button" id="nextBtn">Siguiente →</button>
@@ -914,6 +1013,8 @@
       </article>
     `;
 
+    bindSemaphore(detailEl);
+
     document.getElementById("prevBtn").onclick = () => {
       const visible = filteredItems();
       if (!visible.length) return;
@@ -957,6 +1058,47 @@
       btn.onclick = () => {
         const idx = Number(btn.dataset.mediaIndex);
         openLightbox(media, Number.isFinite(idx) && idx >= 0 ? idx : 0);
+      };
+    });
+  }
+
+  async function setEstado(id, estado) {
+    const item = items.find((it) => it.id === id || it.folio === id);
+    if (!item || !session?.seesAll) return;
+    const previous = item.estadoProduccion || "";
+    item.estadoProduccion = estado;
+    renderStatusFilters();
+    renderList();
+    renderDetail();
+    try {
+      const res = await fetch(`/api/responses/${encodeURIComponent(id)}/estado`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) throw new Error(data.error || "No se pudo guardar");
+      item.estadoProduccion = data.estado || estado;
+      lastFingerprint = boardFingerprint(items);
+    } catch (err) {
+      item.estadoProduccion = previous;
+      renderStatusFilters();
+      renderList();
+      renderDetail();
+      window.alert(err.message || "No se pudo guardar el semáforo");
+    }
+  }
+
+  function bindSemaphore(root) {
+    if (!session?.seesAll) return;
+    root.querySelectorAll(".semaphore-dot").forEach((btn) => {
+      btn.onclick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const id = btn.dataset.id || "";
+        const estado = btn.dataset.estado || "";
+        if (!id || !estado) return;
+        setEstado(id, estado);
       };
     });
   }
@@ -1073,6 +1215,7 @@
       // Keep UI stable while lightbox is open; apply queued data on close via next tick
       if (dataChanged && !lightboxOpen) {
         renderMaterialFilters();
+        renderStatusFilters();
         renderStats();
         renderList();
         renderDetail();
@@ -1102,6 +1245,7 @@
           it.receivedAt || "",
           it.material || "",
           it.puntoVenta || "",
+          it.estadoProduccion || "",
           media,
           typeof it.rotulacion === "string"
             ? it.rotulacion
@@ -1140,6 +1284,19 @@
       const filters = document.getElementById("materialFilters");
       if (filters) filters.hidden = true;
     }
+    renderStatusFilters();
+    document.getElementById("statusFilters")?.addEventListener("click", (e) => {
+      const btn = e.target.closest(".status-filter");
+      if (!btn || !session?.seesAll) return;
+      const next = btn.dataset.status || "all";
+      if (next === statusFilter) return;
+      statusFilter = next;
+      index = 0;
+      renderStatusFilters();
+      renderStats();
+      renderList();
+      renderDetail();
+    });
     document.getElementById("logoutBtn")?.addEventListener("click", async () => {
       await fetch("/api/logout", { method: "POST" }).catch(() => {});
       location.replace("/resultados");

@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./resultados.css?v=20261003d" />
+    <link rel="stylesheet" href="./resultados.css?v=20261007a" />
   </head>
   <body>
     <div class="atmosphere" aria-hidden="true">
@@ -65,6 +65,27 @@
           Rotulación <span class="filter-count" data-count="rotulacion">0</span>
         </button>
       </nav>
+      <nav class="status-filters" id="statusFilters" hidden aria-label="Ordenar por semáforo">
+        <button type="button" class="status-filter is-active" data-status="all">
+          Orden del semáforo
+        </button>
+        <button type="button" class="status-filter" data-status="En diseño" data-tone="diseno">
+          <span class="status-light" aria-hidden="true"></span>
+          En diseño <span class="filter-count" data-status-count="En diseño">0</span>
+        </button>
+        <button type="button" class="status-filter" data-status="En proceso" data-tone="proceso">
+          <span class="status-light" aria-hidden="true"></span>
+          En proceso <span class="filter-count" data-status-count="En proceso">0</span>
+        </button>
+        <button type="button" class="status-filter" data-status="En revisión" data-tone="revision">
+          <span class="status-light" aria-hidden="true"></span>
+          En revisión <span class="filter-count" data-status-count="En revisión">0</span>
+        </button>
+        <button type="button" class="status-filter" data-status="Terminado" data-tone="terminado">
+          <span class="status-light" aria-hidden="true"></span>
+          Terminado <span class="filter-count" data-status-count="Terminado">0</span>
+        </button>
+      </nav>
       <div class="board-shell">
         <aside class="request-list" id="requestList" aria-label="Lista de solicitudes"></aside>
         <section class="detail" id="detail" aria-live="polite"></section>
@@ -82,6 +103,6 @@
       <button type="button" class="lightbox-nav next" id="lightboxNext" aria-label="Siguiente">›</button>
     </div>
 
-    <script src="./resultados.js?v=20261003d" defer></script>
+    <script src="./resultados.js?v=20261007a" defer></script>
   </body>
 </html>

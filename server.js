@@ -127,6 +127,7 @@ const FIELD_ORDER = [
   ["rotulacion", "Especificaciones de rotulación"],
   ["confirmaciones", "Confirmaciones"],
   ["observacionesAdicionales", "Observaciones adicionales"],
+  ["estadoProduccion", "Estado de producción"],
   ["id", "ID interno"],
 ];
 
@@ -159,6 +160,7 @@ const COLUMN_WIDTHS = {
   rotulacion: 56,
   confirmaciones: 40,
   observacionesAdicionales: 40,
+  estadoProduccion: 22,
   id: 28,
 };
 
@@ -230,6 +232,17 @@ const BOARD_ROLES = {
     hash: "102d46f591c1ec63ba75e79340bbda4f:9aaac3482ca9368c40f3d8bbe9660865de40322a708e7a79cb3c94eec5e2e55b",
   },
 };
+const PRODUCCION_ESTADOS = ["En diseño", "En proceso", "En revisión", "Terminado"];
+
+function normalizeProduccionEstado(raw) {
+  const value = String(raw || "").trim().toLowerCase();
+  if (value === "en diseño" || value === "en diseno") return "En diseño";
+  if (value === "en proceso") return "En proceso";
+  if (value === "en revisión" || value === "en revision") return "En revisión";
+  if (value === "terminado") return "Terminado";
+  return "";
+}
+
 const BOARD_COOKIE = "yaavs_board";
 const BOARD_SESSION_DAYS = 30;
 const BOARD_SESSION_SECRET = String(
@@ -921,6 +934,24 @@ const SHEETS_LIST_CACHE_MS = 4000;
 let sheetsListInFlight = null;
 let sheetsCacheGen = 0;
 
+function patchSheetEstado(id, folio, estado) {
+  sheetsCacheGen += 1;
+  sheetsListInFlight = null;
+  if (!Array.isArray(sheetsListCache.items)) return;
+  const wantedId = String(id || "").trim();
+  const wantedFolio = String(folio || "").trim();
+  sheetsListCache = {
+    at: Date.now(),
+    error: null,
+    items: sheetsListCache.items.map((item) => {
+      const sameId = wantedId && String(item.id || "").trim() === wantedId;
+      const sameFolio = wantedFolio && String(item.folio || "").trim() === wantedFolio;
+      if (!sameId && !sameFolio) return item;
+      return { ...item, estadoProduccion: estado };
+    }),
+  };
+}
+
 function invalidateSheetsCache({ hard = false } = {}) {
   sheetsCacheGen += 1;
   sheetsListInFlight = null;
@@ -1070,6 +1101,8 @@ function mergeBoardItems(localItems, sheetsItems) {
     map.set(k, {
       ...prev,
       ...item,
+      estadoProduccion:
+        String(prev.estadoProduccion || "").trim() || String(item.estadoProduccion || "").trim(),
       media,
       lonasDetail: item.lonasDetail || prev.lonasDetail || null,
       toldosDetail: item.toldosDetail || prev.toldosDetail || null,
@@ -1411,6 +1444,49 @@ app.get("/api/responses/:id/archivos.zip", requireBoard, async (req, res) => {
   } catch (err) {
     if (!res.headersSent) res.status(500).json({ ok: false, error: err.message || "Error al generar ZIP" });
   }
+});
+
+app.post("/api/responses/:id/estado", requireBoard, async (req, res) => {
+  if (!req.boardRole.seesAll) {
+    return res.status(403).json({ ok: false, error: "Solo Marketing puede cambiar el semáforo" });
+  }
+  const estado = normalizeProduccionEstado(req.body?.estado);
+  if (!estado || !PRODUCCION_ESTADOS.includes(estado)) {
+    return res.status(400).json({ ok: false, error: "Elige en diseño, en proceso, en revisión o terminado" });
+  }
+  const id = String(req.params.id || "").trim();
+  if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
+
+  const list = readResponses();
+  let folio = "";
+  let changedLocal = false;
+  for (const entry of list) {
+    if (entry.id !== id && entry.folio !== id) continue;
+    folio = entry.folio || folio;
+    entry.answers = entry.answers && typeof entry.answers === "object" ? entry.answers : {};
+    entry.answers.estadoProduccion = estado;
+    changedLocal = true;
+  }
+  if (changedLocal) writeResponses(list);
+
+  const sheets = await fetchSheetsItems().catch(() => null);
+  const row = (sheets || []).find((item) => item.id === id || item.folio === id);
+  folio = folio || row?.folio || "";
+  const previousEstado = String(row?.estadoProduccion || "");
+  patchSheetEstado(id, folio, estado);
+
+  const sheetsResult = await postToSheetsRaw(
+    JSON.stringify({ action: "setEstado", id, folio, estado }),
+  );
+  if (!sheetsResult.ok || sheetsResult.body?.ok === false) {
+    patchSheetEstado(id, folio, previousEstado);
+    return res.status(502).json({
+      ok: false,
+      error: "No se pudo guardar el semáforo en el registro",
+      sheets: sheetsResult,
+    });
+  }
+  res.json({ ok: true, id, folio, estado, sheets: sheetsResult.body || { ok: true } });
 });
 
 app.delete("/api/responses/:id", requireBoard, async (req, res) => {
