@@ -61,6 +61,12 @@
     { key: "rotulacion", label: "Rotulación" },
   ];
 
+  function itemsForSession(list) {
+    const rows = Array.isArray(list) ? list : [];
+    if (session?.seesAll) return rows;
+    return rows.filter((it) => materialKind(it) === "rotulacion");
+  }
+
   function materialKind(item) {
     const m = String(item?.material || "").toLowerCase();
     if (m.includes("toldo")) return "toldo";
@@ -721,8 +727,13 @@
         <strong>${withMedia}</strong>
       </div>
       <div class="stat">
-        <span>Por material</span>
-        <strong class="stat-sm">L ${counts.lona} · T ${counts.toldo} · C ${counts.caballete} · R ${counts.rotulacion}</strong>
+        ${
+          session?.seesAll
+            ? `<span>Por material</span>
+               <strong class="stat-sm">L ${counts.lona} · T ${counts.toldo} · C ${counts.caballete} · R ${counts.rotulacion}</strong>`
+            : `<span>Notas de rotulación</span>
+               <strong>${visible.filter((it) => String(it.faltanteCliente || "").trim()).length}</strong>`
+        }
       </div>
     `;
   }
@@ -769,7 +780,7 @@
                 <p>${escapeHtml(item.puntoVenta || item.yaavserNombre || "—")}</p>
                 <small>${escapeHtml(formatDate(item.receivedAt))}${mediaCount ? ` · ${mediaCount} archivo${mediaCount === 1 ? "" : "s"}` : ""}</small>
                 ${
-                  item.faltanteCliente
+                  item.faltanteCliente && (session?.seesAll || materialKind(item) === "rotulacion")
                     ? `<p class="card-note">${escapeHtml(item.faltanteCliente)}</p>`
                     : ""
                 }
@@ -924,10 +935,10 @@
     const historial = String(item?.faltanteHistorial || "");
     const notes = noteHistoryHtml(historial);
     if (!session?.seesAll) {
-      if (!texto && !historial) return "";
+      if (materialKind(item) !== "rotulacion" || (!texto && !historial)) return "";
       return `
-        <section class="faltante" aria-label="Nota">
-          <h3>Nota</h3>
+        <section class="faltante" aria-label="Nota de rotulación">
+          <h3>Nota de rotulación</h3>
           ${texto ? `<p class="faltante-text">${escapeHtml(texto)}</p>` : ""}
           ${notes}
         </section>`;
@@ -1270,7 +1281,7 @@
         return;
       }
       const data = await res.json();
-      const next = Array.isArray(data.items) ? data.items : [];
+      const next = itemsForSession(data.items);
       sheetsConfigured = Boolean(data.sheetsConfigured);
 
       const fingerprint = boardFingerprint(next);

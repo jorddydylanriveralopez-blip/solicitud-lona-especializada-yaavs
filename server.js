@@ -318,7 +318,12 @@ function isRotulacionItem(item) {
 }
 
 function scopeItems(items, role) {
-  return role?.seesAll ? items : (items || []).filter(isRotulacionItem);
+  if (role?.seesAll) return items || [];
+  return (items || []).filter(isRotulacionItem).map((item) => ({
+    ...item,
+    faltanteCliente: isRotulacionItem(item) ? item.faltanteCliente || "" : "",
+    faltanteHistorial: isRotulacionItem(item) ? item.faltanteHistorial || "" : "",
+  }));
 }
 
 const loginAttempts = new Map();
