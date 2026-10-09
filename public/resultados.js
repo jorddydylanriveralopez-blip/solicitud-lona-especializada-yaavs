@@ -828,6 +828,7 @@
               </div>
             </button>
             ${session?.seesAll ? semaphoreHtml(item, { compact: true }) : ""}
+            ${productoCardHtml(item)}
           </article>`;
       })
       .join("");
@@ -840,6 +841,40 @@
       };
     });
     bindSemaphore(listEl);
+    bindProductoCards(listEl);
+  }
+
+  function productoCardHtml(item) {
+    if (!session?.seesAll || materialKind(item) !== "rotulacion") return "";
+    const count = productoFinalOf(item).length;
+    const id = escapeAttr(item.id || item.folio || "");
+    return `
+      <div class="producto-card">
+        <input class="producto-card-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf,.pdf" multiple hidden data-id="${id}" />
+        <button type="button" class="producto-card-btn" data-id="${id}">${count ? `Subir otro render · ${count}` : "Subir render"}</button>
+      </div>`;
+  }
+
+  function bindProductoCards(root) {
+    if (!session?.seesAll || !root) return;
+    root.querySelectorAll(".producto-card").forEach((wrap) => {
+      const input = wrap.querySelector(".producto-card-input");
+      const button = wrap.querySelector(".producto-card-btn");
+      if (!input || !button) return;
+      button.onclick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!productoUploadBusy) input.click();
+      };
+      input.onchange = () => {
+        const chosen = [...(input.files || [])];
+        input.value = "";
+        if (!chosen.length) return;
+        const id = input.dataset.id || "";
+        const item = items.find((it) => it.id === id || it.folio === id);
+        uploadProductoFinal(item, chosen, button);
+      };
+    });
   }
 
   function fieldValueHtml(key, val) {
@@ -1004,13 +1039,9 @@
     const uploader = session?.seesAll
       ? `
         <div class="producto-upload">
-          <p>Sube el render o cómo quedó el producto terminado.</p>
+          <p>Sube aquí el render o el producto terminado.</p>
           <input id="productoFinalInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf,.pdf" multiple hidden />
-          <div class="producto-upload-row">
-            <button type="button" class="producto-pick" id="productoFinalPick">Elegir archivos</button>
-            <button type="button" class="producto-send" id="productoFinalBtn" disabled>Subir producto terminado</button>
-          </div>
-          <p class="producto-names" id="productoFinalNames"></p>
+          <button type="button" class="producto-send" id="productoFinalBtn">Subir render</button>
         </div>`
       : "";
     return `
@@ -1151,11 +1182,11 @@
           </div>
         </header>
 
+        ${productoFinalHtml(item)}
+
         ${semaphoreHtml(item)}
 
         ${faltanteHtml(item)}
-
-        ${productoFinalHtml(item)}
 
         <div class="chip-row">
           ${item.puntoVenta ? `<span class="chip">${escapeHtml(item.puntoVenta)}</span>` : ""}
@@ -1281,57 +1312,52 @@
     });
   }
 
+  async function uploadProductoFinal(item, files, button) {
+    if (!item || !files?.length || productoUploadBusy || !session?.seesAll) return;
+    productoUploadBusy = true;
+    const previous = button?.textContent || "Subir render";
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Subiendo…";
+    }
+    try {
+      const body = new FormData();
+      for (const file of files) body.append("producto", file);
+      const res = await fetch(
+        `/api/responses/${encodeURIComponent(item.id || item.folio || "")}/producto-final`,
+        { method: "POST", body },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!data.media?.length) throw new Error(data.error || "No se pudo subir el producto terminado");
+      const current = Array.isArray(item.media) ? item.media : [];
+      item.media = current.concat(data.media);
+      lastFingerprint = boardFingerprint(items);
+      if (data.error) window.alert(data.error);
+      renderList();
+      renderDetail();
+    } catch (err) {
+      if (button) {
+        button.disabled = false;
+        button.textContent = previous;
+      }
+      window.alert(err.message || "No se pudo subir el producto terminado");
+    } finally {
+      productoUploadBusy = false;
+    }
+  }
+
   function bindProductoFinal(item) {
     const input = document.getElementById("productoFinalInput");
-    const pick = document.getElementById("productoFinalPick");
     const send = document.getElementById("productoFinalBtn");
-    const names = document.getElementById("productoFinalNames");
-    if (!input || !pick || !send || !session?.seesAll) return;
-    const describe = () => {
-      const chosen = [...(input.files || [])];
-      send.disabled = !chosen.length || productoUploadBusy;
-      if (names) {
-        names.textContent = chosen.length
-          ? chosen.map((file) => file.name).join(", ")
-          : "";
-      }
+    if (!input || !send || !session?.seesAll) return;
+    send.onclick = () => {
+      if (!productoUploadBusy) input.click();
     };
-    pick.onclick = () => input.click();
-    input.onchange = describe;
-    send.onclick = async () => {
+    input.onchange = () => {
       const chosen = [...(input.files || [])];
-      if (!chosen.length || productoUploadBusy) {
-        if (!chosen.length) input.click();
-        return;
-      }
-      productoUploadBusy = true;
-      send.disabled = true;
-      pick.disabled = true;
-      send.textContent = "Subiendo…";
-      try {
-        const body = new FormData();
-        for (const file of chosen) body.append("producto", file);
-        const res = await fetch(
-          `/api/responses/${encodeURIComponent(item.id || item.folio || "")}/producto-final`,
-          { method: "POST", body },
-        );
-        const data = await res.json().catch(() => ({}));
-        if (!data.media?.length) throw new Error(data.error || "No se pudo subir el producto terminado");
-        const current = Array.isArray(item.media) ? item.media : [];
-        item.media = current.concat(data.media);
-        lastFingerprint = boardFingerprint(items);
-        if (data.error) window.alert(data.error);
-        renderList();
-        renderDetail();
-      } catch (err) {
-        productoUploadBusy = false;
-        send.disabled = false;
-        pick.disabled = false;
-        send.textContent = "Subir producto terminado";
-        window.alert(err.message || "No se pudo subir el producto terminado");
-      } finally {
-        productoUploadBusy = false;
-      }
+      input.value = "";
+      if (!chosen.length) return;
+      uploadProductoFinal(item, chosen, send);
     };
   }
 
