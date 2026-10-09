@@ -572,6 +572,19 @@ function extractRotulacionMedia(answers) {
   return media;
 }
 
+function extractProductoFinalMedia(answers) {
+  const files = Array.isArray(answers?.productoFinal) ? answers.productoFinal : [];
+  return files
+    .filter((f) => f && (f.url || f.storedAs))
+    .map((f) => ({
+      ...f,
+      kind: "productoFinal",
+      group: "Producto terminado",
+      label: "Producto terminado",
+      field: "producto_final",
+    }));
+}
+
 function extractMedia(entry) {
   const answers = entry?.answers && typeof entry.answers === "object" ? entry.answers : {};
   return dedupeMedia([
@@ -580,6 +593,7 @@ function extractMedia(entry) {
     ...extractMediaFromItems(answers.caballetes, "caballete"),
     ...extractToldoPuntoVentaMedia(answers),
     ...extractRotulacionMedia(answers),
+    ...extractProductoFinalMedia(answers),
   ]);
 }
 
@@ -998,6 +1012,15 @@ function patchSheetEstado(id, folio, estado) {
       return { ...item, estadoProduccion: estado };
     }),
   };
+}
+
+function rememberMediaOnSheetCache(id, folio, files) {
+  if (!Array.isArray(sheetsListCache.items) || !files?.length) return;
+  const row = sheetsListCache.items.find(
+    (it) => (id && String(it.id || "") === String(id)) || (folio && String(it.folio || "") === String(folio)),
+  );
+  if (!row) return;
+  row.media = parseMediaField(row.media).concat(files);
 }
 
 function invalidateSheetsCache({ hard = false } = {}) {
@@ -1493,6 +1516,149 @@ app.get("/api/responses/:id/archivos.zip", requireBoard, async (req, res) => {
   } catch (err) {
     if (!res.headersSent) res.status(500).json({ ok: false, error: err.message || "Error al generar ZIP" });
   }
+});
+
+app.post("/api/responses/:id/producto-final", requireBoard, (req, res) => {
+  upload.array("producto", 8)(req, res, async (err) => {
+    const tmpPaths = () => (req.files || []).map((file) => file.path).filter(Boolean);
+    const dropTmp = () => {
+      for (const filePath of tmpPaths()) {
+        if (filePath && fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+          } catch (_) {}
+        }
+      }
+    };
+    try {
+      if (err) {
+        return res.status(400).json({ ok: false, error: uploadErrorMessage(err) });
+      }
+      if (!req.boardRole.seesAll) {
+        return res.status(403).json({ ok: false, error: "Solo Marketing puede subir el producto terminado" });
+      }
+      const files = req.files || [];
+      if (!files.length) {
+        return res.status(400).json({ ok: false, error: "Elige el render o el producto terminado" });
+      }
+      const id = String(req.params.id || "").trim();
+      if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
+
+      const board = await boardItems();
+      const item = (board.items || []).find((it) => it.id === id || it.folio === id);
+      if (!item || !isRotulacionItem(item)) {
+        return res.status(404).json({ ok: false, error: "El producto terminado solo se sube en rotulación" });
+      }
+
+      const saved = [];
+      const failed = [];
+      const entryId = item.id || id;
+      const destDir = path.join(uploadsRoot, entryId);
+      fs.mkdirSync(destDir, { recursive: true });
+
+      for (const file of files) {
+        const storedAs = path.basename(file.filename || file.path || "");
+        const target = path.join(destDir, storedAs);
+        try {
+          if (file.path && fs.existsSync(file.path)) {
+            try {
+              fs.renameSync(file.path, target);
+            } catch (_) {
+              fs.copyFileSync(file.path, target);
+            }
+          }
+          if (!fs.existsSync(target)) {
+            failed.push(file.originalname || "archivo");
+            continue;
+          }
+          const att = {
+            name: file.originalname || storedAs,
+            mime: file.mimetype || "application/octet-stream",
+            kind: "productoFinal",
+            group: "Producto terminado",
+            label: "Producto terminado",
+            field: "producto_final",
+            storedAs,
+            data: fs.readFileSync(target).toString("base64"),
+          };
+          let url = `/uploads/${entryId}/${storedAs}`;
+          if (SHEETS_WEBHOOK_URL) {
+            let driveFile = null;
+            for (let attempt = 1; attempt <= 3 && !driveFile; attempt += 1) {
+              const one = await postToSheetsRaw(
+                JSON.stringify({
+                  action: "addMedia",
+                  id: entryId,
+                  folio: item.folio || "",
+                  attachment: att,
+                }),
+              );
+              const savedRows = Array.isArray(one.body?.saved) ? one.body.saved : one.body?.media || [];
+              driveFile = savedRows.find(
+                (m) =>
+                  String(m?.url || "").includes("drive.google") &&
+                  String(m?.storedAs || "") === storedAs,
+              );
+              if (!driveFile && attempt < 3) await new Promise((r) => setTimeout(r, 1500 * attempt));
+            }
+            if (!driveFile?.url) {
+              failed.push(att.name);
+              try {
+                fs.unlinkSync(target);
+              } catch (_) {}
+              continue;
+            }
+            url = driveFile.url;
+          }
+          saved.push({
+            name: att.name,
+            mime: att.mime,
+            kind: "productoFinal",
+            group: "Producto terminado",
+            label: "Producto terminado",
+            field: "producto_final",
+            storedAs,
+            url,
+          });
+        } catch (fileErr) {
+          failed.push(file.originalname || storedAs);
+          console.error("Producto final:", fileErr?.message || fileErr);
+        }
+      }
+
+      if (saved.length) {
+        const list = readResponses();
+        const localEntry = list.find((entry) => entry.id === entryId || entry.folio === (item.folio || id));
+        if (localEntry) {
+          localEntry.answers =
+            localEntry.answers && typeof localEntry.answers === "object" ? localEntry.answers : {};
+          const prev = Array.isArray(localEntry.answers.productoFinal) ? localEntry.answers.productoFinal : [];
+          localEntry.answers.productoFinal = prev.concat(saved);
+          writeResponses(list);
+        }
+        rememberMediaOnSheetCache(entryId, item.folio || "", saved);
+        invalidateSheetsCache();
+      }
+
+      if (!saved.length) {
+        return res.status(502).json({ ok: false, error: "No se pudo guardar el producto terminado" });
+      }
+      res.json({
+        ok: failed.length === 0,
+        id: entryId,
+        folio: item.folio || "",
+        media: saved,
+        error: failed.length ? "Algunas imágenes no se guardaron. Vuelve a subirlas." : "",
+      });
+    } catch (e) {
+      console.error("Producto final:", e?.message || e);
+      if (!res.headersSent) {
+        res.status(500).json({ ok: false, error: "No se pudo subir el producto terminado" });
+      }
+    } finally {
+      dropTmp();
+    }
+  });
 });
 
 app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {

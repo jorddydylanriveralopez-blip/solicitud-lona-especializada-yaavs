@@ -18,6 +18,7 @@
   let lightboxMedia = [];
   let lightboxIndex = 0;
   let materialFilter = "all";
+  let productoUploadBusy = false;
   let statusFilter = "all";
   let lastFingerprint = null;
   let refreshInFlight = false;
@@ -65,6 +66,19 @@
     const rows = Array.isArray(list) ? list : [];
     if (session?.seesAll) return rows;
     return rows.filter((it) => materialKind(it) === "rotulacion");
+  }
+
+  function mergeKeptProducto(prev, next) {
+    if (!Array.isArray(prev) || !prev.length) return next;
+    const previous = new Map(prev.map((it) => [it.id || it.folio, it]));
+    return next.map((it) => {
+      const old = previous.get(it.id || it.folio);
+      if (!old) return it;
+      const incoming = new Set(productoFinalOf(it).map((file) => String(file.storedAs || file.url || "")));
+      const extra = productoFinalOf(old).filter((file) => !incoming.has(String(file.storedAs || file.url || "")));
+      if (!extra.length) return it;
+      return { ...it, media: [...(Array.isArray(it.media) ? it.media : []), ...extra] };
+    });
   }
 
   function materialKind(item) {
@@ -260,12 +274,32 @@
     return m.includes("pdf") || /\.pdf$/i.test(String(name || ""));
   }
 
+  function isProductoFinal(file) {
+    const kind = String(file?.kind || "").toLowerCase();
+    const field = String(file?.field || "").toLowerCase();
+    const group = String(file?.group || "").toLowerCase();
+    return kind === "productofinal" || field === "producto_final" || group.includes("producto terminado");
+  }
+
+  function productoFinalOf(item) {
+    return mediaOf(item).filter((file) => isProductoFinal(file));
+  }
+
   function normalizeMediaFile(file, item) {
     if (!file || typeof file !== "object") return null;
     const kind = String(file.kind || "").toLowerCase();
     const labelRaw = String(file.label || "").toLowerCase();
     const groupRaw = String(file.group || "").toLowerCase();
     const field = String(file.field || "").toLowerCase();
+    if (kind === "productofinal" || field === "producto_final" || groupRaw.includes("producto terminado")) {
+      return {
+        ...file,
+        kind: "productoFinal",
+        group: "Producto terminado",
+        label: "Producto terminado",
+        field: file.field || "producto_final",
+      };
+    }
     const material = String(item?.material || "").toLowerCase();
     const isRotul =
       material.includes("rotul") || field.includes("rotulacion_foto") || field.includes("rotulacion_permiso");
@@ -527,8 +561,10 @@
   function firstThumb(item) {
     const preferred = puntoVentaMedia(item).find((f) => isImageMime(f.mime, f.name) && f.url);
     if (preferred?.url) return viewUrl(preferred);
-    const img = mediaOf(item).find((f) => isImageMime(f.mime, f.name) && f.url);
-    return img?.url ? viewUrl(img) : "";
+    const img = mediaOf(item).find((f) => !isProductoFinal(f) && isImageMime(f.mime, f.name) && f.url);
+    if (img?.url) return viewUrl(img);
+    const render = productoFinalOf(item).find((f) => isImageMime(f.mime, f.name) && f.url);
+    return render?.url ? viewUrl(render) : "";
   }
 
   function renderPuntoVentaPhotos(item, media) {
@@ -784,6 +820,11 @@
                     ? `<p class="card-note">${session?.seesAll ? "" : "Marketing: "}${escapeHtml(item.faltanteCliente)}</p>`
                     : ""
                 }
+                ${
+                  materialKind(item) === "rotulacion" && productoFinalOf(item).length
+                    ? `<p class="card-producto">Producto terminado</p>`
+                    : ""
+                }
               </div>
             </button>
             ${session?.seesAll ? semaphoreHtml(item, { compact: true }) : ""}
@@ -930,6 +971,63 @@
     return `<div class="note-stack"><span>Notas guardadas</span>${cards.join("")}</div>`;
   }
 
+  function productoTile(file, idx) {
+    const kindLabel = "Producto terminado";
+    if (isImageMime(file.mime, file.name)) {
+      return `
+        <div class="evidence-tile-wrap">
+          <button type="button" class="evidence-item image-tile" data-producto-index="${idx}">
+            <img src="${escapeAttr(viewUrl(file))}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
+            <span>${escapeHtml(kindLabel)}</span>
+            ${file.name ? `<small>${escapeHtml(file.name)}</small>` : ""}
+          </button>
+          ${downloadLink(file)}
+        </div>`;
+    }
+    const badge = isPdf(file.mime, file.name) ? "PDF" : "DOC";
+    return `
+      <div class="evidence-tile-wrap">
+        <a class="evidence-item file-tile" href="${escapeAttr(file.url)}" target="_blank" rel="noopener">
+          <div class="evidence-file-tile">${badge}</div>
+          <span>${escapeHtml(kindLabel)}</span>
+          <small>${escapeHtml(file.name || "")}</small>
+        </a>
+        ${downloadLink(file)}
+      </div>`;
+  }
+
+  function productoFinalHtml(item) {
+    if (materialKind(item) !== "rotulacion") return "";
+    const files = productoFinalOf(item);
+    if (!session?.seesAll && !files.length) return "";
+    const tiles = files.map((file, idx) => productoTile(file, idx)).join("");
+    const uploader = session?.seesAll
+      ? `
+        <div class="producto-upload">
+          <p>Sube el render o cómo quedó el producto terminado.</p>
+          <input id="productoFinalInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf,.pdf" multiple hidden />
+          <div class="producto-upload-row">
+            <button type="button" class="producto-pick" id="productoFinalPick">Elegir archivos</button>
+            <button type="button" class="producto-send" id="productoFinalBtn" disabled>Subir producto terminado</button>
+          </div>
+          <p class="producto-names" id="productoFinalNames"></p>
+        </div>`
+      : "";
+    return `
+      <section class="panel producto-panel" aria-label="Producto terminado">
+        <div class="panel-head">
+          <h3>Producto terminado</h3>
+          ${files.length ? `<span class="pill">${files.length}</span>` : ""}
+        </div>
+        ${
+          tiles
+            ? `<div class="evidence-gallery">${tiles}</div>`
+            : `<p class="empty-evidence">Todavía no hay render ni producto terminado.</p>`
+        }
+        ${uploader}
+      </section>`;
+  }
+
   function faltanteHtml(item) {
     const texto = String(item?.faltanteCliente || "");
     const historial = String(item?.faltanteHistorial || "");
@@ -1024,7 +1122,8 @@
 
     const item = visible[index] || visible[0];
     const kind = materialKind(item);
-    const media = mediaOf(item);
+    const media = mediaOf(item).filter((file) => !isProductoFinal(file));
+    const producto = productoFinalOf(item);
     const lonas = specsLonas(item);
     const toldos = specsToldos(item);
     const caballetes = specsCaballetes(item);
@@ -1055,6 +1154,8 @@
         ${semaphoreHtml(item)}
 
         ${faltanteHtml(item)}
+
+        ${productoFinalHtml(item)}
 
         <div class="chip-row">
           ${item.puntoVenta ? `<span class="chip">${escapeHtml(item.puntoVenta)}</span>` : ""}
@@ -1125,6 +1226,7 @@
 
     bindSemaphore(detailEl);
     bindFaltante(item);
+    bindProductoFinal(item, producto);
 
     document.getElementById("prevBtn").onclick = () => {
       const visible = filteredItems();
@@ -1171,6 +1273,66 @@
         openLightbox(media, Number.isFinite(idx) && idx >= 0 ? idx : 0);
       };
     });
+    detailEl.querySelectorAll("[data-producto-index]").forEach((btn) => {
+      btn.onclick = () => {
+        const idx = Number(btn.dataset.productoIndex);
+        openLightbox(producto, Number.isFinite(idx) && idx >= 0 ? idx : 0);
+      };
+    });
+  }
+
+  function bindProductoFinal(item) {
+    const input = document.getElementById("productoFinalInput");
+    const pick = document.getElementById("productoFinalPick");
+    const send = document.getElementById("productoFinalBtn");
+    const names = document.getElementById("productoFinalNames");
+    if (!input || !pick || !send || !session?.seesAll) return;
+    const describe = () => {
+      const chosen = [...(input.files || [])];
+      send.disabled = !chosen.length || productoUploadBusy;
+      if (names) {
+        names.textContent = chosen.length
+          ? chosen.map((file) => file.name).join(", ")
+          : "";
+      }
+    };
+    pick.onclick = () => input.click();
+    input.onchange = describe;
+    send.onclick = async () => {
+      const chosen = [...(input.files || [])];
+      if (!chosen.length || productoUploadBusy) {
+        if (!chosen.length) input.click();
+        return;
+      }
+      productoUploadBusy = true;
+      send.disabled = true;
+      pick.disabled = true;
+      send.textContent = "Subiendo…";
+      try {
+        const body = new FormData();
+        for (const file of chosen) body.append("producto", file);
+        const res = await fetch(
+          `/api/responses/${encodeURIComponent(item.id || item.folio || "")}/producto-final`,
+          { method: "POST", body },
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!data.media?.length) throw new Error(data.error || "No se pudo subir el producto terminado");
+        const current = Array.isArray(item.media) ? item.media : [];
+        item.media = current.concat(data.media);
+        lastFingerprint = boardFingerprint(items);
+        if (data.error) window.alert(data.error);
+        renderList();
+        renderDetail();
+      } catch (err) {
+        productoUploadBusy = false;
+        send.disabled = false;
+        pick.disabled = false;
+        send.textContent = "Subir producto terminado";
+        window.alert(err.message || "No se pudo subir el producto terminado");
+      } finally {
+        productoUploadBusy = false;
+      }
+    };
   }
 
   async function setEstado(id, estado) {
@@ -1281,7 +1443,7 @@
         return;
       }
       const data = await res.json();
-      const next = itemsForSession(data.items);
+      const next = mergeKeptProducto(items, itemsForSession(data.items));
       sheetsConfigured = Boolean(data.sheetsConfigured);
 
       const fingerprint = boardFingerprint(next);
@@ -1325,7 +1487,7 @@
 
       // Keep UI stable while lightbox is open; apply queued data on close via next tick
       const writingNotice = document.activeElement?.id === "faltanteTexto";
-      if (dataChanged && !lightboxOpen && !writingNotice) {
+      if (dataChanged && !lightboxOpen && !writingNotice && !productoUploadBusy) {
         renderMaterialFilters();
         renderStatusFilters();
         renderStats();
