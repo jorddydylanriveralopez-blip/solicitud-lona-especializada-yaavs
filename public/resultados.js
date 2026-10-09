@@ -731,7 +731,7 @@
           session?.seesAll
             ? `<span>Por material</span>
                <strong class="stat-sm">L ${counts.lona} · T ${counts.toldo} · C ${counts.caballete} · R ${counts.rotulacion}</strong>`
-            : `<span>Notas de rotulación</span>
+            : `<span>Notas de Marketing</span>
                <strong>${visible.filter((it) => String(it.faltanteCliente || "").trim()).length}</strong>`
         }
       </div>
@@ -781,7 +781,7 @@
                 <small>${escapeHtml(formatDate(item.receivedAt))}${mediaCount ? ` · ${mediaCount} archivo${mediaCount === 1 ? "" : "s"}` : ""}</small>
                 ${
                   item.faltanteCliente && (session?.seesAll || materialKind(item) === "rotulacion")
-                    ? `<p class="card-note">${escapeHtml(item.faltanteCliente)}</p>`
+                    ? `<p class="card-note">${session?.seesAll ? "" : "Marketing: "}${escapeHtml(item.faltanteCliente)}</p>`
                     : ""
                 }
               </div>
@@ -937,10 +937,10 @@
     if (!session?.seesAll) {
       if (materialKind(item) !== "rotulacion" || (!texto && !historial)) return "";
       return `
-        <section class="faltante" aria-label="Nota de rotulación">
-          <h3>Nota de rotulación</h3>
-          ${texto ? `<p class="faltante-text">${escapeHtml(texto)}</p>` : ""}
-          ${notes}
+        <section class="faltante" aria-label="Nota de Marketing">
+          <h3>Nota de Marketing</h3>
+          <p>Observación de Marketing sobre esta rotulación.</p>
+          ${notes || (texto ? `<p class="faltante-text">${escapeHtml(texto)}</p>` : "")}
         </section>`;
     }
     return `
