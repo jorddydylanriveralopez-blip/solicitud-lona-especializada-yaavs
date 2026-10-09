@@ -900,15 +900,6 @@
       </div>`;
   }
 
-  function phoneReady(raw) {
-    const digits = String(raw || "").replace(/\D/g, "");
-    return (
-      digits.length === 10 ||
-      (digits.length === 12 && digits.startsWith("52")) ||
-      (digits.length === 13 && digits.startsWith("521"))
-    );
-  }
-
   function noteHistoryHtml(historial) {
     const cards = String(historial || "")
       .split(/\n\n+/)
@@ -941,34 +932,14 @@
           ${notes}
         </section>`;
     }
-    const choices = [];
-    if (phoneReady(item.ejecutivoTelefono)) {
-      choices.push(
-        `<option value="ejecutivo">Ejecutivo · ${escapeHtml(item.ejecutivoNombre || "sin nombre")}</option>`,
-      );
-    }
-    if (phoneReady(item.yaavserTelefono)) {
-      choices.push(
-        `<option value="yaavser">YAAVSER · ${escapeHtml(item.yaavserNombre || "sin nombre")}</option>`,
-      );
-    }
-    const send = choices.length
-      ? `<label class="faltante-who">Enviar nota a<select id="faltanteQuien">${choices.join("")}</select></label>
-         <button type="button" class="faltante-send is-ghost" id="faltanteEnviar">Enviar por WhatsApp</button>`
-      : "";
-    const waLink = item._waUrl
-      ? `<a class="faltante-wa" href="${escapeAttr(item._waUrl)}" target="_blank" rel="noopener">Si no se abrió WhatsApp, tócalo aquí</a>`
-      : "";
     return `
       <section class="faltante" aria-label="Nota de la solicitud">
         <h3>Nota</h3>
-        <p>Escribe las observaciones. Por ejemplo: el proyecto está mal, faltó el logo o hay que corregir una medida.</p>
-        <textarea id="faltanteTexto" rows="4" maxlength="800" placeholder="El proyecto está mal. Faltó el logotipo y hay que corregir el texto.">${escapeHtml(texto)}</textarea>
+        <p>Escribe las observaciones. Se guardan en el tablero y no se envían a nadie.</p>
+        <textarea id="faltanteTexto" rows="4" maxlength="800" placeholder="El proyecto está mal. Hay que corregir el texto y faltó el logotipo.">${escapeHtml(texto)}</textarea>
         <div class="faltante-row">
           <button type="button" class="faltante-send" id="faltanteGuardar" data-id="${escapeAttr(item.id || item.folio || "")}">Guardar nota</button>
-          ${send}
         </div>
-        ${waLink}
         ${notes}
       </section>`;
   }
@@ -977,43 +948,34 @@
     const box = document.getElementById("faltanteTexto");
     const saveBtn = document.getElementById("faltanteGuardar");
     if (!box || !saveBtn || !session?.seesAll) return;
-    const sendNote = async (quien, btn, busyLabel) => {
+    saveBtn.onclick = async () => {
       const texto = box.value.trim();
       if (!texto) {
         window.alert("Escribe la observación en la nota.");
         box.focus();
         return;
       }
-      const previousLabel = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = busyLabel;
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Guardando…";
       try {
         const res = await fetch(`/api/responses/${encodeURIComponent(saveBtn.dataset.id || item.id || item.folio || "")}/faltante`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ texto, quien }),
+          body: JSON.stringify({ texto }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.ok === false) throw new Error(data.error || "No se pudo guardar la nota");
         item.faltanteCliente = data.faltanteCliente || texto;
         item.faltanteHistorial = data.faltanteHistorial || item.faltanteHistorial || "";
-        item._waUrl = data.waUrl || "";
         lastFingerprint = boardFingerprint(items);
-        if (data.waUrl) window.open(data.waUrl, "_blank", "noopener");
         renderList();
         renderDetail();
       } catch (err) {
-        btn.disabled = false;
-        btn.textContent = previousLabel;
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Guardar nota";
         window.alert(err.message || "No se pudo guardar la nota");
       }
     };
-    saveBtn.onclick = () => sendNote("guardar", saveBtn, "Guardando…");
-    const sendBtn = document.getElementById("faltanteEnviar");
-    if (sendBtn) {
-      sendBtn.onclick = () =>
-        sendNote(document.getElementById("faltanteQuien")?.value || "ejecutivo", sendBtn, "Enviando…");
-    }
   }
 
   function renderDetail() {

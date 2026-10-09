@@ -105,7 +105,7 @@
               </label>
               <label class="field">
                 <span>Número telefónico de contacto <span class="req">*</span></span>
-                <input type="tel" name="ejecutivoTelefono" inputmode="tel" required placeholder="10 dígitos" />
+                <input type="tel" name="ejecutivoTelefono" inputmode="numeric" maxlength="10" pattern="\d{10}" data-digits="10" required placeholder="10 dígitos" />
               </label>
             </div>
           </section>
@@ -239,7 +239,7 @@
                 <label class="field file-field">
                   <span>Sube la foto del punto de venta <span class="req">*</span></span>
                   <div class="file-drop">
-                    <input type="file" name="toldo_foto" accept=".jpg,.jpeg,.png,.heic,.heif,image/jpeg,image/png,image/heic,image/heif" data-preview multiple />
+                    <input type="file" name="toldo_foto" accept=".jpg,.jpeg,.png,.heic,.heif,image/jpeg,image/png,image/heic,image/heif" data-preview multiple required />
                     <div class="file-drop-copy">
                       <strong>Sube o selecciona las fotos</strong>
                       <small>Puedes elegir varias. JPG o PNG</small>
@@ -611,6 +611,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20261009a" defer></script>
+    <script src="./app.js?v=20261009d" defer></script>
   </body>
 </html>

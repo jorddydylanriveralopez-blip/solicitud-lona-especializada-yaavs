@@ -380,6 +380,11 @@
 
     const visible = (el) => el && !el.disabled && !el.hidden && !el.closest("[hidden]");
 
+    for (const file of section.querySelectorAll('input[type="file"]')) {
+      if (!visible(file)) continue;
+      if (!file.files?.length) return false;
+    }
+
     for (const el of section.querySelectorAll("input, textarea, select")) {
       if (!visible(el)) continue;
       if (el.type === "radio" || el.type === "checkbox") continue;
@@ -853,7 +858,7 @@
       <label class="field file-field">
         <span>${label}${required ? ' <span class="req">*</span>' : ""}</span>
         <div class="file-drop">
-          <input type="file" name="${name}" accept=".jpg,.jpeg,.png,.heic,.heif,.pdf,image/jpeg,image/png,image/heic,image/heif,application/pdf" data-preview multiple />
+          <input type="file" name="${name}" accept=".jpg,.jpeg,.png,.heic,.heif,.pdf,image/jpeg,image/png,image/heic,image/heif,application/pdf" data-preview multiple ${required ? "required" : ""} />
           <div class="file-drop-copy">
             <strong>Sube o selecciona las imágenes</strong>
             <small>Puedes elegir varias. JPG, PNG o PDF</small>
@@ -1318,6 +1323,12 @@
       }
     }
 
+    const ejecutivoTel = form.elements.ejecutivoTelefono;
+    if (ejecutivoTel && ejecutivoTel.value && !/^\d{10}$/.test(ejecutivoTel.value)) {
+      errors.push("El teléfono del ejecutivo debe tener 10 dígitos.");
+      markInvalid(ejecutivoTel);
+    }
+
     const gerenteTel = form.elements.gerenteTelefono;
     if (gerenteTel && gerenteTel.value && !/^\d{10}$/.test(gerenteTel.value)) {
       errors.push("El teléfono del gerente debe tener 10 dígitos.");
@@ -1352,11 +1363,21 @@
     }
     if (isToldo()) {
       const foto = form.querySelector('input[name="toldo_foto"]');
-      if (!foto?.files?.[0]) {
+      if (!foto?.files?.length) {
         errors.push("Sube la foto del punto de venta.");
         markInvalid(foto);
       }
     }
+
+    form.querySelectorAll('input[type="file"]').forEach((input) => {
+      if (input.disabled || input.closest("[hidden]")) return;
+      if (input.files?.length) return;
+      const label = String(input.closest("label")?.querySelector("span")?.textContent || "la foto")
+        .replace(/\*/g, "")
+        .trim();
+      errors.push(`Sube ${label}. No se puede enviar si falta.`);
+      markInvalid(input);
+    });
 
     if (isLona()) {
       const lonas = collectLonas();
@@ -1443,7 +1464,7 @@
         markInvalid(form.querySelector('input[name="rotulacionClasificacion"]'));
       } else {
         const f1 = form.querySelector('input[name="rotulacion_foto_1"]');
-        if (!f1?.files?.[0]) {
+        if (!f1?.files?.length) {
           errors.push(
             r.evidenciaTipo === "esquina"
               ? "Sube la foto del lateral izquierdo."
@@ -1453,7 +1474,7 @@
         }
         if (r.evidenciaTipo === "esquina") {
           const f2 = form.querySelector('input[name="rotulacion_foto_2"]');
-          if (!f2?.files?.[0]) {
+          if (!f2?.files?.length) {
             errors.push("Sube la foto del lateral derecho.");
             markInvalid(f2);
           }

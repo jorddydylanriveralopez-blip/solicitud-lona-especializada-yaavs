@@ -955,36 +955,6 @@ function preferFaltante(sheetItem, localItem) {
   };
 }
 
-function waDigits(raw) {
-  const digits = String(raw || "").replace(/\D/g, "");
-  if (digits.length === 10) return `52${digits}`;
-  if (digits.length === 12 && digits.startsWith("52")) return digits;
-  if (digits.length === 13 && digits.startsWith("521")) return `52${digits.slice(3)}`;
-  return "";
-}
-
-function noticeTarget(item, who) {
-  if (who === "yaavser") {
-    return {
-      who: "yaavser",
-      role: "YAAVSER",
-      name: String(item?.yaavserNombre || "").trim(),
-      phone: String(item?.yaavserTelefono || "").trim(),
-      wa: waDigits(item?.yaavserTelefono),
-    };
-  }
-  if (who === "ejecutivo") {
-    return {
-      who: "ejecutivo",
-      role: "Ejecutivo de ventas",
-      name: String(item?.ejecutivoNombre || "").trim(),
-      phone: String(item?.ejecutivoTelefono || "").trim(),
-      wa: waDigits(item?.ejecutivoTelefono),
-    };
-  }
-  return null;
-}
-
 function patchSheetNotice(id, folio, notice) {
   sheetsCacheGen += 1;
   sheetsListInFlight = null;
@@ -1528,7 +1498,6 @@ app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {
   if (!texto) {
     return res.status(400).json({ ok: false, error: "Escribe la observación en la nota" });
   }
-  const who = String(req.body?.quien || "").trim();
   const id = String(req.params.id || "").trim();
   if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
 
@@ -1536,24 +1505,11 @@ app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {
   const localEntry = list.find((entry) => entry.id === id || entry.folio === id);
   const sheets = await fetchSheetsItems().catch(() => null);
   const row = (sheets || []).find((item) => item.id === id || item.folio === id);
-  const source = { ...(localEntry?.answers || {}), ...(row || {}) };
   const folio = localEntry?.folio || row?.folio || "";
-  const target = noticeTarget(source, who);
-  if (who !== "guardar" && (!target || !target.wa)) {
-    return res.status(400).json({
-      ok: false,
-      error: "Esa persona no tiene un teléfono válido para WhatsApp",
-    });
-  }
 
   const previous = preferFaltante(row || {}, localEntry?.answers || {});
   const when = formatDateMx(new Date().toISOString());
-  const destino = target
-    ? `${target.role}${target.name ? ` ${target.name}` : ""} (${target.phone})`
-    : "";
-  const line = destino
-    ? `${when} — Nota enviada a ${destino}:\n${texto}`
-    : `${when} — Nota:\n${texto}`;
+  const line = `${when} — Nota:\n${texto}`;
   let historial = previous.faltanteHistorial ? `${previous.faltanteHistorial}\n\n${line}` : line;
   if (historial.length > 20000) {
     historial = `${historial.slice(0, 4000)}\n\n…\n\n${historial.slice(-15000)}`;
@@ -1591,24 +1547,12 @@ app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {
     });
   }
 
-  let waUrl = "";
-  if (target?.wa) {
-    const mensaje = [
-      `Hola${target.name ? ` ${target.name}` : ""}, te escribimos de Marketing YAAVS.`,
-      `En la solicitud ${folio || id}${source.puntoVenta ? ` (${source.puntoVenta})` : ""} faltó agregar esto:`,
-      texto,
-      "Cuando lo tengas, avísanos para continuar.",
-    ].join("\n\n");
-    waUrl = `https://wa.me/${target.wa}?text=${encodeURIComponent(mensaje)}`;
-  }
-
   res.json({
     ok: true,
     id,
     folio,
     faltanteCliente: notice.faltanteCliente,
     faltanteHistorial: notice.faltanteHistorial,
-    waUrl,
   });
 });
 
@@ -1737,6 +1681,92 @@ app.get("/api/export.csv", requireBoard, async (req, res) => {
   res.send("\uFEFF" + lines.join("\n"));
 });
 
+function missingSubmissionError(answers, files) {
+  const names = new Set(
+    (files || []).filter((file) => file && Number(file.size) > 0).map((file) => file.fieldname),
+  );
+  const has = (name) => names.has(name);
+  const text = (key) => String(answers?.[key] || "").trim();
+  const material = text("material").toLowerCase();
+  if (!material) return "Selecciona el material antes de enviar.";
+  const requiredText = [
+    ["ejecutivoNombre", "Falta el nombre del ejecutivo."],
+    ["ejecutivoTelefono", "Falta el teléfono del ejecutivo."],
+    ["gerenteTelefono", "Falta el teléfono del gerente."],
+    ["yaavserNombre", "Falta el nombre del YAAVSER."],
+    ["claveYaavser", "Falta la clave del YAAVSER."],
+    ["yaavserTelefono", "Falta el teléfono del YAAVSER."],
+    ["puntoVenta", "Falta el nombre del punto de venta."],
+  ];
+  for (const [key, message] of requiredText) {
+    if (!text(key)) return message;
+  }
+  if (!/^\d{10}$/.test(text("ejecutivoTelefono"))) return "El teléfono del ejecutivo debe tener 10 dígitos.";
+  if (!/^\d{10}$/.test(text("gerenteTelefono"))) return "El teléfono del gerente debe tener 10 dígitos.";
+  if (!/^\d{10}$/.test(text("yaavserTelefono"))) return "El teléfono del YAAVSER debe tener 10 dígitos.";
+  const tipos = answers?.tipoEstablecimiento;
+  if (!Array.isArray(tipos) || !tipos.length) return "Selecciona el tipo de establecimiento.";
+  if (!material.includes("rotul")) {
+    const objetivo = answers?.objetivoLona;
+    if (!Array.isArray(objetivo) || !objetivo.length) return "Selecciona el objetivo del material.";
+  }
+
+  const checkItems = (items, prefix, label) => {
+    if (!Array.isArray(items) || !items.length) return `Completa las especificaciones de ${label}.`;
+    for (let i = 0; i < items.length; i += 1) {
+      const item = items[i] || {};
+      const name = item[prefix] || label;
+      if (prefix === "lona" && (!(Number(item.ancho) > 0) || !(Number(item.alto) > 0) || !item.orientacion || !item.acabados?.length)) {
+        return `Faltan medidas, orientación o acabados de ${name}.`;
+      }
+      if (prefix === "toldo" && (!item.tipo || !(Number(item.ancho) > 0) || !(Number(item.largo) > 0) || !(Number(item.alto) > 0) || !item.incluyeEstructura)) {
+        return `Faltan tipo, medidas o estructura de ${name}.`;
+      }
+      if (prefix === "caballete" && (!(Number(item.ancho) > 0) || !(Number(item.alto) > 0) || !item.caras || !item.orientacion)) {
+        return `Faltan medidas, caras u orientación de ${name}.`;
+      }
+      const contacto = item.datosContactoOpciones || [];
+      if (!contacto.length) return `Selecciona los datos de contacto de ${name}.`;
+      if (contacto.some((value) => value !== "Ninguno") && !String(item.datosContactoDetalle || "").trim()) {
+        return `Faltan los datos de contacto de ${name}.`;
+      }
+      if (!has(`logo_${prefix}_${i + 1}`)) return `Falta el logotipo de ${name}. No se envió la solicitud.`;
+      if (item.tieneReferencia === "Sí" && !has(`referenciaFile_${prefix}_${i + 1}`)) {
+        return `Falta la imagen de referencia de ${item[prefix] || label}. No se envió la solicitud.`;
+      }
+    }
+    return "";
+  };
+
+  if (material.startsWith("lona")) {
+    const error = checkItems(answers.lonas, "lona", "la lona");
+    if (error) return error;
+  } else if (material.startsWith("toldo")) {
+    if (!text("puntoVentaUbicacionMaps") && !text("puntoVentaUbicacion")) {
+      return "Falta la ubicación del punto de venta.";
+    }
+    if (!has("toldo_foto")) return "Falta la foto del punto de venta. No se envió la solicitud.";
+    const error = checkItems(answers.toldos, "toldo", "el toldo");
+    if (error) return error;
+  } else if (material.includes("caballete")) {
+    const error = checkItems(answers.caballetes, "caballete", "el caballete");
+    if (error) return error;
+  } else if (material.includes("rotul")) {
+    if (!text("puntoVentaUbicacionMaps") && !text("puntoVentaUbicacion")) {
+      return "Falta la ubicación del punto de venta.";
+    }
+    const rotulacion = answers.rotulacion && typeof answers.rotulacion === "object" ? answers.rotulacion : {};
+    if (!rotulacion.permisos) return "Indica si hay permisos gubernamentales.";
+    if (!rotulacion.clasificacion) return "Selecciona la clasificación del punto de venta.";
+    if (!rotulacion.color) return "Selecciona el color de la rotulación.";
+    if (!has("rotulacion_foto_1")) return "Falta la foto de la fachada. No se envió la solicitud.";
+    if (String(rotulacion.evidenciaTipo || "").includes("esquina") && !has("rotulacion_foto_2")) {
+      return "Falta la foto del lateral derecho. No se envió la solicitud.";
+    }
+  }
+  return "";
+}
+
 app.post("/api/submit", (req, res) => {
   upload.any()(req, res, async (err) => {
     if (err) {
@@ -1756,6 +1786,10 @@ app.post("/api/submit", (req, res) => {
       }
       const entry = normalize(body, sheetItems);
       const files = req.files || [];
+      const missing = missingSubmissionError(entry.answers, files);
+      if (missing) {
+        return res.status(400).json({ ok: false, error: missing });
+      }
       if (Array.isArray(entry.answers.lonas)) {
         entry.answers.lonas = attachItemFiles(entry.id, entry.answers.lonas, "lona", files);
       }
