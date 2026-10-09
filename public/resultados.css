@@ -1202,15 +1202,32 @@ button.ghost-link {
   background: #1f9d55;
 }
 
+.card-note {
+  margin: 6px 0 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #ffe56a;
+  color: #3a2a00;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.35;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .faltante {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   margin: 0 0 16px;
-  padding: 14px;
-  border-radius: 16px;
-  background: #fff8ef;
-  border: 1px solid rgba(239, 125, 50, 0.35);
+  padding: 16px 16px 14px;
+  border-radius: 3px 16px 16px 16px;
+  background: #ffe56a;
+  color: #3a2a00;
+  box-shadow: 0 10px 24px rgba(90, 70, 10, 0.12);
 }
 
 .faltante h3 {
@@ -1221,25 +1238,30 @@ button.ghost-link {
 .faltante p,
 .faltante-note {
   margin: 0;
-  color: #5c6b7a;
+  color: #5c4a12;
   font-size: 0.9rem;
 }
 
 .faltante textarea,
 .faltante select {
   width: 100%;
-  border: 1.5px solid rgba(15, 36, 64, 0.14);
-  border-radius: 12px;
-  background: #fff;
-  color: var(--navy);
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.45);
+  color: #3a2a00;
   font: inherit;
-  font-size: 1rem;
+  font-size: 1.02rem;
+  line-height: 1.45;
 }
 
 .faltante textarea {
-  min-height: 88px;
-  padding: 10px 12px;
+  min-height: 120px;
+  padding: 12px;
   resize: vertical;
+}
+
+.faltante textarea::placeholder {
+  color: rgba(58, 42, 0, 0.45);
 }
 
 .faltante-row {
@@ -1276,9 +1298,48 @@ button.ghost-link {
   cursor: pointer;
 }
 
+.faltante-send.is-ghost {
+  background: transparent;
+  color: #3a2a00;
+  border: 1.5px solid rgba(58, 42, 0, 0.35);
+}
+
 .faltante-send:disabled {
   opacity: 0.6;
   cursor: wait;
+}
+
+.note-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note-stack > span {
+  font-size: 0.75rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.note-card {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.note-card small {
+  display: block;
+  margin-bottom: 4px;
+  color: #7a5b10;
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.note-card p {
+  color: #3a2a00;
+  font-size: 0.95rem;
 }
 
 .faltante-wa {

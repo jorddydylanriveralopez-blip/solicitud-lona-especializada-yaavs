@@ -768,6 +768,11 @@
                 </div>
                 <p>${escapeHtml(item.puntoVenta || item.yaavserNombre || "—")}</p>
                 <small>${escapeHtml(formatDate(item.receivedAt))}${mediaCount ? ` · ${mediaCount} archivo${mediaCount === 1 ? "" : "s"}` : ""}</small>
+                ${
+                  item.faltanteCliente
+                    ? `<p class="card-note">${escapeHtml(item.faltanteCliente)}</p>`
+                    : ""
+                }
               </div>
             </button>
             ${session?.seesAll ? semaphoreHtml(item, { compact: true }) : ""}
@@ -904,77 +909,92 @@
     );
   }
 
+  function noteHistoryHtml(historial) {
+    const cards = String(historial || "")
+      .split(/\n\n+/)
+      .map((block) => block.trim())
+      .filter(Boolean)
+      .map((block) => {
+        const splitAt = block.indexOf("\n");
+        const head = splitAt === -1 ? "Nota" : block.slice(0, splitAt);
+        const body = splitAt === -1 ? block : block.slice(splitAt + 1).trim();
+        return `
+          <article class="note-card">
+            <small>${escapeHtml(head.replace(/^.*?—\s*/, ""))}</small>
+            <p>${escapeHtml(body || head)}</p>
+          </article>`;
+      });
+    if (!cards.length) return "";
+    return `<div class="note-stack"><span>Notas guardadas</span>${cards.join("")}</div>`;
+  }
+
   function faltanteHtml(item) {
     const texto = String(item?.faltanteCliente || "");
     const historial = String(item?.faltanteHistorial || "");
-    const log = historial
-      ? `<div class="faltante-log"><span>Evidencia de avisos</span><pre>${escapeHtml(historial)}</pre></div>`
-      : "";
+    const notes = noteHistoryHtml(historial);
     if (!session?.seesAll) {
       if (!texto && !historial) return "";
       return `
-        <section class="faltante" aria-label="Aviso al cliente">
-          <h3>Lo que faltó agregar</h3>
+        <section class="faltante" aria-label="Nota">
+          <h3>Nota</h3>
           ${texto ? `<p class="faltante-text">${escapeHtml(texto)}</p>` : ""}
-          ${log}
+          ${notes}
         </section>`;
     }
     const choices = [];
     if (phoneReady(item.ejecutivoTelefono)) {
       choices.push(
-        `<option value="ejecutivo">Ejecutivo · ${escapeHtml(item.ejecutivoNombre || "sin nombre")} · ${escapeHtml(item.ejecutivoTelefono)}</option>`,
+        `<option value="ejecutivo">Ejecutivo · ${escapeHtml(item.ejecutivoNombre || "sin nombre")}</option>`,
       );
     }
     if (phoneReady(item.yaavserTelefono)) {
       choices.push(
-        `<option value="yaavser">YAAVSER · ${escapeHtml(item.yaavserNombre || "sin nombre")} · ${escapeHtml(item.yaavserTelefono)}</option>`,
+        `<option value="yaavser">YAAVSER · ${escapeHtml(item.yaavserNombre || "sin nombre")}</option>`,
       );
     }
-    const whoField = choices.length
-      ? `<label class="faltante-who">Avisar a<select id="faltanteQuien">${choices.join("")}</select></label>`
-      : `<p class="faltante-note">Esta solicitud no tiene teléfono. El texto se guarda como evidencia, sin WhatsApp.</p>`;
+    const send = choices.length
+      ? `<label class="faltante-who">Enviar nota a<select id="faltanteQuien">${choices.join("")}</select></label>
+         <button type="button" class="faltante-send is-ghost" id="faltanteEnviar">Enviar por WhatsApp</button>`
+      : "";
     const waLink = item._waUrl
       ? `<a class="faltante-wa" href="${escapeAttr(item._waUrl)}" target="_blank" rel="noopener">Si no se abrió WhatsApp, tócalo aquí</a>`
       : "";
     return `
-      <section class="faltante" aria-label="Avisar al cliente">
-        <h3>¿Qué faltó agregar?</h3>
-        <p>Escríbelo y envíaselo al cliente. El aviso queda guardado como evidencia.</p>
-        <textarea id="faltanteTexto" rows="3" maxlength="800" placeholder="Ejemplo: Faltó el logotipo y la foto de la fachada.">${escapeHtml(texto)}</textarea>
+      <section class="faltante" aria-label="Nota de la solicitud">
+        <h3>Nota</h3>
+        <p>Escribe las observaciones. Por ejemplo: el proyecto está mal, faltó el logo o hay que corregir una medida.</p>
+        <textarea id="faltanteTexto" rows="4" maxlength="800" placeholder="El proyecto está mal. Faltó el logotipo y hay que corregir el texto.">${escapeHtml(texto)}</textarea>
         <div class="faltante-row">
-          ${whoField}
-          <button type="button" class="faltante-send" id="faltanteEnviar" data-id="${escapeAttr(item.id || item.folio || "")}">
-            ${choices.length ? "Enviar al cliente por WhatsApp" : "Guardar evidencia"}
-          </button>
+          <button type="button" class="faltante-send" id="faltanteGuardar" data-id="${escapeAttr(item.id || item.folio || "")}">Guardar nota</button>
+          ${send}
         </div>
         ${waLink}
-        ${log}
+        ${notes}
       </section>`;
   }
 
   function bindFaltante(item) {
-    const btn = document.getElementById("faltanteEnviar");
     const box = document.getElementById("faltanteTexto");
-    if (!btn || !box || !session?.seesAll) return;
-    btn.onclick = async () => {
+    const saveBtn = document.getElementById("faltanteGuardar");
+    if (!box || !saveBtn || !session?.seesAll) return;
+    const sendNote = async (quien, btn, busyLabel) => {
       const texto = box.value.trim();
       if (!texto) {
-        window.alert("Escribe qué faltó agregar.");
+        window.alert("Escribe la observación en la nota.");
         box.focus();
         return;
       }
-      const quien = document.getElementById("faltanteQuien")?.value || "guardar";
-      const id = btn.dataset.id || item.id || item.folio || "";
+      const previousLabel = btn.textContent;
       btn.disabled = true;
-      btn.textContent = "Enviando…";
+      btn.textContent = busyLabel;
       try {
-        const res = await fetch(`/api/responses/${encodeURIComponent(id)}/faltante`, {
+        const res = await fetch(`/api/responses/${encodeURIComponent(saveBtn.dataset.id || item.id || item.folio || "")}/faltante`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ texto, quien }),
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok || data.ok === false) throw new Error(data.error || "No se pudo guardar el aviso");
+        if (!res.ok || data.ok === false) throw new Error(data.error || "No se pudo guardar la nota");
         item.faltanteCliente = data.faltanteCliente || texto;
         item.faltanteHistorial = data.faltanteHistorial || item.faltanteHistorial || "";
         item._waUrl = data.waUrl || "";
@@ -984,10 +1004,16 @@
         renderDetail();
       } catch (err) {
         btn.disabled = false;
-        btn.textContent = quien === "guardar" ? "Guardar evidencia" : "Enviar al cliente por WhatsApp";
-        window.alert(err.message || "No se pudo enviar el aviso");
+        btn.textContent = previousLabel;
+        window.alert(err.message || "No se pudo guardar la nota");
       }
     };
+    saveBtn.onclick = () => sendNote("guardar", saveBtn, "Guardando…");
+    const sendBtn = document.getElementById("faltanteEnviar");
+    if (sendBtn) {
+      sendBtn.onclick = () =>
+        sendNote(document.getElementById("faltanteQuien")?.value || "ejecutivo", sendBtn, "Enviando…");
+    }
   }
 
   function renderDetail() {

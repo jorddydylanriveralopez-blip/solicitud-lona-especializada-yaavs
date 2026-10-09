@@ -1526,7 +1526,7 @@ app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {
   }
   const texto = String(req.body?.texto || "").trim().slice(0, 800);
   if (!texto) {
-    return res.status(400).json({ ok: false, error: "Escribe qué faltó agregar" });
+    return res.status(400).json({ ok: false, error: "Escribe la observación en la nota" });
   }
   const who = String(req.body?.quien || "").trim();
   const id = String(req.params.id || "").trim();
@@ -1550,8 +1550,10 @@ app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {
   const when = formatDateMx(new Date().toISOString());
   const destino = target
     ? `${target.role}${target.name ? ` ${target.name}` : ""} (${target.phone})`
-    : "sin teléfono";
-  const line = `${when} — Aviso a ${destino}:\n${texto}`;
+    : "";
+  const line = destino
+    ? `${when} — Nota enviada a ${destino}:\n${texto}`
+    : `${when} — Nota:\n${texto}`;
   let historial = previous.faltanteHistorial ? `${previous.faltanteHistorial}\n\n${line}` : line;
   if (historial.length > 20000) {
     historial = `${historial.slice(0, 4000)}\n\n…\n\n${historial.slice(-15000)}`;
