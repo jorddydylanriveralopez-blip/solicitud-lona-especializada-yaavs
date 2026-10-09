@@ -895,6 +895,101 @@
       </div>`;
   }
 
+  function phoneReady(raw) {
+    const digits = String(raw || "").replace(/\D/g, "");
+    return (
+      digits.length === 10 ||
+      (digits.length === 12 && digits.startsWith("52")) ||
+      (digits.length === 13 && digits.startsWith("521"))
+    );
+  }
+
+  function faltanteHtml(item) {
+    const texto = String(item?.faltanteCliente || "");
+    const historial = String(item?.faltanteHistorial || "");
+    const log = historial
+      ? `<div class="faltante-log"><span>Evidencia de avisos</span><pre>${escapeHtml(historial)}</pre></div>`
+      : "";
+    if (!session?.seesAll) {
+      if (!texto && !historial) return "";
+      return `
+        <section class="faltante" aria-label="Aviso al cliente">
+          <h3>Lo que faltó agregar</h3>
+          ${texto ? `<p class="faltante-text">${escapeHtml(texto)}</p>` : ""}
+          ${log}
+        </section>`;
+    }
+    const choices = [];
+    if (phoneReady(item.ejecutivoTelefono)) {
+      choices.push(
+        `<option value="ejecutivo">Ejecutivo · ${escapeHtml(item.ejecutivoNombre || "sin nombre")} · ${escapeHtml(item.ejecutivoTelefono)}</option>`,
+      );
+    }
+    if (phoneReady(item.yaavserTelefono)) {
+      choices.push(
+        `<option value="yaavser">YAAVSER · ${escapeHtml(item.yaavserNombre || "sin nombre")} · ${escapeHtml(item.yaavserTelefono)}</option>`,
+      );
+    }
+    const whoField = choices.length
+      ? `<label class="faltante-who">Avisar a<select id="faltanteQuien">${choices.join("")}</select></label>`
+      : `<p class="faltante-note">Esta solicitud no tiene teléfono. El texto se guarda como evidencia, sin WhatsApp.</p>`;
+    const waLink = item._waUrl
+      ? `<a class="faltante-wa" href="${escapeAttr(item._waUrl)}" target="_blank" rel="noopener">Si no se abrió WhatsApp, tócalo aquí</a>`
+      : "";
+    return `
+      <section class="faltante" aria-label="Avisar al cliente">
+        <h3>¿Qué faltó agregar?</h3>
+        <p>Escríbelo y envíaselo al cliente. El aviso queda guardado como evidencia.</p>
+        <textarea id="faltanteTexto" rows="3" maxlength="800" placeholder="Ejemplo: Faltó el logotipo y la foto de la fachada.">${escapeHtml(texto)}</textarea>
+        <div class="faltante-row">
+          ${whoField}
+          <button type="button" class="faltante-send" id="faltanteEnviar" data-id="${escapeAttr(item.id || item.folio || "")}">
+            ${choices.length ? "Enviar al cliente por WhatsApp" : "Guardar evidencia"}
+          </button>
+        </div>
+        ${waLink}
+        ${log}
+      </section>`;
+  }
+
+  function bindFaltante(item) {
+    const btn = document.getElementById("faltanteEnviar");
+    const box = document.getElementById("faltanteTexto");
+    if (!btn || !box || !session?.seesAll) return;
+    btn.onclick = async () => {
+      const texto = box.value.trim();
+      if (!texto) {
+        window.alert("Escribe qué faltó agregar.");
+        box.focus();
+        return;
+      }
+      const quien = document.getElementById("faltanteQuien")?.value || "guardar";
+      const id = btn.dataset.id || item.id || item.folio || "";
+      btn.disabled = true;
+      btn.textContent = "Enviando…";
+      try {
+        const res = await fetch(`/api/responses/${encodeURIComponent(id)}/faltante`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texto, quien }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok === false) throw new Error(data.error || "No se pudo guardar el aviso");
+        item.faltanteCliente = data.faltanteCliente || texto;
+        item.faltanteHistorial = data.faltanteHistorial || item.faltanteHistorial || "";
+        item._waUrl = data.waUrl || "";
+        lastFingerprint = boardFingerprint(items);
+        if (data.waUrl) window.open(data.waUrl, "_blank", "noopener");
+        renderList();
+        renderDetail();
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = quien === "guardar" ? "Guardar evidencia" : "Enviar al cliente por WhatsApp";
+        window.alert(err.message || "No se pudo enviar el aviso");
+      }
+    };
+  }
+
   function renderDetail() {
     const visible = filteredItems();
     if (!items.length) {
@@ -959,6 +1054,8 @@
         </header>
 
         ${semaphoreHtml(item)}
+
+        ${faltanteHtml(item)}
 
         <div class="chip-row">
           ${item.puntoVenta ? `<span class="chip">${escapeHtml(item.puntoVenta)}</span>` : ""}
@@ -1028,6 +1125,7 @@
     `;
 
     bindSemaphore(detailEl);
+    bindFaltante(item);
 
     document.getElementById("prevBtn").onclick = () => {
       const visible = filteredItems();
@@ -1227,7 +1325,8 @@
       liveStatus.dataset.live = "1";
 
       // Keep UI stable while lightbox is open; apply queued data on close via next tick
-      if (dataChanged && !lightboxOpen) {
+      const writingNotice = document.activeElement?.id === "faltanteTexto";
+      if (dataChanged && !lightboxOpen && !writingNotice) {
         renderMaterialFilters();
         renderStatusFilters();
         renderStats();
@@ -1260,6 +1359,8 @@
           it.material || "",
           it.puntoVenta || "",
           it.estadoProduccion || "",
+          it.faltanteCliente || "",
+          it.faltanteHistorial || "",
           media,
           typeof it.rotulacion === "string"
             ? it.rotulacion

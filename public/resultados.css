@@ -1202,6 +1202,113 @@ button.ghost-link {
   background: #1f9d55;
 }
 
+.faltante {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #fff8ef;
+  border: 1px solid rgba(239, 125, 50, 0.35);
+}
+
+.faltante h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.faltante p,
+.faltante-note {
+  margin: 0;
+  color: #5c6b7a;
+  font-size: 0.9rem;
+}
+
+.faltante textarea,
+.faltante select {
+  width: 100%;
+  border: 1.5px solid rgba(15, 36, 64, 0.14);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--navy);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.faltante textarea {
+  min-height: 88px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.faltante-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+
+.faltante-who {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 220px;
+  font-size: 0.82rem;
+  font-weight: 750;
+  color: var(--navy);
+}
+
+.faltante select {
+  padding: 0.55rem 0.7rem;
+}
+
+.faltante-send {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  background: #0b1f38;
+  color: #fff;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 750;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+}
+
+.faltante-send:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.faltante-wa {
+  font-weight: 750;
+  color: #0b7a43;
+}
+
+.faltante-text,
+.faltante-log pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font: inherit;
+  font-size: 0.92rem;
+}
+
+.faltante-log {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.faltante-log span {
+  font-size: 0.78rem;
+  font-weight: 750;
+  color: #9a5b12;
+}
+
 .semaphore {
   display: flex;
   flex-direction: column;

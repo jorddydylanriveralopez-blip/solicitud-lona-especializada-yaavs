@@ -52,6 +52,8 @@ var HEADERS = [
   "Especificaciones de rotulación",
   "Observaciones adicionales",
   "Estado de producción",
+  "Faltó agregar",
+  "Evidencia de aviso",
 ];
 
 var KEYS = [
@@ -86,6 +88,8 @@ var KEYS = [
   "rotulacion",
   "observacionesAdicionales",
   "estadoProduccion",
+  "faltanteCliente",
+  "faltanteHistorial",
 ];
 
 function doGet(e) {
@@ -114,6 +118,17 @@ function doPost(e) {
   try {
     var raw = (e && e.postData && e.postData.contents) || "{}";
     var data = JSON.parse(raw);
+    if (data.action === "setFaltante") {
+      var textoFalta = String(data.texto || "").trim();
+      if (!textoFalta) return jsonOut_({ ok: false, error: "Escribe qué faltó agregar" });
+      var updatedFalta = setFaltante_(
+        data.id,
+        data.folio,
+        textoFalta.slice(0, 800),
+        String(data.historial || "").slice(0, 20000),
+      );
+      return jsonOut_({ ok: updatedFalta > 0, updated: updatedFalta });
+    }
     if (data.action === "setEstado") {
       var estado = normalizeEstado_(data.estado);
       if (!estado) return jsonOut_({ ok: false, error: "Estado no válido" });
@@ -498,6 +513,8 @@ function rowFromPayload_(data) {
     asText_(pick_(data, "rotulacion")),
     pick_(data, "observacionesAdicionales"),
     normalizeEstado_(pick_(data, "estadoProduccion")),
+    pick_(data, "faltanteCliente"),
+    pick_(data, "faltanteHistorial"),
   ];
 }
 
@@ -508,6 +525,26 @@ function normalizeEstado_(raw) {
   if (value === "en revisión" || value === "en revision") return "En revisión";
   if (value === "terminado") return "Terminado";
   return "";
+}
+
+function setFaltante_(id, folio, texto, historial) {
+  var wantedId = String(id || "").trim();
+  var wantedFolio = String(folio || "").trim();
+  if (!wantedId && !wantedFolio) return 0;
+  var sheet = ensureSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+  var textoCol = KEYS.indexOf("faltanteCliente");
+  var histCol = KEYS.indexOf("faltanteHistorial");
+  if (textoCol < 0 || histCol < 0) return 0;
+  var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getValues();
+  var matches = matchRows_(values, wantedId, wantedFolio);
+  if (!matches.length) return 0;
+  for (var i = 0; i < matches.length; i++) {
+    sheet.getRange(matches[i] + 2, textoCol + 1).setValue(texto);
+    sheet.getRange(matches[i] + 2, histCol + 1).setValue(historial);
+  }
+  return matches.length;
 }
 
 function setEstado_(id, folio, estado) {

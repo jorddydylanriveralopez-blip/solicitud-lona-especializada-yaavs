@@ -128,6 +128,8 @@ const FIELD_ORDER = [
   ["confirmaciones", "Confirmaciones"],
   ["observacionesAdicionales", "Observaciones adicionales"],
   ["estadoProduccion", "Estado de producción"],
+  ["faltanteCliente", "Faltó agregar"],
+  ["faltanteHistorial", "Evidencia de aviso"],
   ["id", "ID interno"],
 ];
 
@@ -161,6 +163,8 @@ const COLUMN_WIDTHS = {
   confirmaciones: 40,
   observacionesAdicionales: 40,
   estadoProduccion: 22,
+  faltanteCliente: 40,
+  faltanteHistorial: 48,
   id: 28,
 };
 
@@ -939,6 +943,70 @@ const SHEETS_LIST_CACHE_MS = 4000;
 let sheetsListInFlight = null;
 let sheetsCacheGen = 0;
 
+function preferFaltante(sheetItem, localItem) {
+  const sheetHist = String(sheetItem?.faltanteHistorial || "");
+  const localHist = String(localItem?.faltanteHistorial || "");
+  const useSheet = sheetHist.length >= localHist.length;
+  const source = useSheet ? sheetItem : localItem;
+  const fallback = useSheet ? localItem : sheetItem;
+  return {
+    faltanteCliente: String(source?.faltanteCliente || fallback?.faltanteCliente || ""),
+    faltanteHistorial: useSheet ? sheetHist : localHist,
+  };
+}
+
+function waDigits(raw) {
+  const digits = String(raw || "").replace(/\D/g, "");
+  if (digits.length === 10) return `52${digits}`;
+  if (digits.length === 12 && digits.startsWith("52")) return digits;
+  if (digits.length === 13 && digits.startsWith("521")) return `52${digits.slice(3)}`;
+  return "";
+}
+
+function noticeTarget(item, who) {
+  if (who === "yaavser") {
+    return {
+      who: "yaavser",
+      role: "YAAVSER",
+      name: String(item?.yaavserNombre || "").trim(),
+      phone: String(item?.yaavserTelefono || "").trim(),
+      wa: waDigits(item?.yaavserTelefono),
+    };
+  }
+  if (who === "ejecutivo") {
+    return {
+      who: "ejecutivo",
+      role: "Ejecutivo de ventas",
+      name: String(item?.ejecutivoNombre || "").trim(),
+      phone: String(item?.ejecutivoTelefono || "").trim(),
+      wa: waDigits(item?.ejecutivoTelefono),
+    };
+  }
+  return null;
+}
+
+function patchSheetNotice(id, folio, notice) {
+  sheetsCacheGen += 1;
+  sheetsListInFlight = null;
+  if (!Array.isArray(sheetsListCache.items)) return;
+  const wantedId = String(id || "").trim();
+  const wantedFolio = String(folio || "").trim();
+  sheetsListCache = {
+    at: Date.now(),
+    error: null,
+    items: sheetsListCache.items.map((item) => {
+      const sameId = wantedId && String(item.id || "").trim() === wantedId;
+      const sameFolio = wantedFolio && String(item.folio || "").trim() === wantedFolio;
+      if (!sameId && !sameFolio) return item;
+      return {
+        ...item,
+        faltanteCliente: notice.faltanteCliente,
+        faltanteHistorial: notice.faltanteHistorial,
+      };
+    }),
+  };
+}
+
 function patchSheetEstado(id, folio, estado) {
   sheetsCacheGen += 1;
   sheetsListInFlight = null;
@@ -1108,6 +1176,7 @@ function mergeBoardItems(localItems, sheetsItems) {
       ...item,
       estadoProduccion:
         String(prev.estadoProduccion || "").trim() || String(item.estadoProduccion || "").trim(),
+      ...preferFaltante(prev, item),
       media,
       lonasDetail: item.lonasDetail || prev.lonasDetail || null,
       toldosDetail: item.toldosDetail || prev.toldosDetail || null,
@@ -1449,6 +1518,96 @@ app.get("/api/responses/:id/archivos.zip", requireBoard, async (req, res) => {
   } catch (err) {
     if (!res.headersSent) res.status(500).json({ ok: false, error: err.message || "Error al generar ZIP" });
   }
+});
+
+app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {
+  if (!req.boardRole.seesAll) {
+    return res.status(403).json({ ok: false, error: "Solo Marketing puede avisar al cliente" });
+  }
+  const texto = String(req.body?.texto || "").trim().slice(0, 800);
+  if (!texto) {
+    return res.status(400).json({ ok: false, error: "Escribe qué faltó agregar" });
+  }
+  const who = String(req.body?.quien || "").trim();
+  const id = String(req.params.id || "").trim();
+  if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
+
+  const list = readResponses();
+  const localEntry = list.find((entry) => entry.id === id || entry.folio === id);
+  const sheets = await fetchSheetsItems().catch(() => null);
+  const row = (sheets || []).find((item) => item.id === id || item.folio === id);
+  const source = { ...(localEntry?.answers || {}), ...(row || {}) };
+  const folio = localEntry?.folio || row?.folio || "";
+  const target = noticeTarget(source, who);
+  if (who !== "guardar" && (!target || !target.wa)) {
+    return res.status(400).json({
+      ok: false,
+      error: "Esa persona no tiene un teléfono válido para WhatsApp",
+    });
+  }
+
+  const previous = preferFaltante(row || {}, localEntry?.answers || {});
+  const when = formatDateMx(new Date().toISOString());
+  const destino = target
+    ? `${target.role}${target.name ? ` ${target.name}` : ""} (${target.phone})`
+    : "sin teléfono";
+  const line = `${when} — Aviso a ${destino}:\n${texto}`;
+  let historial = previous.faltanteHistorial ? `${previous.faltanteHistorial}\n\n${line}` : line;
+  if (historial.length > 20000) {
+    historial = `${historial.slice(0, 4000)}\n\n…\n\n${historial.slice(-15000)}`;
+  }
+  const notice = { faltanteCliente: texto, faltanteHistorial: historial };
+
+  if (localEntry) {
+    localEntry.answers =
+      localEntry.answers && typeof localEntry.answers === "object" ? localEntry.answers : {};
+    localEntry.answers.faltanteCliente = notice.faltanteCliente;
+    localEntry.answers.faltanteHistorial = notice.faltanteHistorial;
+    writeResponses(list);
+  }
+  patchSheetNotice(id, folio, notice);
+
+  const sheetsResult = await postToSheetsRaw(
+    JSON.stringify({
+      action: "setFaltante",
+      id,
+      folio,
+      texto: notice.faltanteCliente,
+      historial: notice.faltanteHistorial,
+    }),
+  );
+  if (SHEETS_WEBHOOK_URL && (!sheetsResult.ok || sheetsResult.body?.ok === false)) {
+    if (localEntry) {
+      localEntry.answers.faltanteCliente = previous.faltanteCliente;
+      localEntry.answers.faltanteHistorial = previous.faltanteHistorial;
+      writeResponses(list);
+    }
+    patchSheetNotice(id, folio, previous);
+    return res.status(502).json({
+      ok: false,
+      error: "No se pudo guardar el aviso en el registro",
+    });
+  }
+
+  let waUrl = "";
+  if (target?.wa) {
+    const mensaje = [
+      `Hola${target.name ? ` ${target.name}` : ""}, te escribimos de Marketing YAAVS.`,
+      `En la solicitud ${folio || id}${source.puntoVenta ? ` (${source.puntoVenta})` : ""} faltó agregar esto:`,
+      texto,
+      "Cuando lo tengas, avísanos para continuar.",
+    ].join("\n\n");
+    waUrl = `https://wa.me/${target.wa}?text=${encodeURIComponent(mensaje)}`;
+  }
+
+  res.json({
+    ok: true,
+    id,
+    folio,
+    faltanteCliente: notice.faltanteCliente,
+    faltanteHistorial: notice.faltanteHistorial,
+    waUrl,
+  });
 });
 
 app.post("/api/responses/:id/estado", requireBoard, async (req, res) => {
