@@ -217,13 +217,15 @@ const BOARD_ROLES = {
   marketing: {
     label: "Marketing",
     seesAll: true,
+    canManage: true,
     canDelete: true,
     envPassword: "BOARD_PASSWORD_MARKETING",
     hash: "f6e81b05c57f0ac3cf952436c015ccaf:204820d4156c6f638a5471588f47ae67c05631bb8d4c6c301126e6c3407b710b",
   },
   rotulacion: {
-    label: "Dirección comercial · Rotulación",
-    seesAll: false,
+    label: "Dirección comercial",
+    seesAll: true,
+    canManage: false,
     canDelete: false,
     envPassword: "BOARD_PASSWORD_ROTULACION",
     hash: "027aa9c9b2e048233f0e322a4a106eae:f41028090bc1d6027308afc7c3fd952abf23268b3a3a619daed11e76b17b8a25",
@@ -231,6 +233,7 @@ const BOARD_ROLES = {
   ejecutivo: {
     label: "Ejecutivo de ventas · Rotulación",
     seesAll: false,
+    canManage: false,
     canDelete: false,
     envPassword: "BOARD_PASSWORD_EJECUTIVO",
     hash: "102d46f591c1ec63ba75e79340bbda4f:9aaac3482ca9368c40f3d8bbe9660865de40322a708e7a79cb3c94eec5e2e55b",
@@ -366,7 +369,14 @@ app.get("/api/session", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   const role = boardRole(req);
   if (!role) return res.status(401).json({ ok: false });
-  res.json({ ok: true, role: role.key, label: role.label, seesAll: role.seesAll, canDelete: role.canDelete });
+  res.json({
+    ok: true,
+    role: role.key,
+    label: role.label,
+    seesAll: role.seesAll,
+    canManage: role.canManage,
+    canDelete: role.canDelete,
+  });
 });
 
 function ensureStore() {
@@ -1534,7 +1544,7 @@ app.post("/api/responses/:id/producto-final", requireBoard, (req, res) => {
       if (err) {
         return res.status(400).json({ ok: false, error: uploadErrorMessage(err) });
       }
-      if (!req.boardRole.seesAll) {
+      if (!req.boardRole.canManage) {
         return res.status(403).json({ ok: false, error: "Solo Marketing puede subir el producto terminado" });
       }
       const files = req.files || [];
@@ -1662,8 +1672,8 @@ app.post("/api/responses/:id/producto-final", requireBoard, (req, res) => {
 });
 
 app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {
-  if (!req.boardRole.seesAll) {
-    return res.status(403).json({ ok: false, error: "Solo Marketing puede avisar al cliente" });
+  if (!req.boardRole.canManage) {
+    return res.status(403).json({ ok: false, error: "Solo Marketing puede guardar la nota" });
   }
   const texto = String(req.body?.texto || "").trim().slice(0, 800);
   if (!texto) {
@@ -1728,7 +1738,7 @@ app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {
 });
 
 app.post("/api/responses/:id/estado", requireBoard, async (req, res) => {
-  if (!req.boardRole.seesAll) {
+  if (!req.boardRole.canManage) {
     return res.status(403).json({ ok: false, error: "Solo Marketing puede cambiar el semáforo" });
   }
   const estado = normalizeProduccionEstado(req.body?.estado);

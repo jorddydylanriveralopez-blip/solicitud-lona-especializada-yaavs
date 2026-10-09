@@ -144,7 +144,7 @@
   function semaphoreHtml(item, { compact = false } = {}) {
     const current = estadoOf(item);
     const tone = estadoTone(current);
-    if (!session?.seesAll) {
+    if (!session?.canManage) {
       if (!current) return "";
       return `<p class="estado-pill" data-tone="${tone}"><span class="status-light" aria-hidden="true"></span>${escapeHtml(current)}</p>`;
     }
@@ -827,7 +827,7 @@
                 }
               </div>
             </button>
-            ${session?.seesAll ? semaphoreHtml(item, { compact: true }) : ""}
+            ${session?.seesAll || session?.canManage ? semaphoreHtml(item, { compact: true }) : ""}
             ${productoCardHtml(item)}
           </article>`;
       })
@@ -845,7 +845,7 @@
   }
 
   function productoCardHtml(item) {
-    if (!session?.seesAll || materialKind(item) !== "rotulacion") return "";
+    if (!session?.canManage || materialKind(item) !== "rotulacion") return "";
     const count = productoFinalOf(item).length;
     const id = escapeAttr(item.id || item.folio || "");
     return `
@@ -856,7 +856,7 @@
   }
 
   function bindProductoCards(root) {
-    if (!session?.seesAll || !root) return;
+    if (!session?.canManage || !root) return;
     root.querySelectorAll(".producto-card").forEach((wrap) => {
       const input = wrap.querySelector(".producto-card-input");
       const button = wrap.querySelector(".producto-card-btn");
@@ -1034,9 +1034,9 @@
   function productoFinalHtml(item) {
     if (materialKind(item) !== "rotulacion") return "";
     const files = productoFinalOf(item);
-    if (!session?.seesAll && !files.length) return "";
+    if (!session?.canManage && !files.length) return "";
     const tiles = files.map((file, idx) => productoTile(file, idx)).join("");
-    const uploader = session?.seesAll
+    const uploader = session?.canManage
       ? `
         <div class="producto-upload">
           <p>Sube aquí el render o el producto terminado.</p>
@@ -1063,12 +1063,14 @@
     const texto = String(item?.faltanteCliente || "");
     const historial = String(item?.faltanteHistorial || "");
     const notes = noteHistoryHtml(historial);
-    if (!session?.seesAll) {
-      if (materialKind(item) !== "rotulacion" || (!texto && !historial)) return "";
+    if (!session?.canManage) {
+      if (!texto && !historial) return "";
+      if (!session?.seesAll && materialKind(item) !== "rotulacion") return "";
+      const title = session?.seesAll ? "Nota" : "Nota de Marketing";
       return `
-        <section class="faltante" aria-label="Nota de Marketing">
-          <h3>Nota de Marketing</h3>
-          <p>Observación de Marketing sobre esta rotulación.</p>
+        <section class="faltante" aria-label="${title}">
+          <h3>${title}</h3>
+          <p>${session?.seesAll ? "Observación de Marketing." : "Observación de Marketing sobre esta rotulación."}</p>
           ${notes || (texto ? `<p class="faltante-text">${escapeHtml(texto)}</p>` : "")}
         </section>`;
     }
@@ -1087,7 +1089,7 @@
   function bindFaltante(item) {
     const box = document.getElementById("faltanteTexto");
     const saveBtn = document.getElementById("faltanteGuardar");
-    if (!box || !saveBtn || !session?.seesAll) return;
+    if (!box || !saveBtn || !session?.canManage) return;
     saveBtn.onclick = async () => {
       const texto = box.value.trim();
       if (!texto) {
@@ -1313,7 +1315,7 @@
   }
 
   async function uploadProductoFinal(item, files, button) {
-    if (!item || !files?.length || productoUploadBusy || !session?.seesAll) return;
+    if (!item || !files?.length || productoUploadBusy || !session?.canManage) return;
     productoUploadBusy = true;
     const previous = button?.textContent || "Subir render";
     if (button) {
@@ -1349,7 +1351,7 @@
   function bindProductoFinal(item) {
     const input = document.getElementById("productoFinalInput");
     const send = document.getElementById("productoFinalBtn");
-    if (!input || !send || !session?.seesAll) return;
+    if (!input || !send || !session?.canManage) return;
     send.onclick = () => {
       if (!productoUploadBusy) input.click();
     };
@@ -1363,7 +1365,7 @@
 
   async function setEstado(id, estado) {
     const item = items.find((it) => it.id === id || it.folio === id);
-    if (!item || !session?.seesAll) return;
+    if (!item || !session?.canManage) return;
     const previous = item.estadoProduccion || "";
     item.estadoProduccion = estado;
     renderStatusFilters();
@@ -1389,7 +1391,7 @@
   }
 
   function bindSemaphore(root) {
-    if (!session?.seesAll) return;
+    if (!session?.canManage) return;
     root.querySelectorAll(".semaphore-choice").forEach((btn) => {
       btn.onclick = (event) => {
         event.preventDefault();
