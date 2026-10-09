@@ -137,15 +137,18 @@ function doPost(e) {
         data.folio || data.id || "",
       );
       var mediaNow = appendMediaToRow_(data.id, data.folio, added);
+      var merged = mediaNow.merged || [];
+      var saved = mediaNow.saved || [];
       var failed = [];
       for (var ai = 0; ai < added.length; ai++) {
         if (added[ai] && added[ai].error) failed.push(added[ai].error);
       }
       return jsonOut_({
-        ok: failed.length === 0,
-        added: mediaNow.length ? added.filter(function (m) { return m && m.url; }).length : 0,
-        mediaCount: mediaNow.length,
-        media: mediaNow,
+        ok: failed.length === 0 && saved.length > 0,
+        added: saved.length,
+        mediaCount: merged.length,
+        media: merged,
+        saved: saved,
         errors: failed,
       });
     }
@@ -304,33 +307,66 @@ function parseMedia_(raw) {
 function appendMediaToRow_(id, folio, newMedia) {
   var wantedId = String(id || "").trim();
   var wantedFolio = String(folio || "").trim();
-  if ((!wantedId && !wantedFolio) || !newMedia || !newMedia.length) return newMedia || [];
+  function pack_(merged, saved) {
+    return { merged: merged || [], saved: saved || [] };
+  }
+  if ((!wantedId && !wantedFolio) || !newMedia || !newMedia.length) return pack_([], []);
 
   // Solo persistir entradas con URL de Drive (ignorar fallos).
   var valid = [];
   for (var i = 0; i < newMedia.length; i++) {
     if (newMedia[i] && newMedia[i].url) valid.push(newMedia[i]);
   }
-  if (!valid.length) return [];
+  if (!valid.length) return pack_([], []);
 
   var sheet = ensureSheet_();
   var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return valid;
+  if (lastRow < 2) return pack_(valid, valid);
 
   var mediaCol = KEYS.indexOf("media");
   var materialCol = KEYS.indexOf("material");
-  if (mediaCol < 0) return valid;
+  if (mediaCol < 0) return pack_(valid, valid);
 
   var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getValues();
   var matches = matchRows_(values, wantedId, wantedFolio).filter(function (r) {
     return materialCol < 0 || String(values[r][materialCol] || "").trim() !== "";
   });
-  if (!matches.length) return valid;
+  if (!matches.length) return pack_(valid, valid);
   var row = matches[0];
   var existing = parseMedia_(values[row][mediaCol]);
-  var merged = existing.concat(valid);
+  var seen = {};
+  var merged = [];
+  function mediaKey_(file) {
+    if (!file) return "";
+    if (file.storedAs) return "s:" + String(file.storedAs);
+    var url = String(file.url || "");
+    var match = url.match(/[?&]id=([\w-]+)/);
+    if (match) return "d:" + match[1];
+    return "u:" + url;
+  }
+  function pushUnique_(file) {
+    var key = mediaKey_(file);
+    if (!key || seen[key]) return false;
+    seen[key] = true;
+    merged.push(file);
+    return true;
+  }
+  for (var e = 0; e < existing.length; e++) pushUnique_(existing[e]);
+  var saved = [];
+  for (var n = 0; n < valid.length; n++) {
+    var key = mediaKey_(valid[n]);
+    var already = false;
+    for (var m = 0; m < merged.length; m++) {
+      if (mediaKey_(merged[m]) === key) {
+        saved.push(merged[m]);
+        already = true;
+        break;
+      }
+    }
+    if (!already && pushUnique_(valid[n])) saved.push(valid[n]);
+  }
   sheet.getRange(row + 2, mediaCol + 1).setValue(JSON.stringify(merged));
-  return merged;
+  return pack_(merged, saved);
 }
 
 /** Filas por id; el folio solo se usa si no hay id que coincida (los folios pueden repetirse). */

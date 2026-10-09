@@ -326,7 +326,20 @@
 
   function mediaOf(item) {
     if (!Array.isArray(item?.media) || !item.media.length) return [];
-    return item.media.map((f) => normalizeMediaFile(f, item)).filter((f) => f && f.url);
+    const out = [];
+    const seen = new Set();
+    for (const raw of item.media) {
+      const file = normalizeMediaFile(raw, item);
+      if (!file?.url) continue;
+      const driveId = driveIdOf(file.url);
+      const key =
+        String(file.storedAs || "").trim().toLowerCase() ||
+        (driveId ? `drive:${driveId}` : String(file.url).trim().toLowerCase());
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(file);
+    }
+    return out;
   }
 
   function mediaIndex(media, file) {
@@ -460,6 +473,7 @@
                   <button type="button" class="evidence-item image-tile" data-media-index="${globalIdx}">
                     <img src="${escapeAttr(viewUrl(file))}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
                     <span>${escapeHtml(kindLabel)}</span>
+                    ${file.name ? `<small>${escapeHtml(file.name)}</small>` : ""}
                   </button>
                   ${downloadLink(file)}
                 </div>`;
@@ -956,14 +970,11 @@
 
         ${SECTIONS.map((section) => {
           const body = fieldGrid(section.fields, item);
-          const pvPhotos =
-            section.title === "Punto de venta" ? renderPuntoVentaPhotos(item, media) : "";
-          if (!body && !pvPhotos) return "";
+          if (!body) return "";
           return `
             <section class="panel">
               <div class="panel-head"><h3>${escapeHtml(section.title)}</h3></div>
               ${body}
-              ${pvPhotos}
             </section>`;
         }).join("")}
 
@@ -999,7 +1010,6 @@
             ? `<section class="panel">
                 <div class="panel-head"><h3>Rotulación</h3></div>
                 ${renderSpecCards(rotulaciones, "rotulacion")}
-                ${renderFachadaPhotos(item, media)}
               </section>`
             : ""
         }

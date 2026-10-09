@@ -821,8 +821,13 @@ async function forwardToSheets(entry) {
             attachment: att,
           }),
         );
-        const savedToDrive = (one.body?.media || []).some((m) =>
-          String(m?.url || "").includes("drive.google"),
+        const savedRows = Array.isArray(one.body?.saved)
+          ? one.body.saved
+          : one.body?.media || [];
+        const savedToDrive = savedRows.some(
+          (m) =>
+            String(m?.url || "").includes("drive.google") &&
+            String(m?.storedAs || "") === String(att.storedAs || ""),
         );
         if (one.ok && savedToDrive) {
           uploaded += 1;

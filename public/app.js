@@ -853,10 +853,10 @@
       <label class="field file-field">
         <span>${label}${required ? ' <span class="req">*</span>' : ""}</span>
         <div class="file-drop">
-          <input type="file" name="${name}" accept=".jpg,.jpeg,.png,.heic,.heif,.pdf,image/jpeg,image/png,image/heic,image/heif,application/pdf" data-preview />
+          <input type="file" name="${name}" accept=".jpg,.jpeg,.png,.heic,.heif,.pdf,image/jpeg,image/png,image/heic,image/heif,application/pdf" data-preview multiple />
           <div class="file-drop-copy">
-            <strong>Sube o selecciona un archivo</strong>
-            <small>JPG, PNG o PDF</small>
+            <strong>Sube o selecciona las imágenes</strong>
+            <small>Puedes elegir varias. JPG, PNG o PDF</small>
           </div>
           <div class="file-preview" hidden>
             <div class="file-preview-media"></div>
@@ -969,10 +969,14 @@
 
       input.addEventListener("change", async () => {
         clearPreview();
-        const file = input.files?.[0];
+        const files = [...(input.files || [])];
+        const file = files[0];
         if (!file || !preview || !media || !nameEl || !sizeEl) return;
-        nameEl.textContent = file.name;
-        sizeEl.textContent = formatBytes(file.size);
+        nameEl.textContent = files.length > 1 ? `${files.length} imágenes` : file.name;
+        sizeEl.textContent =
+          files.length > 1
+            ? files.map((item) => item.name).join(", ")
+            : formatBytes(file.size);
         if (file.size > WARN_FILE_MB * 1024 * 1024) {
           showToast(`La foto pesa ${formatBytes(file.size)}. Si puedes, súbela más liviana para evitar traba en el celular.`);
         }
@@ -1514,30 +1518,11 @@
     };
   }
 
-  function appendRotulacionFiles(fd) {
-    const f1 = form.querySelector('input[name="rotulacion_foto_1"]');
-    if (f1?.files?.[0]) fd.append("rotulacion_foto_1", f1.files[0]);
-    const evidencia = rotulacionEvidenciaTipo();
-    const f2 = form.querySelector('input[name="rotulacion_foto_2"]');
-    if (evidencia === "esquina" && f2?.files?.[0]) fd.append("rotulacion_foto_2", f2.files[0]);
-  }
-
-  function appendToldoPuntoVentaFiles(fd) {
-    const foto = form.querySelector('input[name="toldo_foto"]');
-    if (foto?.files?.[0]) fd.append("toldo_foto", foto.files[0]);
-  }
-
-  function appendItemFiles(fd, prefix, count) {
-    for (let i = 1; i <= count; i += 1) {
-      const logo = form.querySelector(`input[name="logo_${prefix}_${i}"]`);
-      if (logo?.files?.[0]) fd.append(`logo_${prefix}_${i}`, logo.files[0]);
-      const refYes =
-        form.querySelector(`input[name="referencia_${prefix}_${i}"]:checked`)?.value === "Sí";
-      const refFile = form.querySelector(`input[name="referenciaFile_${prefix}_${i}"]`);
-      if (refYes && refFile?.files?.[0]) {
-        fd.append(`referenciaFile_${prefix}_${i}`, refFile.files[0]);
-      }
-    }
+  function appendSelectedFiles(fd) {
+    form.querySelectorAll('input[type="file"]').forEach((input) => {
+      if (!input.name || input.closest("[hidden]")) return;
+      for (const file of input.files || []) fd.append(input.name, file);
+    });
   }
 
   form.addEventListener("change", (e) => {
@@ -1601,13 +1586,7 @@
 
       const fd = new FormData();
       fd.append("answers", JSON.stringify(buildAnswers()));
-      if (isLona()) appendItemFiles(fd, "lona", lonaCount());
-      if (isToldo()) {
-        appendToldoPuntoVentaFiles(fd);
-        appendItemFiles(fd, "toldo", toldoCount());
-      }
-      if (isCaballete()) appendItemFiles(fd, "caballete", caballeteCount());
-      if (isRotulacion()) appendRotulacionFiles(fd);
+      appendSelectedFiles(fd);
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 90000);
       let res;
