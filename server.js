@@ -246,6 +246,55 @@ const BOARD_ROLES = {
     envPassword: "BOARD_PASSWORD_GERENTE",
     hash: "e16159c1b93e4ebfd2c0843b5848e429:2a0faefcb8f7a0323536f1c731b428bc60d516a05dc49bbedb65b20d003517d5",
   },
+  "gerente-reynoso": {
+    label: "Gerente regional · Rodolfo Reynoso Castelan",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    hash: "772ea1eeec4d3bb0101eb0819b482327:f2f35e4070a6cef10e05dfa320cc3c123c4d738c7f8d3d91ffc94471a654b248",
+  },
+  "gerente-ugalde": {
+    label: "Gerente territorial · Luis Daniel Ugalde Welsh",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    hash: "a215eb57491539bff4fd8b0c9b89e1f2:6fff153936bce2a2869ec0dbce522205c9304d51ecd656b5e19b6a60f67c957c",
+  },
+  "gerente-redonda": {
+    label: "Gerente territorial · Jesus Redonda Perez",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    hash: "f0d418c49964f70b169988c982c00ccd:66719346f6efd979e3d06fce834776d82b60fb112af083740a8d9df9dbc990e0",
+  },
+  "gerente-vazquez-h": {
+    label: "Gerente territorial · Luis Eduardo Vazquez Hernandez",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    hash: "52233cde6b7d4a91c67a9c9a7fe84071:06d6a0d3de1b4ad38310ce9370453fd8c050ebc48acdcb6bff9d0222540c4e99",
+  },
+  "gerente-perez": {
+    label: "Gerente territorial · Erick Perez Galindo",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    hash: "5d93edc806b125c993ad8f37ff6d9c61:1bf92444b86890b812f2fdfa02533702d604e54ad241ca0c15318df695198dc5",
+  },
+  "gerente-garcia": {
+    label: "Gerente territorial · Juan Fernando Garcia Aguilar",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    hash: "afb06eeb0c1a315a28711e4d0129cd3c:f6a7b77ee753bb0f72aa4c5b7be1955adc4d67512f949ab086d39edb8898a8be",
+  },
+  "gerente-vazquez-a": {
+    label: "Gerente territorial · Manuel Vazquez Aguila",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    hash: "171f4d1fb54ae09b980ce70f500efcf3:be7343347b69c18b51f5718250b3751466c8603f8e21c97638bb4be46a940740",
+  },
 };
 const PRODUCCION_ESTADOS = ["En diseño", "En proceso", "En revisión", "Terminado"];
 
