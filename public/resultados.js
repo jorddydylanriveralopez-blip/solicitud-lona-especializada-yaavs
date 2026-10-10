@@ -853,7 +853,7 @@
   function autorizacionCardHtml(item) {
     const ok = isAuthorized(item);
     const id = escapeAttr(item.id || item.folio || "");
-    if (session?.canAuthorize) {
+    if (session?.canAuthorize && item?.enMiZona) {
       return `
         <div class="autorizacion-card">
           <button type="button" class="autorizacion-btn${ok ? " is-on" : ""}" data-id="${id}" data-aceptar="${ok ? "0" : "1"}">
@@ -905,14 +905,16 @@
       .join("·")
       .trim();
     const id = escapeAttr(item.id || item.folio || "");
-    const action = session?.canAuthorize
+    const mine = session?.canAuthorize && item?.enMiZona;
+    const action = mine
       ? `<button type="button" class="autorizacion-btn${ok ? " is-on" : ""}" data-id="${id}" data-aceptar="${ok ? "0" : "1"}">${ok ? "Quitar autorización" : "Aceptar para Marketing"}</button>`
       : "";
+    const fuera = session?.canAuthorize && !item?.enMiZona ? " La autoriza el gerente de esta zona." : "";
     return `
       <section class="autorizacion-panel${ok ? " is-on" : ""}">
         <div>
           <p class="autorizacion-kicker">Autorización del gerente</p>
-          <p class="autorizacion-state">${ok ? `Autorizada${quien ? ` · ${escapeHtml(quien)}` : ""}` : "Pendiente de autorización"}</p>
+          <p class="autorizacion-state">${ok ? `Autorizada${quien ? ` · ${escapeHtml(quien)}` : ""}` : `Pendiente de autorización${fuera}`}</p>
         </div>
         ${action}
       </section>`;
@@ -933,7 +935,7 @@
 
   async function setAutorizacion(id, aceptar) {
     const item = items.find((it) => it.id === id || it.folio === id);
-    if (!item || !session?.canAuthorize) return;
+    if (!item || !session?.canAuthorize || !item.enMiZona) return;
     const previous = item.autorizada || "";
     item.autorizada = aceptar ? "Autorizada" : "";
     renderList();

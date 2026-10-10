@@ -251,6 +251,7 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zoneNames: ["Rodolfo Reynoso Castelan"],
     hash: "772ea1eeec4d3bb0101eb0819b482327:f2f35e4070a6cef10e05dfa320cc3c123c4d738c7f8d3d91ffc94471a654b248",
   },
   "gerente-ugalde": {
@@ -258,6 +259,7 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zoneNames: ["Luis Daniel Ugalde Welsh"],
     hash: "a215eb57491539bff4fd8b0c9b89e1f2:6fff153936bce2a2869ec0dbce522205c9304d51ecd656b5e19b6a60f67c957c",
   },
   "gerente-redonda": {
@@ -265,6 +267,7 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zoneNames: ["Jesus Redonda Perez"],
     hash: "f0d418c49964f70b169988c982c00ccd:66719346f6efd979e3d06fce834776d82b60fb112af083740a8d9df9dbc990e0",
   },
   "gerente-vazquez-h": {
@@ -272,6 +275,7 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zoneNames: ["Luis Eduardo Vazquez Hernandez"],
     hash: "52233cde6b7d4a91c67a9c9a7fe84071:06d6a0d3de1b4ad38310ce9370453fd8c050ebc48acdcb6bff9d0222540c4e99",
   },
   "gerente-perez": {
@@ -279,6 +283,7 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zoneNames: ["Erick Perez Galindo"],
     hash: "5d93edc806b125c993ad8f37ff6d9c61:1bf92444b86890b812f2fdfa02533702d604e54ad241ca0c15318df695198dc5",
   },
   "gerente-garcia": {
@@ -286,6 +291,7 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zoneNames: ["Juan Fernando Garcia Aguilar"],
     hash: "afb06eeb0c1a315a28711e4d0129cd3c:f6a7b77ee753bb0f72aa4c5b7be1955adc4d67512f949ab086d39edb8898a8be",
   },
   "gerente-vazquez-a": {
@@ -293,6 +299,7 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zoneNames: ["Manuel Vazquez Aguila"],
     hash: "171f4d1fb54ae09b980ce70f500efcf3:be7343347b69c18b51f5718250b3751466c8603f8e21c97638bb4be46a940740",
   },
 };
@@ -378,8 +385,7 @@ function isRotulacionItem(item) {
 }
 
 function canAuthorizeRole(role) {
-  const key = String(role?.key || "");
-  return key === "gerente" || key.startsWith("gerente-");
+  return Array.isArray(role?.zoneNames) && role.zoneNames.length > 0;
 }
 
 function authorName(role) {
@@ -388,13 +394,33 @@ function authorName(role) {
   return name || "Gerente";
 }
 
+function personName(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function itemInAuthorizeZone(role, item) {
+  const names = (role?.zoneNames || []).map(personName).filter(Boolean);
+  if (!names.length || !item) return false;
+  const answers = item.answers && typeof item.answers === "object" ? item.answers : {};
+  const territorial = personName(item.gerenteTerritorial || answers.gerenteTerritorial);
+  const regional = personName(item.territorioGerente || answers.territorioGerente);
+  return names.some((name) => name === territorial || name === regional);
+}
+
 function scopeItems(items, role) {
-  if (role?.seesAll) return items || [];
-  return (items || []).filter(isRotulacionItem).map((item) => ({
-    ...item,
-    faltanteCliente: isRotulacionItem(item) ? item.faltanteCliente || "" : "",
-    faltanteHistorial: isRotulacionItem(item) ? item.faltanteHistorial || "" : "",
-  }));
+  const list = role?.seesAll
+    ? items || []
+    : (items || []).filter(isRotulacionItem).map((item) => ({
+        ...item,
+        faltanteCliente: isRotulacionItem(item) ? item.faltanteCliente || "" : "",
+        faltanteHistorial: isRotulacionItem(item) ? item.faltanteHistorial || "" : "",
+      }));
+  return list.map((item) => ({ ...item, enMiZona: itemInAuthorizeZone(role, item) }));
 }
 
 const loginAttempts = new Map();
@@ -1806,6 +1832,19 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
   if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
 
   const list = readResponses();
+  const localEntry = list.find((entry) => entry.id === id || entry.folio === id);
+  const sheets = await fetchSheetsItems().catch(() => null);
+  const row = (sheets || []).find((item) => item.id === id || item.folio === id);
+  if (!localEntry && !row) return res.status(404).json({ ok: false, error: "Solicitud no encontrada" });
+  const answers = localEntry?.answers && typeof localEntry.answers === "object" ? localEntry.answers : {};
+  const zoneItem = {
+    gerenteTerritorial: String(row?.gerenteTerritorial || answers.gerenteTerritorial || "").trim(),
+    territorioGerente: String(row?.territorioGerente || answers.territorioGerente || "").trim(),
+  };
+  if (!itemInAuthorizeZone(req.boardRole, zoneItem)) {
+    return res.status(403).json({ ok: false, error: "Esta solicitud es de otra zona" });
+  }
+
   let folio = "";
   let changedLocal = false;
   let previous = "";
@@ -1819,13 +1858,8 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
   }
   if (changedLocal) writeResponses(list);
 
-  const sheets = await fetchSheetsItems().catch(() => null);
-  const row = (sheets || []).find((item) => item.id === id || item.folio === id);
   folio = folio || row?.folio || "";
   if (!changedLocal && row) previous = String(row.autorizada || "");
-  if (!changedLocal && !row) {
-    return res.status(404).json({ ok: false, error: "Solicitud no encontrada" });
-  }
   patchSheetAutorizada(id, folio, autorizada);
 
   const sheetsResult = await postToSheetsRaw(
