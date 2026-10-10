@@ -980,16 +980,53 @@ const SHEETS_LIST_CACHE_MS = 4000;
 let sheetsListInFlight = null;
 let sheetsCacheGen = 0;
 
+function noteBlocks(historial) {
+  return String(historial || "")
+    .split(/\n\n+/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+}
+
+function noteStamp(historial) {
+  const last = noteBlocks(historial).pop() || "";
+  const match = last.match(/^(\d{2})\/(\d{2})\/(\d{4}),\s*(\d{2}):(\d{2}):(\d{2})/);
+  if (!match) return 0;
+  const [, dd, mm, yyyy, hh, mi, ss] = match;
+  const time = Date.parse(`${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`);
+  return Number.isNaN(time) ? 0 : time;
+}
+
 function preferFaltante(sheetItem, localItem) {
   const sheetHist = String(sheetItem?.faltanteHistorial || "");
   const localHist = String(localItem?.faltanteHistorial || "");
-  const useSheet = sheetHist.length >= localHist.length;
+  const sheetStamp = noteStamp(sheetHist);
+  const localStamp = noteStamp(localHist);
+  const useSheet =
+    sheetStamp && localStamp && sheetStamp !== localStamp
+      ? sheetStamp > localStamp
+      : sheetHist.length >= localHist.length;
   const source = useSheet ? sheetItem : localItem;
   const fallback = useSheet ? localItem : sheetItem;
   return {
     faltanteCliente: String(source?.faltanteCliente || fallback?.faltanteCliente || ""),
     faltanteHistorial: useSheet ? sheetHist : localHist,
   };
+}
+
+function historialWithNote(previousHistorial, previousTexto, texto) {
+  const line = `${formatDateMx(new Date().toISOString())} — Nota:\n${texto}`;
+  const blocks = noteBlocks(previousHistorial);
+  if (String(previousTexto || "").trim()) {
+    if (blocks.length) blocks[blocks.length - 1] = line;
+    else blocks.push(line);
+  } else {
+    blocks.push(line);
+  }
+  let historial = blocks.join("\n\n");
+  if (historial.length > 20000) {
+    historial = `${historial.slice(0, 4000)}\n\n…\n\n${historial.slice(-15000)}`;
+  }
+  return historial;
 }
 
 function patchSheetNotice(id, folio, notice) {
@@ -1697,12 +1734,16 @@ app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {
   const folio = localEntry?.folio || row?.folio || "";
 
   const previous = preferFaltante(row || {}, localEntry?.answers || {});
-  const when = formatDateMx(new Date().toISOString());
-  const line = `${when} — Nota:\n${texto}`;
-  let historial = previous.faltanteHistorial ? `${previous.faltanteHistorial}\n\n${line}` : line;
-  if (historial.length > 20000) {
-    historial = `${historial.slice(0, 4000)}\n\n…\n\n${historial.slice(-15000)}`;
+  if (texto === String(previous.faltanteCliente || "").trim()) {
+    return res.json({
+      ok: true,
+      id,
+      folio,
+      faltanteCliente: previous.faltanteCliente,
+      faltanteHistorial: previous.faltanteHistorial,
+    });
   }
+  const historial = historialWithNote(previous.faltanteHistorial, previous.faltanteCliente, texto);
   const notice = { faltanteCliente: texto, faltanteHistorial: historial };
 
   if (localEntry) {

@@ -1077,10 +1077,10 @@
     return `
       <section class="faltante" aria-label="Nota de la solicitud">
         <h3>Nota</h3>
-        <p>Escribe las observaciones. Se guardan en el tablero y no se envían a nadie.</p>
+        <p>${texto ? "Si te equivocaste, corrige el texto y guarda de nuevo." : "Escribe las observaciones. Se guardan en el tablero y no se envían a nadie."}</p>
         <textarea id="faltanteTexto" rows="4" maxlength="800" placeholder="El proyecto está mal. Hay que corregir el texto y faltó el logotipo.">${escapeHtml(texto)}</textarea>
         <div class="faltante-row">
-          <button type="button" class="faltante-send" id="faltanteGuardar" data-id="${escapeAttr(item.id || item.folio || "")}">Guardar nota</button>
+          <button type="button" class="faltante-send" id="faltanteGuardar" data-id="${escapeAttr(item.id || item.folio || "")}">${texto ? "Guardar cambios" : "Guardar nota"}</button>
         </div>
         ${notes}
       </section>`;
@@ -1514,7 +1514,13 @@
       liveStatus.dataset.live = "1";
 
       // Keep UI stable while lightbox is open; apply queued data on close via next tick
-      const writingNotice = document.activeElement?.id === "faltanteTexto";
+      const noteBox = document.getElementById("faltanteTexto");
+      const openItem = filteredItems()[index];
+      const writingNotice = Boolean(
+        noteBox &&
+          (document.activeElement === noteBox ||
+            noteBox.value.trim() !== String(openItem?.faltanteCliente || "").trim()),
+      );
       if (dataChanged && !lightboxOpen && !writingNotice && !productoUploadBusy) {
         renderMaterialFilters();
         renderStatusFilters();
