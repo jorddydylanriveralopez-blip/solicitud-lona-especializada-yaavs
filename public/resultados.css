@@ -1524,6 +1524,76 @@ button.ghost-link {
   cursor: wait;
 }
 
+.autorizacion-card {
+  padding: 0 8px 10px;
+}
+
+.autorizacion-btn {
+  width: 100%;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  background: #1f7a4d;
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+}
+
+.autorizacion-btn.is-on {
+  background: #e8f6ee;
+  color: #146c43;
+}
+
+.autorizacion-flag {
+  margin: 0 10px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #8a6a12;
+}
+
+.autorizacion-flag.is-on {
+  color: #146c43;
+}
+
+.autorizacion-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff8e8;
+  border: 1px solid #f0dfb0;
+}
+
+.autorizacion-panel.is-on {
+  background: #eefaf3;
+  border-color: #b7e4c7;
+}
+
+.autorizacion-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.autorizacion-state {
+  margin: 2px 0 0;
+  font-weight: 750;
+}
+
+.autorizacion-panel .autorizacion-btn {
+  width: auto;
+  flex: 0 0 auto;
+}
+
 .producto-upload {
   display: flex;
   flex-direction: column;

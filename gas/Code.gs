@@ -135,6 +135,11 @@ function doPost(e) {
       var updated = setEstado_(data.id, data.folio, estado);
       return jsonOut_({ ok: updated > 0, updated: updated, estado: estado });
     }
+    if (data.action === "setAutorizada") {
+      var autorizada = String(data.autorizada || "").trim().slice(0, 180);
+      var updatedAut = setAutorizada_(data.id, data.folio, autorizada);
+      return jsonOut_({ ok: updatedAut > 0, updated: updatedAut, autorizada: autorizada });
+    }
     if (data.action === "delete") {
       var deleted = deleteRows_(data.id, data.folio);
       return jsonOut_({ ok: true, deleted: deleted });
@@ -543,6 +548,24 @@ function setFaltante_(id, folio, texto, historial) {
   for (var i = 0; i < matches.length; i++) {
     sheet.getRange(matches[i] + 2, textoCol + 1).setValue(texto);
     sheet.getRange(matches[i] + 2, histCol + 1).setValue(historial);
+  }
+  return matches.length;
+}
+
+function setAutorizada_(id, folio, autorizada) {
+  var wantedId = String(id || "").trim();
+  var wantedFolio = String(folio || "").trim();
+  if (!wantedId && !wantedFolio) return 0;
+  var sheet = ensureSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+  var col = KEYS.indexOf("autorizada");
+  if (col < 0) return 0;
+  var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getValues();
+  var matches = matchRows_(values, wantedId, wantedFolio);
+  if (!matches.length) return 0;
+  for (var i = 0; i < matches.length; i++) {
+    sheet.getRange(matches[i] + 2, col + 1).setValue(autorizada);
   }
   return matches.length;
 }

@@ -196,7 +196,7 @@
     {
       title: "Gerente",
       fields: [
-        ["autorizada", "Estado"],
+        ["autorizada", "Autorización"],
         ["gerenteTerritorial", "Gerente territorial"],
         ["territorioGerente", "Gerente regional"],
         ["gerenteTelefono", "Teléfono gerente"],
@@ -829,6 +829,7 @@
             </button>
             ${session?.seesAll || session?.canManage ? semaphoreHtml(item, { compact: true }) : ""}
             ${productoCardHtml(item)}
+            ${autorizacionCardHtml(item)}
           </article>`;
       })
       .join("");
@@ -842,6 +843,25 @@
     });
     bindSemaphore(listEl);
     bindProductoCards(listEl);
+    bindAutorizacion(listEl);
+  }
+
+  function isAuthorized(item) {
+    return /^autorizada\b/i.test(String(item?.autorizada || "").trim());
+  }
+
+  function autorizacionCardHtml(item) {
+    const ok = isAuthorized(item);
+    const id = escapeAttr(item.id || item.folio || "");
+    if (session?.canAuthorize) {
+      return `
+        <div class="autorizacion-card">
+          <button type="button" class="autorizacion-btn${ok ? " is-on" : ""}" data-id="${id}" data-aceptar="${ok ? "0" : "1"}">
+            ${ok ? "Autorizada · quitar" : "Aceptar solicitud"}
+          </button>
+        </div>`;
+    }
+    return `<p class="autorizacion-flag${ok ? " is-on" : ""}">${ok ? "Autorizada" : "Pendiente de autorización"}</p>`;
   }
 
   function productoCardHtml(item) {
@@ -875,6 +895,67 @@
         uploadProductoFinal(item, chosen, button);
       };
     });
+  }
+
+  function autorizacionDetailHtml(item) {
+    const ok = isAuthorized(item);
+    const quien = String(item?.autorizada || "")
+      .split("·")
+      .slice(1)
+      .join("·")
+      .trim();
+    const id = escapeAttr(item.id || item.folio || "");
+    const action = session?.canAuthorize
+      ? `<button type="button" class="autorizacion-btn${ok ? " is-on" : ""}" data-id="${id}" data-aceptar="${ok ? "0" : "1"}">${ok ? "Quitar autorización" : "Aceptar para Marketing"}</button>`
+      : "";
+    return `
+      <section class="autorizacion-panel${ok ? " is-on" : ""}">
+        <div>
+          <p class="autorizacion-kicker">Autorización del gerente</p>
+          <p class="autorizacion-state">${ok ? `Autorizada${quien ? ` · ${escapeHtml(quien)}` : ""}` : "Pendiente de autorización"}</p>
+        </div>
+        ${action}
+      </section>`;
+  }
+
+  function bindAutorizacion(root) {
+    if (!session?.canAuthorize || !root) return;
+    root.querySelectorAll(".autorizacion-btn").forEach((btn) => {
+      btn.onclick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const id = btn.dataset.id || "";
+        if (!id) return;
+        setAutorizacion(id, btn.dataset.aceptar !== "0");
+      };
+    });
+  }
+
+  async function setAutorizacion(id, aceptar) {
+    const item = items.find((it) => it.id === id || it.folio === id);
+    if (!item || !session?.canAuthorize) return;
+    const previous = item.autorizada || "";
+    item.autorizada = aceptar ? "Autorizada" : "";
+    renderList();
+    renderDetail();
+    try {
+      const res = await fetch(`/api/responses/${encodeURIComponent(id)}/autorizacion`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aceptar }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) throw new Error(data.error || "No se pudo guardar");
+      item.autorizada = data.autorizada || "";
+      lastFingerprint = boardFingerprint(items);
+      renderList();
+      renderDetail();
+    } catch (err) {
+      item.autorizada = previous;
+      renderList();
+      renderDetail();
+      window.alert(err.message || "No se pudo guardar la autorización");
+    }
   }
 
   function fieldValueHtml(key, val) {
@@ -1184,6 +1265,8 @@
           </div>
         </header>
 
+        ${autorizacionDetailHtml(item)}
+
         ${productoFinalHtml(item)}
 
         ${semaphoreHtml(item)}
@@ -1260,6 +1343,7 @@
     bindSemaphore(detailEl);
     bindFaltante(item);
     bindProductoFinal(item, producto);
+    bindAutorizacion(detailEl);
 
     document.getElementById("prevBtn").onclick = () => {
       const visible = filteredItems();
@@ -1554,6 +1638,7 @@
           it.material || "",
           it.puntoVenta || "",
           it.estadoProduccion || "",
+          it.autorizada || "",
           it.faltanteCliente || "",
           it.faltanteHistorial || "",
           media,

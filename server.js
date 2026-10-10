@@ -377,6 +377,17 @@ function isRotulacionItem(item) {
   return String(item?.material || "").toLowerCase().includes("rotul");
 }
 
+function canAuthorizeRole(role) {
+  const key = String(role?.key || "");
+  return key === "gerente" || key.startsWith("gerente-");
+}
+
+function authorName(role) {
+  const label = String(role?.label || "Gerente");
+  const name = label.split("·").pop().trim();
+  return name || "Gerente";
+}
+
 function scopeItems(items, role) {
   if (role?.seesAll) return items || [];
   return (items || []).filter(isRotulacionItem).map((item) => ({
@@ -432,6 +443,7 @@ app.get("/api/session", (req, res) => {
     label: role.label,
     seesAll: role.seesAll,
     canManage: role.canManage,
+    canAuthorize: canAuthorizeRole(role),
     canDelete: role.canDelete,
   });
 });
@@ -1100,6 +1112,24 @@ function patchSheetNotice(id, folio, notice) {
   };
 }
 
+function patchSheetAutorizada(id, folio, autorizada) {
+  sheetsCacheGen += 1;
+  sheetsListInFlight = null;
+  if (!Array.isArray(sheetsListCache.items)) return;
+  const wantedId = String(id || "").trim();
+  const wantedFolio = String(folio || "").trim();
+  sheetsListCache = {
+    at: Date.now(),
+    error: null,
+    items: sheetsListCache.items.map((item) => {
+      const sameId = wantedId && String(item.id || "").trim() === wantedId;
+      const sameFolio = wantedFolio && String(item.folio || "").trim() === wantedFolio;
+      if (!sameId && !sameFolio) return item;
+      return { ...item, autorizada };
+    }),
+  };
+}
+
 function patchSheetEstado(id, folio, estado) {
   sheetsCacheGen += 1;
   sheetsListInFlight = null;
@@ -1278,6 +1308,7 @@ function mergeBoardItems(localItems, sheetsItems) {
       ...item,
       estadoProduccion:
         String(prev.estadoProduccion || "").trim() || String(item.estadoProduccion || "").trim(),
+      autorizada: String(item.autorizada || "").trim() || String(prev.autorizada || "").trim(),
       ...preferFaltante(prev, item),
       media,
       lonasDetail: item.lonasDetail || prev.lonasDetail || null,
@@ -1763,6 +1794,56 @@ app.post("/api/responses/:id/producto-final", requireBoard, (req, res) => {
       dropTmp();
     }
   });
+});
+
+app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
+  if (!canAuthorizeRole(req.boardRole)) {
+    return res.status(403).json({ ok: false, error: "Solo un gerente puede autorizar la solicitud" });
+  }
+  const aceptar = req.body?.aceptar === true || req.body?.aceptar === "1" || req.body?.aceptar === 1;
+  const autorizada = aceptar ? `Autorizada · ${authorName(req.boardRole)}` : "";
+  const id = String(req.params.id || "").trim();
+  if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
+
+  const list = readResponses();
+  let folio = "";
+  let changedLocal = false;
+  let previous = "";
+  for (const entry of list) {
+    if (entry.id !== id && entry.folio !== id) continue;
+    folio = entry.folio || folio;
+    entry.answers = entry.answers && typeof entry.answers === "object" ? entry.answers : {};
+    previous = String(entry.answers.autorizada || previous || "");
+    entry.answers.autorizada = autorizada;
+    changedLocal = true;
+  }
+  if (changedLocal) writeResponses(list);
+
+  const sheets = await fetchSheetsItems().catch(() => null);
+  const row = (sheets || []).find((item) => item.id === id || item.folio === id);
+  folio = folio || row?.folio || "";
+  if (!changedLocal && row) previous = String(row.autorizada || "");
+  if (!changedLocal && !row) {
+    return res.status(404).json({ ok: false, error: "Solicitud no encontrada" });
+  }
+  patchSheetAutorizada(id, folio, autorizada);
+
+  const sheetsResult = await postToSheetsRaw(
+    JSON.stringify({ action: "setAutorizada", id, folio, autorizada }),
+  );
+  if (SHEETS_WEBHOOK_URL && (!sheetsResult.ok || sheetsResult.body?.ok === false)) {
+    if (changedLocal) {
+      for (const entry of list) {
+        if (entry.id !== id && entry.folio !== id) continue;
+        entry.answers.autorizada = previous;
+      }
+      writeResponses(list);
+    }
+    patchSheetAutorizada(id, folio, previous);
+    return res.status(502).json({ ok: false, error: "No se pudo guardar la autorización" });
+  }
+
+  res.json({ ok: true, id, folio, autorizada });
 });
 
 app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {
