@@ -212,7 +212,7 @@ app.set("trust proxy", 1);
 app.use(express.json({ limit: "2mb" }));
 
 // Acceso al tablero. El repo es público: solo se guardan hashes scrypt ("salt:hash");
-// en Render se pueden sustituir con BOARD_PASSWORD_MARKETING / BOARD_PASSWORD_ROTULACION / BOARD_PASSWORD_EJECUTIVO.
+// en el servidor se pueden sustituir con BOARD_PASSWORD_MARKETING / BOARD_PASSWORD_ROTULACION / BOARD_PASSWORD_EJECUTIVO / BOARD_PASSWORD_GERENTE.
 const BOARD_ROLES = {
   marketing: {
     label: "Marketing",
@@ -237,6 +237,14 @@ const BOARD_ROLES = {
     canDelete: false,
     envPassword: "BOARD_PASSWORD_EJECUTIVO",
     hash: "102d46f591c1ec63ba75e79340bbda4f:9aaac3482ca9368c40f3d8bbe9660865de40322a708e7a79cb3c94eec5e2e55b",
+  },
+  gerente: {
+    label: "Gerentes",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    envPassword: "BOARD_PASSWORD_GERENTE",
+    hash: "e16159c1b93e4ebfd2c0843b5848e429:2a0faefcb8f7a0323536f1c731b428bc60d516a05dc49bbedb65b20d003517d5",
   },
 };
 const PRODUCCION_ESTADOS = ["En diseño", "En proceso", "En revisión", "Terminado"];
