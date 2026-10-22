@@ -19,6 +19,7 @@
   let lightboxIndex = 0;
   let materialFilter = "all";
   let productoUploadBusy = false;
+  let evidenciaUploadBusy = false;
   let statusFilter = "all";
   let lastFingerprint = null;
   let refreshInFlight = false;
@@ -30,11 +31,23 @@
     { key: "En revisión", tone: "revision" },
     { key: "Terminado", tone: "terminado" },
   ];
+  const ESTADOS_ROTULACION = [
+    { key: "Recibida", tone: "recibida" },
+    { key: "Aprobado", tone: "aprobado" },
+    { key: "Diseño de render", tone: "diseno" },
+    { key: "Render concluido", tone: "proceso" },
+    { key: "Rotulación terminada", tone: "terminado" },
+  ];
   const ESTADO_RANK = {
     "En diseño": 1,
     "En proceso": 2,
     "En revisión": 3,
     Terminado: 4,
+    Recibida: 1,
+    Aprobado: 2,
+    "Diseño de render": 3,
+    "Render concluido": 4,
+    "Rotulación terminada": 5,
   };
 
   function normalizeEstado(raw) {
@@ -43,6 +56,11 @@
     if (value === "en proceso") return "En proceso";
     if (value === "en revisión" || value === "en revision") return "En revisión";
     if (value === "terminado") return "Terminado";
+    if (value === "recibida") return "Recibida";
+    if (value === "aprobado" || value === "aprobada") return "Aprobado";
+    if (value === "diseño de render" || value === "diseno de render") return "Diseño de render";
+    if (value === "render concluido") return "Render concluido";
+    if (value === "rotulación terminada" || value === "rotulacion terminada") return "Rotulación terminada";
     return "";
   }
 
@@ -50,8 +68,26 @@
     return normalizeEstado(item?.estadoProduccion);
   }
 
+  function estadosForItem(item) {
+    return materialKind(item) === "rotulacion" ? ESTADOS_ROTULACION : ESTADOS;
+  }
+
+  function activeEstados() {
+    if (!session?.seesAll || materialFilter === "rotulacion") return ESTADOS_ROTULACION;
+    return ESTADOS;
+  }
+
+  function canEditEstado(item) {
+    if (session?.canManage) return true;
+    return Boolean(session?.canManageRotulacion && materialKind(item) === "rotulacion");
+  }
+
   function estadoTone(estado) {
-    return ESTADOS.find((item) => item.key === estado)?.tone || "";
+    return (
+      ESTADOS_ROTULACION.find((item) => item.key === estado)?.tone ||
+      ESTADOS.find((item) => item.key === estado)?.tone ||
+      ""
+    );
   }
 
   const MATERIAL_FILTERS = [
@@ -118,7 +154,7 @@
   function statusCounts() {
     const base = materialFilter === "all" ? items : items.filter((it) => materialKind(it) === materialFilter);
     const counts = { all: base.length };
-    for (const estado of ESTADOS) counts[estado.key] = 0;
+    for (const estado of activeEstados()) counts[estado.key] = 0;
     for (const item of base) {
       const estado = estadoOf(item);
       if (counts[estado] != null) counts[estado] += 1;
@@ -129,27 +165,37 @@
   function renderStatusFilters() {
     const nav = document.getElementById("statusFilters");
     if (!nav) return;
-    const show = Boolean(session?.seesAll);
+    const show = Boolean(session?.seesAll || session?.canManageRotulacion);
     nav.hidden = !show;
     if (!show) return;
+    const estados = activeEstados();
+    if (!estados.some((estado) => estado.key === statusFilter)) statusFilter = "all";
     const counts = statusCounts();
-    nav.querySelectorAll(".status-filter").forEach((btn) => {
-      const key = btn.dataset.status || "all";
-      btn.classList.toggle("is-active", key === statusFilter);
-      const countEl = btn.querySelector("[data-status-count]");
-      if (countEl) countEl.textContent = String(counts[key] ?? 0);
-    });
+    nav.innerHTML = `
+      <button type="button" class="status-filter${statusFilter === "all" ? " is-active" : ""}" data-status="all">
+        Todas
+      </button>
+      ${estados
+        .map(
+          (estado) => `
+        <button type="button" class="status-filter${statusFilter === estado.key ? " is-active" : ""}" data-status="${escapeAttr(estado.key)}" data-tone="${estado.tone}">
+          <span class="status-light" aria-hidden="true"></span>
+          ${escapeHtml(estado.key)} <span class="filter-count" data-status-count="${escapeAttr(estado.key)}">${counts[estado.key] ?? 0}</span>
+        </button>`,
+        )
+        .join("")}`;
   }
 
   function semaphoreHtml(item, { compact = false } = {}) {
     const current = estadoOf(item);
     const tone = estadoTone(current);
-    if (!session?.canManage) {
+    if (!canEditEstado(item)) {
       if (!current) return "";
       return `<p class="estado-pill" data-tone="${tone}"><span class="status-light" aria-hidden="true"></span>${escapeHtml(current)}</p>`;
     }
-    const choices = ESTADOS.map(
-      (estado) => `
+    const choices = estadosForItem(item)
+      .map(
+        (estado) => `
         <button
           type="button"
           class="semaphore-choice${current === estado.key ? " is-on" : ""}"
@@ -161,7 +207,8 @@
           <span class="status-light" aria-hidden="true"></span>
           ${escapeHtml(estado.key)}
         </button>`,
-    ).join("");
+      )
+      .join("");
     const hint = current ? `Va en: ${current}` : "Elige el estado:";
     return `
       <section class="semaphore${compact ? " is-compact" : ""}" aria-label="Estado de la solicitud">
@@ -281,8 +328,34 @@
     return kind === "productofinal" || field === "producto_final" || group.includes("producto terminado");
   }
 
+  function isEvidenciaRotulacion(file) {
+    const kind = String(file?.kind || "").toLowerCase();
+    const field = String(file?.field || "").toLowerCase();
+    const group = String(file?.group || "").toLowerCase();
+    return (
+      kind === "evidenciarotulacion" ||
+      field === "evidencia_rotulacion" ||
+      group.includes("evidencia de rotulación") ||
+      group.includes("evidencia de rotulacion")
+    );
+  }
+
   function productoFinalOf(item) {
     return mediaOf(item).filter((file) => isProductoFinal(file));
+  }
+
+  function evidenciaRotulacionOf(item) {
+    return mediaOf(item).filter((file) => isEvidenciaRotulacion(file));
+  }
+
+  function formatFechaRotulacion(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      const [y, m, d] = raw.split("-");
+      return `${d}/${m}/${y}`;
+    }
+    return raw;
   }
 
   function normalizeMediaFile(file, item) {
@@ -298,6 +371,20 @@
         group: "Producto terminado",
         label: "Producto terminado",
         field: file.field || "producto_final",
+      };
+    }
+    if (
+      kind === "evidenciarotulacion" ||
+      field === "evidencia_rotulacion" ||
+      groupRaw.includes("evidencia de rotulación") ||
+      groupRaw.includes("evidencia de rotulacion")
+    ) {
+      return {
+        ...file,
+        kind: "evidenciaRotulacion",
+        group: "Evidencia de rotulación",
+        label: "Evidencia de rotulación",
+        field: file.field || "evidencia_rotulacion",
       };
     }
     const material = String(item?.material || "").toLowerCase();
@@ -561,7 +648,9 @@
   function firstThumb(item) {
     const preferred = puntoVentaMedia(item).find((f) => isImageMime(f.mime, f.name) && f.url);
     if (preferred?.url) return viewUrl(preferred);
-    const img = mediaOf(item).find((f) => !isProductoFinal(f) && isImageMime(f.mime, f.name) && f.url);
+    const img = mediaOf(item).find(
+      (f) => !isProductoFinal(f) && !isEvidenciaRotulacion(f) && isImageMime(f.mime, f.name) && f.url,
+    );
     if (img?.url) return viewUrl(img);
     const render = productoFinalOf(item).find((f) => isImageMime(f.mime, f.name) && f.url);
     return render?.url ? viewUrl(render) : "";
@@ -825,9 +914,23 @@
                     ? `<p class="card-producto">Producto terminado</p>`
                     : ""
                 }
+                ${
+                  materialKind(item) === "rotulacion" && item.fechaRotulacion
+                    ? `<p class="card-fecha">Fecha: ${escapeHtml(formatFechaRotulacion(item.fechaRotulacion))}</p>`
+                    : ""
+                }
+                ${
+                  materialKind(item) === "rotulacion" && evidenciaRotulacionOf(item).length
+                    ? `<p class="card-producto">Evidencia lista</p>`
+                    : ""
+                }
               </div>
             </button>
-            ${session?.seesAll || session?.canManage ? semaphoreHtml(item, { compact: true }) : ""}
+            ${
+              session?.seesAll || session?.canManage || session?.canManageRotulacion
+                ? semaphoreHtml(item, { compact: true })
+                : ""
+            }
             ${productoCardHtml(item)}
             ${autorizacionCardHtml(item)}
           </article>`;
@@ -1142,6 +1245,83 @@
       </section>`;
   }
 
+  function fechaRotulacionHtml(item) {
+    if (materialKind(item) !== "rotulacion") return "";
+    const value = String(item?.fechaRotulacion || "").trim();
+    const pretty = formatFechaRotulacion(value);
+    if (!session?.canManageRotulacion && !value) return "";
+    if (!session?.canManageRotulacion) {
+      return `
+        <section class="panel fecha-panel" aria-label="Fecha de rotulación">
+          <div class="panel-head"><h3>Fecha de rotulación</h3></div>
+          <p class="fecha-value">${escapeHtml(pretty)}</p>
+        </section>`;
+    }
+    return `
+      <section class="panel fecha-panel" aria-label="Fecha de rotulación">
+        <div class="panel-head"><h3>Fecha de rotulación</h3></div>
+        <p>Ricardo Fernandez fija la fecha en que se hizo la rotulación.</p>
+        <div class="fecha-row">
+          <input id="fechaRotulacionInput" type="date" value="${escapeAttr(value)}" />
+          <button type="button" class="fecha-send" id="fechaRotulacionBtn" data-id="${escapeAttr(item.id || item.folio || "")}">Guardar fecha</button>
+        </div>
+        ${pretty ? `<p class="fecha-value">Actual: ${escapeHtml(pretty)}</p>` : ""}
+      </section>`;
+  }
+
+  function evidenciaTile(file, idx) {
+    const kindLabel = "Evidencia de rotulación";
+    if (isImageMime(file.mime, file.name)) {
+      return `
+        <div class="evidence-tile-wrap">
+          <button type="button" class="evidence-item image-tile" data-evidencia-index="${idx}">
+            <img src="${escapeAttr(viewUrl(file))}" alt="${escapeAttr(file.name || kindLabel)}" loading="lazy" />
+            <span>${escapeHtml(kindLabel)}</span>
+            ${file.name ? `<small>${escapeHtml(file.name)}</small>` : ""}
+          </button>
+          ${downloadLink(file)}
+        </div>`;
+    }
+    const badge = isPdf(file.mime, file.name) ? "PDF" : "DOC";
+    return `
+      <div class="evidence-tile-wrap">
+        <a class="evidence-item file-tile" href="${escapeAttr(file.url)}" target="_blank" rel="noopener">
+          <div class="evidence-file-tile">${badge}</div>
+          <span>${escapeHtml(kindLabel)}</span>
+          <small>${escapeHtml(file.name || "")}</small>
+        </a>
+        ${downloadLink(file)}
+      </div>`;
+  }
+
+  function evidenciaRotulacionHtml(item) {
+    if (materialKind(item) !== "rotulacion") return "";
+    const files = evidenciaRotulacionOf(item);
+    if (!session?.canManageRotulacion && !files.length) return "";
+    const tiles = files.map((file, idx) => evidenciaTile(file, idx)).join("");
+    const uploader = session?.canManageRotulacion
+      ? `
+        <div class="producto-upload">
+          <p>Sube la evidencia de la rotulación terminada.</p>
+          <input id="evidenciaRotulacionInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf,.pdf" multiple hidden />
+          <button type="button" class="producto-send" id="evidenciaRotulacionBtn">${files.length ? "Subir otra evidencia" : "Subir evidencia"}</button>
+        </div>`
+      : "";
+    return `
+      <section class="panel producto-panel" aria-label="Evidencia de rotulación">
+        <div class="panel-head">
+          <h3>Evidencia de rotulación</h3>
+          ${files.length ? `<span class="pill">${files.length}</span>` : ""}
+        </div>
+        ${
+          tiles
+            ? `<div class="evidence-gallery">${tiles}</div>`
+            : `<p class="empty-evidence">Todavía no hay evidencia de rotulación terminada.</p>`
+        }
+        ${uploader}
+      </section>`;
+  }
+
   function faltanteHtml(item) {
     const texto = String(item?.faltanteCliente || "");
     const historial = String(item?.faltanteHistorial || "");
@@ -1238,8 +1418,9 @@
 
     const item = visible[index] || visible[0];
     const kind = materialKind(item);
-    const media = mediaOf(item).filter((file) => !isProductoFinal(file));
+    const media = mediaOf(item).filter((file) => !isProductoFinal(file) && !isEvidenciaRotulacion(file));
     const producto = productoFinalOf(item);
+    const evidencia = evidenciaRotulacionOf(item);
     const lonas = specsLonas(item);
     const toldos = specsToldos(item);
     const caballetes = specsCaballetes(item);
@@ -1269,9 +1450,13 @@
 
         ${autorizacionDetailHtml(item)}
 
+        ${semaphoreHtml(item)}
+
+        ${fechaRotulacionHtml(item)}
+
         ${productoFinalHtml(item)}
 
-        ${semaphoreHtml(item)}
+        ${evidenciaRotulacionHtml(item)}
 
         ${faltanteHtml(item)}
 
@@ -1345,6 +1530,8 @@
     bindSemaphore(detailEl);
     bindFaltante(item);
     bindProductoFinal(item, producto);
+    bindFechaRotulacion(item);
+    bindEvidenciaRotulacion(item, evidencia);
     bindAutorizacion(detailEl);
 
     document.getElementById("prevBtn").onclick = () => {
@@ -1398,6 +1585,12 @@
         openLightbox(producto, Number.isFinite(idx) && idx >= 0 ? idx : 0);
       };
     });
+    detailEl.querySelectorAll("[data-evidencia-index]").forEach((btn) => {
+      btn.onclick = () => {
+        const idx = Number(btn.dataset.evidenciaIndex);
+        openLightbox(evidencia, Number.isFinite(idx) && idx >= 0 ? idx : 0);
+      };
+    });
   }
 
   async function uploadProductoFinal(item, files, button) {
@@ -1449,9 +1642,92 @@
     };
   }
 
+  function bindFechaRotulacion(item) {
+    const input = document.getElementById("fechaRotulacionInput");
+    const send = document.getElementById("fechaRotulacionBtn");
+    if (!input || !send || !session?.canManageRotulacion) return;
+    send.onclick = async () => {
+      const fecha = input.value || "";
+      send.disabled = true;
+      send.textContent = "Guardando…";
+      const previous = item.fechaRotulacion || "";
+      item.fechaRotulacion = fecha;
+      try {
+        const res = await fetch(
+          `/api/responses/${encodeURIComponent(send.dataset.id || item.id || item.folio || "")}/fecha-rotulacion`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fecha }),
+          },
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok === false) throw new Error(data.error || "No se pudo guardar");
+        item.fechaRotulacion = data.fechaRotulacion || fecha;
+        lastFingerprint = boardFingerprint(items);
+        renderList();
+        renderDetail();
+      } catch (err) {
+        item.fechaRotulacion = previous;
+        send.disabled = false;
+        send.textContent = "Guardar fecha";
+        window.alert(err.message || "No se pudo guardar la fecha");
+      }
+    };
+  }
+
+  async function uploadEvidenciaRotulacion(item, files, button) {
+    if (!item || !files?.length || evidenciaUploadBusy || !session?.canManageRotulacion) return;
+    evidenciaUploadBusy = true;
+    const previous = button?.textContent || "Subir evidencia";
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Subiendo…";
+    }
+    try {
+      const body = new FormData();
+      for (const file of files) body.append("evidencia", file);
+      const res = await fetch(
+        `/api/responses/${encodeURIComponent(item.id || item.folio || "")}/evidencia-rotulacion`,
+        { method: "POST", body },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!data.media?.length) throw new Error(data.error || "No se pudo subir la evidencia");
+      const current = Array.isArray(item.media) ? item.media : [];
+      item.media = current.concat(data.media);
+      lastFingerprint = boardFingerprint(items);
+      if (data.error) window.alert(data.error);
+      renderList();
+      renderDetail();
+    } catch (err) {
+      if (button) {
+        button.disabled = false;
+        button.textContent = previous;
+      }
+      window.alert(err.message || "No se pudo subir la evidencia");
+    } finally {
+      evidenciaUploadBusy = false;
+    }
+  }
+
+  function bindEvidenciaRotulacion(item) {
+    const input = document.getElementById("evidenciaRotulacionInput");
+    const send = document.getElementById("evidenciaRotulacionBtn");
+    if (!input || !send || !session?.canManageRotulacion) return;
+    send.onclick = () => {
+      if (!evidenciaUploadBusy) input.click();
+    };
+    input.onchange = () => {
+      const chosen = [...(input.files || [])];
+      input.value = "";
+      if (!chosen.length) return;
+      uploadEvidenciaRotulacion(item, chosen, send);
+    };
+  }
+
   async function setEstado(id, estado) {
     const item = items.find((it) => it.id === id || it.folio === id);
-    if (!item || !session?.canManage) return;
+    if (!item || !canEditEstado(item)) return;
     const previous = item.estadoProduccion || "";
     item.estadoProduccion = estado;
     renderStatusFilters();
@@ -1477,7 +1753,7 @@
   }
 
   function bindSemaphore(root) {
-    if (!session?.canManage) return;
+    if (!session?.canManage && !session?.canManageRotulacion) return;
     root.querySelectorAll(".semaphore-choice").forEach((btn) => {
       btn.onclick = (event) => {
         event.preventDefault();
@@ -1640,6 +1916,7 @@
           it.material || "",
           it.puntoVenta || "",
           it.estadoProduccion || "",
+          it.fechaRotulacion || "",
           it.autorizada || "",
           it.faltanteCliente || "",
           it.faltanteHistorial || "",
@@ -1658,8 +1935,10 @@
     const next = btn.dataset.filter || "all";
     if (next === materialFilter) return;
     materialFilter = next;
+    statusFilter = "all";
     index = 0;
     renderMaterialFilters();
+    renderStatusFilters();
     renderStats();
     renderList();
     renderDetail();
@@ -1684,7 +1963,7 @@
     renderStatusFilters();
     document.getElementById("statusFilters")?.addEventListener("click", (e) => {
       const btn = e.target.closest(".status-filter");
-      if (!btn || !session?.seesAll) return;
+      if (!btn || !(session?.seesAll || session?.canManageRotulacion)) return;
       const next = btn.dataset.status || "all";
       if (next === statusFilter) return;
       statusFilter = next;

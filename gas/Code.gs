@@ -54,6 +54,7 @@ var HEADERS = [
   "Estado de producción",
   "Faltó agregar",
   "Evidencia de aviso",
+  "Fecha de rotulación",
 ];
 
 var KEYS = [
@@ -90,6 +91,7 @@ var KEYS = [
   "estadoProduccion",
   "faltanteCliente",
   "faltanteHistorial",
+  "fechaRotulacion",
 ];
 
 function doGet(e) {
@@ -139,6 +141,11 @@ function doPost(e) {
       var autorizada = String(data.autorizada || "").trim().slice(0, 180);
       var updatedAut = setAutorizada_(data.id, data.folio, autorizada);
       return jsonOut_({ ok: updatedAut > 0, updated: updatedAut, autorizada: autorizada });
+    }
+    if (data.action === "setFechaRotulacion") {
+      var fechaRot = String(data.fechaRotulacion || "").trim().slice(0, 32);
+      var updatedFecha = setFechaRotulacion_(data.id, data.folio, fechaRot);
+      return jsonOut_({ ok: updatedFecha > 0, updated: updatedFecha, fechaRotulacion: fechaRot });
     }
     if (data.action === "delete") {
       var deleted = deleteRows_(data.id, data.folio);
@@ -520,6 +527,7 @@ function rowFromPayload_(data) {
     normalizeEstado_(pick_(data, "estadoProduccion")),
     pick_(data, "faltanteCliente"),
     pick_(data, "faltanteHistorial"),
+    pick_(data, "fechaRotulacion"),
   ];
 }
 
@@ -529,6 +537,11 @@ function normalizeEstado_(raw) {
   if (value === "en proceso") return "En proceso";
   if (value === "en revisión" || value === "en revision") return "En revisión";
   if (value === "terminado") return "Terminado";
+  if (value === "recibida") return "Recibida";
+  if (value === "aprobado" || value === "aprobada") return "Aprobado";
+  if (value === "diseño de render" || value === "diseno de render") return "Diseño de render";
+  if (value === "render concluido") return "Render concluido";
+  if (value === "rotulación terminada" || value === "rotulacion terminada") return "Rotulación terminada";
   return "";
 }
 
@@ -584,6 +597,24 @@ function setEstado_(id, folio, estado) {
   if (!matches.length) return 0;
   for (var i = 0; i < matches.length; i++) {
     sheet.getRange(matches[i] + 2, estadoCol + 1).setValue(estado);
+  }
+  return matches.length;
+}
+
+function setFechaRotulacion_(id, folio, fechaRotulacion) {
+  var wantedId = String(id || "").trim();
+  var wantedFolio = String(folio || "").trim();
+  if (!wantedId && !wantedFolio) return 0;
+  var sheet = ensureSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+  var col = KEYS.indexOf("fechaRotulacion");
+  if (col < 0) return 0;
+  var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getValues();
+  var matches = matchRows_(values, wantedId, wantedFolio);
+  if (!matches.length) return 0;
+  for (var i = 0; i < matches.length; i++) {
+    sheet.getRange(matches[i] + 2, col + 1).setValue(fechaRotulacion);
   }
   return matches.length;
 }

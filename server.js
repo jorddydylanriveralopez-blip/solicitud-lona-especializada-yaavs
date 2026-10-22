@@ -128,6 +128,7 @@ const FIELD_ORDER = [
   ["confirmaciones", "Confirmaciones"],
   ["observacionesAdicionales", "Observaciones adicionales"],
   ["estadoProduccion", "Estado de producción"],
+  ["fechaRotulacion", "Fecha de rotulación"],
   ["faltanteCliente", "Faltó agregar"],
   ["faltanteHistorial", "Evidencia de aviso"],
   ["id", "ID interno"],
@@ -163,6 +164,7 @@ const COLUMN_WIDTHS = {
   confirmaciones: 40,
   observacionesAdicionales: 40,
   estadoProduccion: 22,
+  fechaRotulacion: 16,
   faltanteCliente: 40,
   faltanteHistorial: 48,
   id: 28,
@@ -302,8 +304,24 @@ const BOARD_ROLES = {
     zoneNames: ["Manuel Vazquez Aguila"],
     hash: "171f4d1fb54ae09b980ce70f500efcf3:be7343347b69c18b51f5718250b3751466c8603f8e21c97638bb4be46a940740",
   },
+  mantenimiento: {
+    label: "Gerente de mantenimiento · Ricardo Fernandez",
+    seesAll: false,
+    canManage: false,
+    canManageRotulacion: true,
+    canDelete: false,
+    envPassword: "BOARD_PASSWORD_MANTENIMIENTO",
+    hash: "27dac4b638a77bafc55f94b1650d00df:8fc996e954e1044cfc17f4ba44be5e013ccfda2e5b584daefe716cb8803f5e0c",
+  },
 };
 const PRODUCCION_ESTADOS = ["En diseño", "En proceso", "En revisión", "Terminado"];
+const ROTULACION_ESTADOS = [
+  "Recibida",
+  "Aprobado",
+  "Diseño de render",
+  "Render concluido",
+  "Rotulación terminada",
+];
 
 function normalizeProduccionEstado(raw) {
   const value = String(raw || "").trim().toLowerCase();
@@ -311,6 +329,33 @@ function normalizeProduccionEstado(raw) {
   if (value === "en proceso") return "En proceso";
   if (value === "en revisión" || value === "en revision") return "En revisión";
   if (value === "terminado") return "Terminado";
+  if (value === "recibida") return "Recibida";
+  if (value === "aprobado" || value === "aprobada") return "Aprobado";
+  if (value === "diseño de render" || value === "diseno de render") return "Diseño de render";
+  if (value === "render concluido") return "Render concluido";
+  if (value === "rotulación terminada" || value === "rotulacion terminada") return "Rotulación terminada";
+  return "";
+}
+
+function estadosForItem(item) {
+  return isRotulacionItem(item) ? ROTULACION_ESTADOS : PRODUCCION_ESTADOS;
+}
+
+function canEditEstado(role, item) {
+  if (role?.canManage) return true;
+  return Boolean(role?.canManageRotulacion && isRotulacionItem(item));
+}
+
+function normalizeFechaRotulacion(raw) {
+  const value = String(raw || "").trim();
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const mx = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mx) {
+    const day = mx[1].padStart(2, "0");
+    const month = mx[2].padStart(2, "0");
+    return `${mx[3]}-${month}-${day}`;
+  }
   return "";
 }
 
@@ -469,6 +514,7 @@ app.get("/api/session", (req, res) => {
     label: role.label,
     seesAll: role.seesAll,
     canManage: role.canManage,
+    canManageRotulacion: Boolean(role.canManageRotulacion),
     canAuthorize: canAuthorizeRole(role),
     canDelete: role.canDelete,
   });
@@ -690,6 +736,19 @@ function extractProductoFinalMedia(answers) {
     }));
 }
 
+function extractEvidenciaRotulacionMedia(answers) {
+  const files = Array.isArray(answers?.evidenciaRotulacion) ? answers.evidenciaRotulacion : [];
+  return files
+    .filter((f) => f && (f.url || f.storedAs))
+    .map((f) => ({
+      ...f,
+      kind: "evidenciaRotulacion",
+      group: "Evidencia de rotulación",
+      label: "Evidencia de rotulación",
+      field: "evidencia_rotulacion",
+    }));
+}
+
 function extractMedia(entry) {
   const answers = entry?.answers && typeof entry.answers === "object" ? entry.answers : {};
   return dedupeMedia([
@@ -699,6 +758,7 @@ function extractMedia(entry) {
     ...extractToldoPuntoVentaMedia(answers),
     ...extractRotulacionMedia(answers),
     ...extractProductoFinalMedia(answers),
+    ...extractEvidenciaRotulacionMedia(answers),
   ]);
 }
 
@@ -1174,6 +1234,24 @@ function patchSheetEstado(id, folio, estado) {
   };
 }
 
+function patchSheetFechaRotulacion(id, folio, fechaRotulacion) {
+  sheetsCacheGen += 1;
+  sheetsListInFlight = null;
+  if (!Array.isArray(sheetsListCache.items)) return;
+  const wantedId = String(id || "").trim();
+  const wantedFolio = String(folio || "").trim();
+  sheetsListCache = {
+    at: Date.now(),
+    error: null,
+    items: sheetsListCache.items.map((item) => {
+      const sameId = wantedId && String(item.id || "").trim() === wantedId;
+      const sameFolio = wantedFolio && String(item.folio || "").trim() === wantedFolio;
+      if (!sameId && !sameFolio) return item;
+      return { ...item, fechaRotulacion };
+    }),
+  };
+}
+
 function rememberMediaOnSheetCache(id, folio, files) {
   if (!Array.isArray(sheetsListCache.items) || !files?.length) return;
   const row = sheetsListCache.items.find(
@@ -1334,6 +1412,8 @@ function mergeBoardItems(localItems, sheetsItems) {
       ...item,
       estadoProduccion:
         String(prev.estadoProduccion || "").trim() || String(item.estadoProduccion || "").trim(),
+      fechaRotulacion:
+        String(item.fechaRotulacion || "").trim() || String(prev.fechaRotulacion || "").trim(),
       autorizada: String(item.autorizada || "").trim() || String(prev.autorizada || "").trim(),
       ...preferFaltante(prev, item),
       media,
@@ -1951,38 +2031,67 @@ app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {
 });
 
 app.post("/api/responses/:id/estado", requireBoard, async (req, res) => {
-  if (!req.boardRole.canManage) {
-    return res.status(403).json({ ok: false, error: "Solo Marketing puede cambiar el semáforo" });
-  }
-  const estado = normalizeProduccionEstado(req.body?.estado);
-  if (!estado || !PRODUCCION_ESTADOS.includes(estado)) {
-    return res.status(400).json({ ok: false, error: "Elige en diseño, en proceso, en revisión o terminado" });
-  }
   const id = String(req.params.id || "").trim();
   if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
 
   const list = readResponses();
+  const localEntry = list.find((entry) => entry.id === id || entry.folio === id);
+  const sheets = await fetchSheetsItems().catch(() => null);
+  const row = (sheets || []).find((item) => item.id === id || item.folio === id);
+  if (!localEntry && !row) return res.status(404).json({ ok: false, error: "Solicitud no encontrada" });
+
+  const answers = localEntry?.answers && typeof localEntry.answers === "object" ? localEntry.answers : {};
+  const item = {
+    material: String(row?.material || answers.material || "").trim(),
+    estadoProduccion: String(row?.estadoProduccion || answers.estadoProduccion || "").trim(),
+  };
+  if (!canEditEstado(req.boardRole, item)) {
+    return res.status(403).json({
+      ok: false,
+      error: isRotulacionItem(item)
+        ? "No puedes cambiar el estado de esta rotulación"
+        : "Solo Marketing puede cambiar el semáforo",
+    });
+  }
+
+  const allowed = estadosForItem(item);
+  const estado = normalizeProduccionEstado(req.body?.estado);
+  if (!estado || !allowed.includes(estado)) {
+    return res.status(400).json({
+      ok: false,
+      error: isRotulacionItem(item)
+        ? "Elige un estado de rotulación válido"
+        : "Elige en diseño, en proceso, en revisión o terminado",
+    });
+  }
+
   let folio = "";
   let changedLocal = false;
+  let previousEstado = String(row?.estadoProduccion || answers.estadoProduccion || "");
   for (const entry of list) {
     if (entry.id !== id && entry.folio !== id) continue;
     folio = entry.folio || folio;
     entry.answers = entry.answers && typeof entry.answers === "object" ? entry.answers : {};
+    previousEstado = String(entry.answers.estadoProduccion || previousEstado);
     entry.answers.estadoProduccion = estado;
     changedLocal = true;
   }
   if (changedLocal) writeResponses(list);
 
-  const sheets = await fetchSheetsItems().catch(() => null);
-  const row = (sheets || []).find((item) => item.id === id || item.folio === id);
   folio = folio || row?.folio || "";
-  const previousEstado = String(row?.estadoProduccion || "");
   patchSheetEstado(id, folio, estado);
 
   const sheetsResult = await postToSheetsRaw(
     JSON.stringify({ action: "setEstado", id, folio, estado }),
   );
-  if (!sheetsResult.ok || sheetsResult.body?.ok === false) {
+  if (SHEETS_WEBHOOK_URL && (!sheetsResult.ok || sheetsResult.body?.ok === false)) {
+    if (changedLocal) {
+      for (const entry of list) {
+        if (entry.id !== id && entry.folio !== id) continue;
+        entry.answers.estadoProduccion = previousEstado;
+      }
+      writeResponses(list);
+    }
     patchSheetEstado(id, folio, previousEstado);
     return res.status(502).json({
       ok: false,
@@ -1991,6 +2100,212 @@ app.post("/api/responses/:id/estado", requireBoard, async (req, res) => {
     });
   }
   res.json({ ok: true, id, folio, estado, sheets: sheetsResult.body || { ok: true } });
+});
+
+app.post("/api/responses/:id/fecha-rotulacion", requireBoard, async (req, res) => {
+  if (!req.boardRole.canManageRotulacion) {
+    return res.status(403).json({ ok: false, error: "Solo mantenimiento puede fijar la fecha de rotulación" });
+  }
+  const fechaRotulacion = normalizeFechaRotulacion(req.body?.fecha);
+  if (req.body?.fecha && !fechaRotulacion) {
+    return res.status(400).json({ ok: false, error: "Usa una fecha válida" });
+  }
+  const id = String(req.params.id || "").trim();
+  if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
+
+  const list = readResponses();
+  const localEntry = list.find((entry) => entry.id === id || entry.folio === id);
+  const sheets = await fetchSheetsItems().catch(() => null);
+  const row = (sheets || []).find((item) => item.id === id || item.folio === id);
+  if (!localEntry && !row) return res.status(404).json({ ok: false, error: "Solicitud no encontrada" });
+
+  const answers = localEntry?.answers && typeof localEntry.answers === "object" ? localEntry.answers : {};
+  const item = { material: String(row?.material || answers.material || "").trim() };
+  if (!isRotulacionItem(item)) {
+    return res.status(400).json({ ok: false, error: "La fecha solo aplica a rotulación" });
+  }
+
+  let folio = "";
+  let changedLocal = false;
+  let previous = String(row?.fechaRotulacion || answers.fechaRotulacion || "");
+  for (const entry of list) {
+    if (entry.id !== id && entry.folio !== id) continue;
+    folio = entry.folio || folio;
+    entry.answers = entry.answers && typeof entry.answers === "object" ? entry.answers : {};
+    previous = String(entry.answers.fechaRotulacion || previous);
+    entry.answers.fechaRotulacion = fechaRotulacion;
+    changedLocal = true;
+  }
+  if (changedLocal) writeResponses(list);
+
+  folio = folio || row?.folio || "";
+  patchSheetFechaRotulacion(id, folio, fechaRotulacion);
+
+  const sheetsResult = await postToSheetsRaw(
+    JSON.stringify({ action: "setFechaRotulacion", id, folio, fechaRotulacion }),
+  );
+  if (SHEETS_WEBHOOK_URL && (!sheetsResult.ok || sheetsResult.body?.ok === false)) {
+    if (changedLocal) {
+      for (const entry of list) {
+        if (entry.id !== id && entry.folio !== id) continue;
+        entry.answers.fechaRotulacion = previous;
+      }
+      writeResponses(list);
+    }
+    patchSheetFechaRotulacion(id, folio, previous);
+    return res.status(502).json({ ok: false, error: "No se pudo guardar la fecha de rotulación" });
+  }
+
+  res.json({ ok: true, id, folio, fechaRotulacion });
+});
+
+app.post("/api/responses/:id/evidencia-rotulacion", requireBoard, (req, res) => {
+  upload.array("evidencia", 8)(req, res, async (err) => {
+    const tmpPaths = () => (req.files || []).map((file) => file.path).filter(Boolean);
+    const dropTmp = () => {
+      for (const filePath of tmpPaths()) {
+        if (filePath && fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+          } catch (_) {}
+        }
+      }
+    };
+    try {
+      if (err) {
+        return res.status(400).json({ ok: false, error: uploadErrorMessage(err) });
+      }
+      if (!req.boardRole.canManageRotulacion) {
+        return res.status(403).json({ ok: false, error: "Solo mantenimiento puede subir la evidencia" });
+      }
+      const files = req.files || [];
+      if (!files.length) {
+        return res.status(400).json({ ok: false, error: "Elige la evidencia de rotulación terminada" });
+      }
+      const id = String(req.params.id || "").trim();
+      if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
+
+      const board = await boardItems();
+      const item = (board.items || []).find((it) => it.id === id || it.folio === id);
+      if (!item || !isRotulacionItem(item)) {
+        return res.status(404).json({ ok: false, error: "La evidencia solo se sube en rotulación" });
+      }
+
+      const saved = [];
+      const failed = [];
+      const entryId = item.id || id;
+      const destDir = path.join(uploadsRoot, entryId);
+      fs.mkdirSync(destDir, { recursive: true });
+
+      for (const file of files) {
+        const storedAs = path.basename(file.filename || file.path || "");
+        const target = path.join(destDir, storedAs);
+        try {
+          if (file.path && fs.existsSync(file.path)) {
+            try {
+              fs.renameSync(file.path, target);
+            } catch (_) {
+              fs.copyFileSync(file.path, target);
+            }
+          }
+          if (!fs.existsSync(target)) {
+            failed.push(file.originalname || "archivo");
+            continue;
+          }
+          const att = {
+            name: file.originalname || storedAs,
+            mime: file.mimetype || "application/octet-stream",
+            kind: "evidenciaRotulacion",
+            group: "Evidencia de rotulación",
+            label: "Evidencia de rotulación",
+            field: "evidencia_rotulacion",
+            storedAs,
+            data: fs.readFileSync(target).toString("base64"),
+          };
+          let url = `/uploads/${entryId}/${storedAs}`;
+          if (SHEETS_WEBHOOK_URL) {
+            let driveFile = null;
+            for (let attempt = 1; attempt <= 3 && !driveFile; attempt += 1) {
+              const one = await postToSheetsRaw(
+                JSON.stringify({
+                  action: "addMedia",
+                  id: entryId,
+                  folio: item.folio || "",
+                  attachment: att,
+                }),
+              );
+              const savedRows = Array.isArray(one.body?.saved) ? one.body.saved : one.body?.media || [];
+              driveFile = savedRows.find(
+                (m) =>
+                  String(m?.url || "").includes("drive.google") &&
+                  String(m?.storedAs || "") === storedAs,
+              );
+              if (!driveFile && attempt < 3) await new Promise((r) => setTimeout(r, 1500 * attempt));
+            }
+            if (!driveFile?.url) {
+              failed.push(att.name);
+              try {
+                fs.unlinkSync(target);
+              } catch (_) {}
+              continue;
+            }
+            url = driveFile.url;
+          }
+          saved.push({
+            name: att.name,
+            mime: att.mime,
+            kind: "evidenciaRotulacion",
+            group: "Evidencia de rotulación",
+            label: "Evidencia de rotulación",
+            field: "evidencia_rotulacion",
+            storedAs,
+            url,
+          });
+        } catch (fileErr) {
+          failed.push(file.originalname || storedAs);
+          console.error("Evidencia rotulación:", fileErr?.message || fileErr);
+        }
+      }
+
+      if (saved.length) {
+        const nextList = readResponses();
+        const localEntry = nextList.find((entry) => entry.id === entryId || entry.folio === (item.folio || id));
+        if (localEntry) {
+          localEntry.answers =
+            localEntry.answers && typeof localEntry.answers === "object" ? localEntry.answers : {};
+          const prev = Array.isArray(localEntry.answers.evidenciaRotulacion)
+            ? localEntry.answers.evidenciaRotulacion
+            : [];
+          localEntry.answers.evidenciaRotulacion = prev.concat(saved);
+          writeResponses(nextList);
+        }
+        rememberMediaOnSheetCache(entryId, item.folio || "", saved);
+        invalidateSheetsCache();
+      }
+
+      dropTmp();
+      if (!saved.length) {
+        return res.status(502).json({
+          ok: false,
+          error: "No se pudo guardar la evidencia de rotulación",
+          failed,
+        });
+      }
+      res.json({
+        ok: true,
+        id: entryId,
+        folio: item.folio || "",
+        media: saved,
+        failed,
+      });
+    } catch (uploadErr) {
+      console.error("Evidencia rotulación:", uploadErr?.message || uploadErr);
+      dropTmp();
+      if (!res.headersSent) {
+        res.status(500).json({ ok: false, error: "No se pudo subir la evidencia de rotulación" });
+      }
+    }
+  });
 });
 
 app.delete("/api/responses/:id", requireBoard, async (req, res) => {

@@ -1154,6 +1154,8 @@ button.ghost-link {
   border-color: transparent;
 }
 
+.status-filter[data-tone="recibida"].is-active { background: #5b6b7c; }
+.status-filter[data-tone="aprobado"].is-active { background: #0f766e; }
 .status-filter[data-tone="diseno"].is-active { background: #2f6fed; }
 .status-filter[data-tone="proceso"].is-active { background: #e0a100; color: #1a1a1a; }
 .status-filter[data-tone="revision"].is-active { background: #ef7d32; }
@@ -1172,6 +1174,20 @@ button.ghost-link {
   background: #c5ced6;
   box-shadow: inset 0 0 0 1px rgba(15, 36, 64, 0.12);
   flex: none;
+}
+
+.status-filter[data-tone="recibida"] .status-light,
+.semaphore-choice[data-tone="recibida"] .status-light,
+.semaphore-dot[data-tone="recibida"],
+.estado-pill[data-tone="recibida"] .status-light {
+  background: #5b6b7c;
+}
+
+.status-filter[data-tone="aprobado"] .status-light,
+.semaphore-choice[data-tone="aprobado"] .status-light,
+.semaphore-dot[data-tone="aprobado"],
+.estado-pill[data-tone="aprobado"] .status-light {
+  background: #0f766e;
 }
 
 .status-filter[data-tone="diseno"] .status-light,
@@ -1423,6 +1439,18 @@ button.ghost-link {
   text-align: center;
 }
 
+.semaphore-choice[data-tone="recibida"].is-on {
+  background: #5b6b7c;
+  color: #fff;
+  border-color: transparent;
+}
+
+.semaphore-choice[data-tone="aprobado"].is-on {
+  background: #0f766e;
+  color: #fff;
+  border-color: transparent;
+}
+
 .semaphore-choice[data-tone="diseno"].is-on {
   background: #2f6fed;
   color: #fff;
@@ -1450,6 +1478,52 @@ button.ghost-link {
 .semaphore-choice.is-on .status-light {
   background: currentColor;
   box-shadow: none;
+}
+
+.fecha-panel p {
+  margin: 0 0 10px;
+  color: #52606d;
+}
+
+.fecha-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.fecha-row input[type="date"] {
+  appearance: none;
+  border: 1px solid #d9e2ec;
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  min-width: 11rem;
+}
+
+.fecha-send {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  background: #0b1f38;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+}
+
+.fecha-value {
+  margin-top: 8px !important;
+  font-weight: 700;
+  color: #0b1f38 !important;
+}
+
+.card-fecha {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f766e;
 }
 
 .estado-pill {
