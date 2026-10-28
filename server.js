@@ -2427,9 +2427,6 @@ function missingSubmissionError(answers, files) {
     ["yaavserTelefono", "Falta el teléfono del YAAVSER."],
     ["puntoVenta", "Falta el nombre del punto de venta."],
   ];
-  if (zona === "foráneo" || zona === "foraneo") {
-    requiredText.splice(1, 0, ["gerenteTerritorial", "Falta el gerente territorial."]);
-  }
   for (const [key, message] of requiredText) {
     if (!text(key)) return message;
   }
