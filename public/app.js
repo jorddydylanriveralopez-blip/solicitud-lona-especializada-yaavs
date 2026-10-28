@@ -1,5 +1,6 @@
 (() => {
   const form = document.getElementById("lonaForm");
+  const afterZona = document.getElementById("afterZona");
   const afterMaterial = document.getElementById("afterMaterial");
   const formRest = document.getElementById("formRest");
   const flowLona = document.getElementById("flowLona");
@@ -136,8 +137,40 @@
     if (gerenteRegionalInput) gerenteRegionalInput.value = row ? row[2] : "";
   }
 
-  function applyZonaComercial() {
+  function applyMaterialOptionsForZona() {
+    const zona = selectedZonaComercial();
+    const isForaneo = zona === "Foráneo";
+    form?.querySelectorAll("[data-material-option]").forEach((label) => {
+      const value = label.getAttribute("data-material-option");
+      const input = label.querySelector('input[name="material"]');
+      const onlyRotulacion = isForaneo && value !== "Rotulación";
+      label.hidden = onlyRotulacion;
+      if (input) {
+        input.disabled = onlyRotulacion;
+        if (onlyRotulacion && input.checked) input.checked = false;
+      }
+    });
+    if (isForaneo) {
+      const rotul = form?.querySelector('input[name="material"][value="Rotulación"]');
+      if (rotul && !rotul.disabled) rotul.checked = true;
+    }
+  }
+
+  function syncZona() {
+    const zona = selectedZonaComercial();
+    if (afterZona) afterZona.hidden = !zona;
+    applyMaterialOptionsForZona();
     fillEjecutivoOptions();
+    if (!zona) {
+      form?.querySelectorAll('input[name="material"]').forEach((input) => {
+        input.checked = false;
+      });
+    }
+    syncMaterial();
+  }
+
+  function applyZonaComercial() {
+    syncZona();
   }
 
   if (ejecutivoSelect) {
@@ -147,7 +180,6 @@
   form?.querySelectorAll('input[name="zonaComercial"]').forEach((input) => {
     input.addEventListener("change", applyZonaComercial);
   });
-  applyZonaComercial();
 
   form?.querySelectorAll("input[data-digits]").forEach((input) => {
     input.addEventListener("input", () => {
@@ -518,7 +550,7 @@
     });
 
     form.querySelectorAll("[data-form-step]").forEach((section) => {
-      if (!isStepApplicable(section) && section.id !== "secMaterial") {
+      if (!isStepApplicable(section) && section.id !== "secZona" && section.id !== "secMaterial") {
         section.hidden = true;
         section.classList.remove("is-step-active");
       }
@@ -1353,15 +1385,22 @@
     clearInvalid();
     const errors = [];
 
+    if (!selectedZonaComercial()) {
+      errors.push("Indica si la solicitud es de Centro o Foráneo.");
+      markInvalid(form.querySelector('input[name="zonaComercial"]'));
+      return errors;
+    }
+
     if (!selectedMaterial()) {
       errors.push("Selecciona el material a solicitar.");
       markInvalid(form.querySelector('input[name="material"]'));
       return errors;
     }
 
-    if (!selectedZonaComercial()) {
-      errors.push("Indica si la solicitud es de Centro o Foráneo.");
-      markInvalid(form.querySelector('input[name="zonaComercial"]'));
+    if (selectedZonaComercial() === "Foráneo" && selectedMaterial() !== "Rotulación") {
+      errors.push("En Foráneo solo se puede solicitar rotulación.");
+      markInvalid(form.querySelector('input[name="material"]'));
+      return errors;
     }
 
     const requiredText = [
@@ -1721,7 +1760,7 @@
   if (toldoPuntoVentaExtra) bindFilePreviews(toldoPuntoVentaExtra);
   if (flowRotulacion) bindFilePreviews(flowRotulacion);
   initUbicacionPicker();
-  syncMaterial();
+  syncZona();
   syncRotulacionUi();
   syncContacto();
   syncReferencia();

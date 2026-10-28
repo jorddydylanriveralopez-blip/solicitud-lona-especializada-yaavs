@@ -17,7 +17,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles-base.css?v=20261005a" />
-    <link rel="stylesheet" href="./lona.css?v=20261028d" />
+    <link rel="stylesheet" href="./lona.css?v=20261028e" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -42,44 +42,62 @@
         <p class="eyebrow">Mercadotecnia · Producción</p>
         <h1 id="heroTitle">Solicitud de material especializado</h1>
         <p class="lede" id="heroLede">
-          Elige primero si solicitas <strong>lona</strong>, <strong>toldo</strong>,
-          <strong>caballete</strong> o <strong>rotulación</strong>. Luego completa el cuestionario
-          de manera correcta y verifica las respuestas antes de enviar.
+          Indica primero si la solicitud es de <strong>Centro</strong> o <strong>Foráneo</strong>.
+          Luego elige el material y completa el cuestionario de manera correcta.
         </p>
       </section>
 
       <form id="lonaForm" class="report-form" novalidate>
         <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
 
-        <section class="card-section" id="secMaterial" data-form-step>
+        <section class="card-section" id="secZona" data-form-step>
           <header class="section-head">
             <span>1</span>
+            <h2>¿La solicitud es de Centro o Foráneo?</h2>
+          </header>
+          <fieldset class="choice-group zona-comercial" id="zonaComercialGroup" data-required="true">
+            <legend>Selecciona una opción <span class="req">*</span></legend>
+            <label class="choice">
+              <input type="radio" name="zonaComercial" value="Centro" required />
+              <span>Centro</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="zonaComercial" value="Foráneo" required />
+              <span>Foráneo</span>
+            </label>
+          </fieldset>
+        </section>
+
+        <div id="afterZona" hidden>
+        <section class="card-section" id="secMaterial" data-form-step>
+          <header class="section-head">
+            <span>2</span>
             <h2>¿Qué material solicitas?</h2>
           </header>
           <fieldset class="choice-group material-pick" data-required="true">
             <legend>Selecciona una opción <span class="req">*</span></legend>
-            <label class="choice material-choice">
+            <label class="choice material-choice" data-material-option="Lona">
               <input type="radio" name="material" value="Lona" required />
               <span>
                 <strong>Lona</strong>
                 <small>Diseño y producción de lona especializada</small>
               </span>
             </label>
-            <label class="choice material-choice">
+            <label class="choice material-choice" data-material-option="Toldo">
               <input type="radio" name="material" value="Toldo" />
               <span>
                 <strong>Toldo</strong>
                 <small>Diseño y producción de toldo y cortina desplegable</small>
               </span>
             </label>
-            <label class="choice material-choice">
+            <label class="choice material-choice" data-material-option="Caballete">
               <input type="radio" name="material" value="Caballete" />
               <span>
                 <strong>Caballete</strong>
                 <small>Diseño y producción de caballete para punto de venta</small>
               </span>
             </label>
-            <label class="choice material-choice">
+            <label class="choice material-choice" data-material-option="Rotulación">
               <input type="radio" name="material" value="Rotulación" />
               <span>
                 <strong>Rotulación</strong>
@@ -93,20 +111,9 @@
         <div id="formRest">
           <section class="card-section" data-form-step>
             <header class="section-head">
-              <span>2</span>
+              <span>3</span>
               <h2>Datos del ejecutivo de ventas</h2>
             </header>
-            <fieldset class="choice-group zona-comercial" id="zonaComercialGroup">
-              <legend>¿La solicitud es de Centro o Foráneo? <span class="req">*</span></legend>
-              <label class="choice">
-                <input type="radio" name="zonaComercial" value="Centro" required />
-                <span>Centro</span>
-              </label>
-              <label class="choice">
-                <input type="radio" name="zonaComercial" value="Foráneo" required />
-                <span>Foráneo</span>
-              </label>
-            </fieldset>
             <div class="grid-2">
               <label class="field">
                 <span>Nombre completo del ejecutivo <span class="req">*</span></span>
@@ -605,6 +612,7 @@
           </div>
         </div>
         </div>
+        </div>
       </form>
 
       <section id="successPanel" class="success-panel" hidden>
@@ -622,6 +630,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20261028d" defer></script>
+    <script src="./app.js?v=20261028e" defer></script>
   </body>
 </html>

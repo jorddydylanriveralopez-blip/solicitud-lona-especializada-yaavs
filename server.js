@@ -326,7 +326,7 @@ const BOARD_ROLES = {
   },
   "gerente-jimenez": {
     label: "Centro · David Jimenez",
-    seesAll: false,
+    seesAll: true,
     canManage: false,
     canDelete: false,
     zonaFilter: "centro",
@@ -2450,6 +2450,9 @@ function missingSubmissionError(answers, files) {
   const zona = text("zonaComercial").toLowerCase();
   if (zona !== "centro" && zona !== "foráneo" && zona !== "foraneo") {
     return "Indica si la solicitud es de Centro o Foráneo.";
+  }
+  if ((zona === "foráneo" || zona === "foraneo") && !material.includes("rotul")) {
+    return "En Foráneo solo se puede solicitar rotulación.";
   }
   const requiredText = [
     ["ejecutivoNombre", "Falta el nombre del ejecutivo."],

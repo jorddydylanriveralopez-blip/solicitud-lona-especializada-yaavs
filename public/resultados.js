@@ -73,6 +73,7 @@
   }
 
   function activeEstados() {
+    if (session?.zonaFilter === "foraneo") return ESTADOS_ROTULACION;
     if (!session?.seesAll || materialFilter === "rotulacion") return ESTADOS_ROTULACION;
     return ESTADOS;
   }
@@ -100,6 +101,7 @@
 
   function itemsForSession(list) {
     const rows = Array.isArray(list) ? list : [];
+    // El servidor ya filtra por zona/material; aquí solo reforzamos rotulación para perfiles sin seesAll.
     if (session?.seesAll) return rows;
     return rows.filter((it) => materialKind(it) === "rotulacion");
   }
