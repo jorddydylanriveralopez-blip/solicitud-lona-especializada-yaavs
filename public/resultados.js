@@ -916,7 +916,7 @@
                 }
                 ${
                   materialKind(item) === "rotulacion" && item.fechaRotulacion
-                    ? `<p class="card-fecha">Fecha: ${escapeHtml(formatFechaRotulacion(item.fechaRotulacion))}</p>`
+                    ? `<p class="card-fecha">Programada: ${escapeHtml(formatFechaRotulacion(item.fechaRotulacion))}</p>`
                     : ""
                 }
                 ${
@@ -1245,28 +1245,20 @@
       </section>`;
   }
 
-  function fechaRotulacionHtml(item) {
+  function fechaProgramadaNavHtml(item) {
     if (materialKind(item) !== "rotulacion") return "";
     const value = String(item?.fechaRotulacion || "").trim();
     const pretty = formatFechaRotulacion(value);
-    if (!session?.canManageRotulacion && !value) return "";
+    const label = pretty ? `Rotulación programada para ${pretty}` : "Rotulación programada para";
     if (!session?.canManageRotulacion) {
-      return `
-        <section class="panel fecha-panel" aria-label="Fecha de rotulación">
-          <div class="panel-head"><h3>Fecha de rotulación</h3></div>
-          <p class="fecha-value">${escapeHtml(pretty)}</p>
-        </section>`;
+      if (!pretty) return "";
+      return `<span class="fecha-programada-pill" title="Rotulación programada">${escapeHtml(label)}</span>`;
     }
     return `
-      <section class="panel fecha-panel" aria-label="Fecha de rotulación">
-        <div class="panel-head"><h3>Fecha de rotulación</h3></div>
-        <p>Ricardo Fernandez fija la fecha en que se hizo la rotulación.</p>
-        <div class="fecha-row">
-          <input id="fechaRotulacionInput" type="date" value="${escapeAttr(value)}" />
-          <button type="button" class="fecha-send" id="fechaRotulacionBtn" data-id="${escapeAttr(item.id || item.folio || "")}">Guardar fecha</button>
-        </div>
-        ${pretty ? `<p class="fecha-value">Actual: ${escapeHtml(pretty)}</p>` : ""}
-      </section>`;
+      <label class="fecha-programada">
+        <input id="fechaRotulacionInput" type="date" value="${escapeAttr(value)}" data-id="${escapeAttr(item.id || item.folio || "")}" />
+        <span class="fecha-programada-btn" id="fechaRotulacionBtn" aria-hidden="true">📅 ${escapeHtml(label)}</span>
+      </label>`;
   }
 
   function evidenciaTile(file, idx) {
@@ -1443,6 +1435,7 @@
             <div class="nav">
               <button type="button" id="prevBtn">← Anterior</button>
               <button type="button" id="nextBtn">Siguiente →</button>
+              ${fechaProgramadaNavHtml(item)}
               ${session?.canDelete ? `<button type="button" id="deleteBtn" class="delete-btn">Eliminar</button>` : ""}
             </div>
           </div>
@@ -1451,8 +1444,6 @@
         ${autorizacionDetailHtml(item)}
 
         ${semaphoreHtml(item)}
-
-        ${fechaRotulacionHtml(item)}
 
         ${productoFinalHtml(item)}
 
@@ -1644,17 +1635,31 @@
 
   function bindFechaRotulacion(item) {
     const input = document.getElementById("fechaRotulacionInput");
-    const send = document.getElementById("fechaRotulacionBtn");
-    if (!input || !send || !session?.canManageRotulacion) return;
-    send.onclick = async () => {
+    const chip = document.getElementById("fechaRotulacionBtn");
+    if (!input || !session?.canManageRotulacion) return;
+    let saving = false;
+    const openPicker = () => {
+      try {
+        if (typeof input.showPicker === "function") input.showPicker();
+        else input.focus();
+      } catch (_) {
+        input.focus();
+      }
+    };
+    chip?.addEventListener("click", (event) => {
+      event.preventDefault();
+      openPicker();
+    });
+    input.onchange = async () => {
+      if (saving) return;
       const fecha = input.value || "";
-      send.disabled = true;
-      send.textContent = "Guardando…";
+      saving = true;
+      if (chip) chip.textContent = "📅 Guardando…";
       const previous = item.fechaRotulacion || "";
       item.fechaRotulacion = fecha;
       try {
         const res = await fetch(
-          `/api/responses/${encodeURIComponent(send.dataset.id || item.id || item.folio || "")}/fecha-rotulacion`,
+          `/api/responses/${encodeURIComponent(input.dataset.id || item.id || item.folio || "")}/fecha-rotulacion`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -1669,9 +1674,16 @@
         renderDetail();
       } catch (err) {
         item.fechaRotulacion = previous;
-        send.disabled = false;
-        send.textContent = "Guardar fecha";
+        input.value = previous;
+        if (chip) {
+          const pretty = formatFechaRotulacion(previous);
+          chip.textContent = pretty
+            ? `📅 Rotulación programada para ${pretty}`
+            : "📅 Rotulación programada para";
+        }
         window.alert(err.message || "No se pudo guardar la fecha");
+      } finally {
+        saving = false;
       }
     };
   }

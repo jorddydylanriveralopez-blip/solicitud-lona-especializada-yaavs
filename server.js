@@ -128,7 +128,7 @@ const FIELD_ORDER = [
   ["confirmaciones", "Confirmaciones"],
   ["observacionesAdicionales", "Observaciones adicionales"],
   ["estadoProduccion", "Estado de producción"],
-  ["fechaRotulacion", "Fecha de rotulación"],
+  ["fechaRotulacion", "Rotulación programada para"],
   ["faltanteCliente", "Faltó agregar"],
   ["faltanteHistorial", "Evidencia de aviso"],
   ["id", "ID interno"],

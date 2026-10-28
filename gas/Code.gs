@@ -54,7 +54,7 @@ var HEADERS = [
   "Estado de producción",
   "Faltó agregar",
   "Evidencia de aviso",
-  "Fecha de rotulación",
+  "Rotulación programada para",
 ];
 
 var KEYS = [

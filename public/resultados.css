@@ -1480,43 +1480,42 @@ button.ghost-link {
   box-shadow: none;
 }
 
-.fecha-panel p {
-  margin: 0 0 10px;
-  color: #52606d;
-}
-
-.fecha-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.fecha-programada {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-}
-
-.fecha-row input[type="date"] {
-  appearance: none;
-  border: 1px solid #d9e2ec;
-  border-radius: 10px;
-  padding: 0.55rem 0.7rem;
-  font: inherit;
-  min-width: 11rem;
-}
-
-.fecha-send {
-  appearance: none;
-  border: 0;
-  border-radius: 999px;
-  background: #0b1f38;
-  color: #fff;
-  font: inherit;
-  font-weight: 700;
-  padding: 0.55rem 1rem;
   cursor: pointer;
 }
 
-.fecha-value {
-  margin-top: 8px !important;
-  font-weight: 700;
-  color: #0b1f38 !important;
+.fecha-programada input[type="date"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  border: 0;
+}
+
+.fecha-programada-btn,
+.fecha-programada-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  appearance: none;
+  border: 1px solid #b7e4c7;
+  background: #eefaf3;
+  color: #0f766e;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.fecha-programada:hover .fecha-programada-btn {
+  background: #dff5e8;
 }
 
 .card-fecha {
