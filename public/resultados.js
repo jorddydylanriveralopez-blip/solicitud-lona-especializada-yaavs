@@ -1255,10 +1255,19 @@
       return `<span class="fecha-programada-pill" title="Rotulación programada">${escapeHtml(label)}</span>`;
     }
     return `
-      <label class="fecha-programada">
-        <input id="fechaRotulacionInput" type="date" value="${escapeAttr(value)}" data-id="${escapeAttr(item.id || item.folio || "")}" />
-        <span class="fecha-programada-btn" id="fechaRotulacionBtn" aria-hidden="true">📅 ${escapeHtml(label)}</span>
-      </label>`;
+      <div class="fecha-programada" data-open="0">
+        <button type="button" class="fecha-programada-btn" id="fechaRotulacionBtn" aria-expanded="false" aria-controls="fechaRotulacionPanel">
+          📅 ${escapeHtml(label)}
+        </button>
+        <div class="fecha-programada-panel" id="fechaRotulacionPanel" hidden>
+          <p>Elige o cambia la fecha programada</p>
+          <input id="fechaRotulacionInput" type="date" value="${escapeAttr(value)}" data-id="${escapeAttr(item.id || item.folio || "")}" />
+          <div class="fecha-programada-actions">
+            <button type="button" class="fecha-send" id="fechaRotulacionGuardar">Guardar fecha</button>
+            ${value ? `<button type="button" class="fecha-clear" id="fechaRotulacionQuitar">Quitar</button>` : ""}
+          </div>
+        </div>
+      </div>`;
   }
 
   function evidenciaTile(file, idx) {
@@ -1634,27 +1643,38 @@
   }
 
   function bindFechaRotulacion(item) {
+    const wrap = detailEl.querySelector(".fecha-programada");
     const input = document.getElementById("fechaRotulacionInput");
     const chip = document.getElementById("fechaRotulacionBtn");
-    if (!input || !session?.canManageRotulacion) return;
-    let saving = false;
-    const openPicker = () => {
-      try {
-        if (typeof input.showPicker === "function") input.showPicker();
-        else input.focus();
-      } catch (_) {
+    const panel = document.getElementById("fechaRotulacionPanel");
+    const saveBtn = document.getElementById("fechaRotulacionGuardar");
+    const clearBtn = document.getElementById("fechaRotulacionQuitar");
+    if (!wrap || !input || !chip || !panel || !saveBtn || !session?.canManageRotulacion) return;
+
+    const setOpen = (open) => {
+      wrap.dataset.open = open ? "1" : "0";
+      panel.hidden = !open;
+      chip.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) {
         input.focus();
+        try {
+          if (typeof input.showPicker === "function") input.showPicker();
+        } catch (_) {}
       }
     };
-    chip?.addEventListener("click", (event) => {
+
+    chip.onclick = (event) => {
       event.preventDefault();
-      openPicker();
-    });
-    input.onchange = async () => {
-      if (saving) return;
-      const fecha = input.value || "";
-      saving = true;
-      if (chip) chip.textContent = "📅 Guardando…";
+      event.stopPropagation();
+      setOpen(wrap.dataset.open !== "1");
+    };
+
+    panel.onclick = (event) => event.stopPropagation();
+
+    const saveFecha = async (fecha) => {
+      saveBtn.disabled = true;
+      if (clearBtn) clearBtn.disabled = true;
+      saveBtn.textContent = "Guardando…";
       const previous = item.fechaRotulacion || "";
       item.fechaRotulacion = fecha;
       try {
@@ -1675,17 +1695,28 @@
       } catch (err) {
         item.fechaRotulacion = previous;
         input.value = previous;
-        if (chip) {
-          const pretty = formatFechaRotulacion(previous);
-          chip.textContent = pretty
-            ? `📅 Rotulación programada para ${pretty}`
-            : "📅 Rotulación programada para";
-        }
+        saveBtn.disabled = false;
+        if (clearBtn) clearBtn.disabled = false;
+        saveBtn.textContent = "Guardar fecha";
         window.alert(err.message || "No se pudo guardar la fecha");
-      } finally {
-        saving = false;
       }
     };
+
+    saveBtn.onclick = () => saveFecha(input.value || "");
+    if (clearBtn) clearBtn.onclick = () => saveFecha("");
+
+    if (!bindFechaRotulacion._outside) {
+      bindFechaRotulacion._outside = true;
+      document.addEventListener("click", () => {
+        const open = detailEl.querySelector('.fecha-programada[data-open="1"]');
+        if (!open) return;
+        open.dataset.open = "0";
+        const openPanel = open.querySelector(".fecha-programada-panel");
+        const openBtn = open.querySelector(".fecha-programada-btn");
+        if (openPanel) openPanel.hidden = true;
+        if (openBtn) openBtn.setAttribute("aria-expanded", "false");
+      });
+    }
   }
 
   async function uploadEvidenciaRotulacion(item, files, button) {
@@ -1889,11 +1920,15 @@
 
       // Keep UI stable while lightbox is open; apply queued data on close via next tick
       const noteBox = document.getElementById("faltanteTexto");
+      const fechaBox = document.getElementById("fechaRotulacionInput");
+      const fechaPanelOpen = Boolean(detailEl.querySelector('.fecha-programada[data-open="1"]'));
       const openItem = filteredItems()[index];
       const writingNotice = Boolean(
-        noteBox &&
+        (noteBox &&
           (document.activeElement === noteBox ||
-            noteBox.value.trim() !== String(openItem?.faltanteCliente || "").trim()),
+            noteBox.value.trim() !== String(openItem?.faltanteCliente || "").trim())) ||
+          fechaPanelOpen ||
+          (fechaBox && document.activeElement === fechaBox),
       );
       if (dataChanged && !lightboxOpen && !writingNotice && !productoUploadBusy) {
         renderMaterialFilters();

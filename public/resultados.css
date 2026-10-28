@@ -1484,17 +1484,6 @@ button.ghost-link {
   position: relative;
   display: inline-flex;
   align-items: center;
-  cursor: pointer;
-}
-
-.fecha-programada input[type="date"] {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-  border: 0;
 }
 
 .fecha-programada-btn,
@@ -1512,10 +1501,70 @@ button.ghost-link {
   font-size: 0.88rem;
   font-weight: 750;
   white-space: nowrap;
+  cursor: pointer;
 }
 
-.fecha-programada:hover .fecha-programada-btn {
+.fecha-programada-btn:hover {
   background: #dff5e8;
+}
+
+.fecha-programada-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 240px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid #d9e2ec;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(11, 31, 56, 0.14);
+  display: grid;
+  gap: 10px;
+}
+
+.fecha-programada-panel p {
+  margin: 0;
+  color: #52606d;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.fecha-programada-panel input[type="date"] {
+  appearance: none;
+  width: 100%;
+  border: 1px solid #d9e2ec;
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  background: #fff;
+}
+
+.fecha-programada-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fecha-send,
+.fecha-clear {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+}
+
+.fecha-send {
+  background: #0b1f38;
+  color: #fff;
+}
+
+.fecha-clear {
+  background: #f4f7fb;
+  color: #52606d;
 }
 
 .card-fecha {
