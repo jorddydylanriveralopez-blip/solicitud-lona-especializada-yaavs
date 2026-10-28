@@ -165,7 +165,7 @@
   function renderStatusFilters() {
     const nav = document.getElementById("statusFilters");
     if (!nav) return;
-    const show = Boolean(session?.seesAll || session?.canManageRotulacion);
+    const show = Boolean(session?.seesAll || session?.canManageRotulacion || session?.zonaFilter);
     nav.hidden = !show;
     if (!show) return;
     const estados = activeEstados();
@@ -2012,7 +2012,7 @@
     renderStatusFilters();
     document.getElementById("statusFilters")?.addEventListener("click", (e) => {
       const btn = e.target.closest(".status-filter");
-      if (!btn || !(session?.seesAll || session?.canManageRotulacion)) return;
+      if (!btn || !(session?.seesAll || session?.canManageRotulacion || session?.zonaFilter)) return;
       const next = btn.dataset.status || "all";
       if (next === statusFilter) return;
       statusFilter = next;

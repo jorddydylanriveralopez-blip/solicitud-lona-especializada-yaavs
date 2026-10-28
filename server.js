@@ -317,11 +317,21 @@ const BOARD_ROLES = {
   },
   "gerente-henonin": {
     label: "Foráneo · Alejandro Henonin",
-    seesAll: true,
+    seesAll: false,
     canManage: false,
     canDelete: false,
+    zonaFilter: "foraneo",
     zoneNames: ["Alejandro Henonin"],
     hash: "4e30eee4fc75fa906ec7b2e6206e45a8:af082f811e6b0cbb60ed00196003958360dd7e6110ab0e74a8d08508ac6406b1",
+  },
+  "gerente-jimenez": {
+    label: "Centro · David Jimenez",
+    seesAll: false,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "centro",
+    zoneNames: ["David Jimenez"],
+    hash: "ea2e20730e025b914d6c86c6a3627ae8:020de4e5bf5ac0c50811ff12ea1de4e999868dd8fa22e9238128d2d0b54d393c",
   },
 };
 const PRODUCCION_ESTADOS = ["En diseño", "En proceso", "En revisión", "Terminado"];
@@ -458,29 +468,51 @@ function personName(value) {
     .trim();
 }
 
+function itemZonaComercial(item) {
+  const answers = item?.answers && typeof item.answers === "object" ? item.answers : {};
+  return String(item?.zonaComercial || answers.zonaComercial || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function itemMatchesZonaFilter(role, item) {
+  const filter = String(role?.zonaFilter || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+  if (!filter) return true;
+  const zona = itemZonaComercial(item);
+  if (filter === "foraneo") return zona === "foraneo";
+  if (filter === "centro") return zona === "centro";
+  return zona === filter;
+}
+
 function itemInAuthorizeZone(role, item) {
   const names = (role?.zoneNames || []).map(personName).filter(Boolean);
   if (!names.length || !item) return false;
   const answers = item.answers && typeof item.answers === "object" ? item.answers : {};
   const territorial = personName(item.gerenteTerritorial || answers.gerenteTerritorial);
   const regional = personName(item.territorioGerente || answers.territorioGerente);
-  const zona = String(item.zonaComercial || answers.zonaComercial || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
+  const zona = itemZonaComercial(item);
   if (names.includes(personName("Alejandro Henonin")) && zona === "foraneo") return true;
+  if (names.includes(personName("David Jimenez")) && zona === "centro") return true;
   return names.some((name) => name === territorial || name === regional);
 }
 
 function scopeItems(items, role) {
-  const list = role?.seesAll
+  let list = role?.seesAll
     ? items || []
     : (items || []).filter(isRotulacionItem).map((item) => ({
         ...item,
         faltanteCliente: isRotulacionItem(item) ? item.faltanteCliente || "" : "",
         faltanteHistorial: isRotulacionItem(item) ? item.faltanteHistorial || "" : "",
       }));
+  if (role?.zonaFilter) {
+    list = list.filter((item) => itemMatchesZonaFilter(role, item));
+  }
   return list.map((item) => ({ ...item, enMiZona: itemInAuthorizeZone(role, item) }));
 }
 
@@ -533,6 +565,7 @@ app.get("/api/session", (req, res) => {
     canManageRotulacion: Boolean(role.canManageRotulacion),
     canAuthorize: canAuthorizeRole(role),
     canDelete: role.canDelete,
+    zonaFilter: role.zonaFilter || "",
   });
 });
 
