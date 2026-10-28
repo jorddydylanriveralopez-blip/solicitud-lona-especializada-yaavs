@@ -103,6 +103,7 @@ const FIELD_ORDER = [
   ["receivedAt", "Fecha y hora"],
   ["material", "Material"],
   ["autorizada", "Autorizada por gerente"],
+  ["zonaComercial", "Zona comercial"],
   ["gerenteTerritorial", "Gerente territorial"],
   ["gerenteTelefono", "Teléfono del gerente"],
   ["territorioGerente", "Gerente regional"],
@@ -138,6 +139,7 @@ const COLUMN_WIDTHS = {
   folio: 16,
   receivedAt: 20,
   autorizada: 18,
+  zonaComercial: 14,
   gerenteTerritorial: 28,
   gerenteTelefono: 16,
   territorioGerente: 24,
@@ -313,6 +315,14 @@ const BOARD_ROLES = {
     envPassword: "BOARD_PASSWORD_MANTENIMIENTO",
     hash: "27dac4b638a77bafc55f94b1650d00df:8fc996e954e1044cfc17f4ba44be5e013ccfda2e5b584daefe716cb8803f5e0c",
   },
+  "gerente-henonin": {
+    label: "Foráneo · Alejandro Henonin",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    zoneNames: ["Alejandro Henonin"],
+    hash: "4e30eee4fc75fa906ec7b2e6206e45a8:af082f811e6b0cbb60ed00196003958360dd7e6110ab0e74a8d08508ac6406b1",
+  },
 };
 const PRODUCCION_ESTADOS = ["En diseño", "En proceso", "En revisión", "Terminado"];
 const ROTULACION_ESTADOS = [
@@ -454,6 +464,12 @@ function itemInAuthorizeZone(role, item) {
   const answers = item.answers && typeof item.answers === "object" ? item.answers : {};
   const territorial = personName(item.gerenteTerritorial || answers.gerenteTerritorial);
   const regional = personName(item.territorioGerente || answers.territorioGerente);
+  const zona = String(item.zonaComercial || answers.zonaComercial || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+  if (names.includes(personName("Alejandro Henonin")) && zona === "foraneo") return true;
   return names.some((name) => name === territorial || name === regional);
 }
 
@@ -2398,6 +2414,10 @@ function missingSubmissionError(answers, files) {
   const text = (key) => String(answers?.[key] || "").trim();
   const material = text("material").toLowerCase();
   if (!material) return "Selecciona el material antes de enviar.";
+  const zona = text("zonaComercial").toLowerCase();
+  if (zona !== "centro" && zona !== "foráneo" && zona !== "foraneo") {
+    return "Indica si la solicitud es de Centro o Foráneo.";
+  }
   const requiredText = [
     ["ejecutivoNombre", "Falta el nombre del ejecutivo."],
     ["ejecutivoTelefono", "Falta el teléfono del ejecutivo."],
@@ -2407,6 +2427,9 @@ function missingSubmissionError(answers, files) {
     ["yaavserTelefono", "Falta el teléfono del YAAVSER."],
     ["puntoVenta", "Falta el nombre del punto de venta."],
   ];
+  if (zona === "foráneo" || zona === "foraneo") {
+    requiredText.splice(1, 0, ["gerenteTerritorial", "Falta el gerente territorial."]);
+  }
   for (const [key, message] of requiredText) {
     if (!text(key)) return message;
   }

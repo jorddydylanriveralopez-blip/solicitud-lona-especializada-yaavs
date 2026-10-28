@@ -55,6 +55,7 @@ var HEADERS = [
   "Faltó agregar",
   "Evidencia de aviso",
   "Rotulación programada para",
+  "Zona comercial",
 ];
 
 var KEYS = [
@@ -92,6 +93,7 @@ var KEYS = [
   "faltanteCliente",
   "faltanteHistorial",
   "fechaRotulacion",
+  "zonaComercial",
 ];
 
 function doGet(e) {
@@ -528,6 +530,7 @@ function rowFromPayload_(data) {
     pick_(data, "faltanteCliente"),
     pick_(data, "faltanteHistorial"),
     pick_(data, "fechaRotulacion"),
+    pick_(data, "zonaComercial"),
   ];
 }
 

@@ -395,6 +395,10 @@
   gap: 0.45rem;
 }
 
+.zona-comercial {
+  margin: 0 0 1rem;
+}
+
 .choice-group.compact {
   margin-top: 0;
 }

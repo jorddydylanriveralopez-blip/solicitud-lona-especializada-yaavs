@@ -235,6 +235,7 @@
     {
       title: "Ejecutivo de ventas",
       fields: [
+        ["zonaComercial", "Zona"],
         ["ejecutivoNombre", "Nombre"],
         ["ejecutivoTelefono", "Teléfono"],
         ["ejecutivoCorreo", "Correo"],
@@ -1461,6 +1462,7 @@
         ${faltanteHtml(item)}
 
         <div class="chip-row">
+          ${item.zonaComercial ? `<span class="chip">${escapeHtml(item.zonaComercial)}</span>` : ""}
           ${item.puntoVenta ? `<span class="chip">${escapeHtml(item.puntoVenta)}</span>` : ""}
           ${item.claveYaavser ? `<span class="chip">${escapeHtml(item.claveYaavser)}</span>` : ""}
           ${item.gerenteTerritorial ? `<span class="chip">${escapeHtml(item.gerenteTerritorial)}</span>` : ""}

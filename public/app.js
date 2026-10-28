@@ -80,21 +80,103 @@
     ["Daniel De Jesus Chapa Mendoza", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
     ["Victor Manuel Martinez Osorio", "Erick Perez Galindo", "Rodolfo Reynoso Castelan"],
   ];
+  const FORANEO_REGIONAL = "Alejandro Henonin";
+  const FORANEO_TERRITORIALES = [
+    "Alan Alarcon Morales",
+    "Cesar Gutierrez Escarcega",
+    "Erendira Trujillo Aleman",
+    "Leon Perez Zamudio",
+    "Marco Antonio Calderon Martinez",
+    "Olyver Alain Guerrero Lozano",
+  ];
 
   const ejecutivoSelect = document.getElementById("ejecutivoNombre");
+  const ejecutivoForaneoInput = document.getElementById("ejecutivoNombreForaneo");
+  const ejecutivoCentroWrap = document.getElementById("ejecutivoCentroWrap");
+  const ejecutivoForaneoWrap = document.getElementById("ejecutivoForaneoWrap");
   const gerenteTerritorialInput = document.getElementById("gerenteTerritorial");
+  const gerenteTerritorialForaneo = document.getElementById("gerenteTerritorialForaneo");
+  const gerenteTerritorialCentroWrap = document.getElementById("gerenteTerritorialCentroWrap");
+  const gerenteTerritorialForaneoWrap = document.getElementById("gerenteTerritorialForaneoWrap");
   const gerenteRegionalInput = document.getElementById("territorioGerente");
+
+  function selectedZonaComercial() {
+    return String(form?.querySelector('input[name="zonaComercial"]:checked')?.value || "").trim();
+  }
+
+  function applyZonaComercial() {
+    const zona = selectedZonaComercial();
+    const isForaneo = zona === "Foráneo";
+    if (ejecutivoCentroWrap) ejecutivoCentroWrap.hidden = isForaneo;
+    if (ejecutivoForaneoWrap) ejecutivoForaneoWrap.hidden = !isForaneo;
+    if (gerenteTerritorialCentroWrap) gerenteTerritorialCentroWrap.hidden = isForaneo;
+    if (gerenteTerritorialForaneoWrap) gerenteTerritorialForaneoWrap.hidden = !isForaneo;
+
+    if (ejecutivoSelect) {
+      ejecutivoSelect.disabled = isForaneo;
+      ejecutivoSelect.required = !isForaneo && Boolean(zona);
+      if (isForaneo) ejecutivoSelect.value = "";
+    }
+    if (ejecutivoForaneoInput) {
+      ejecutivoForaneoInput.disabled = !isForaneo;
+      ejecutivoForaneoInput.required = isForaneo;
+      if (isForaneo) ejecutivoForaneoInput.setAttribute("name", "ejecutivoNombre");
+      else ejecutivoForaneoInput.removeAttribute("name");
+      if (!isForaneo) ejecutivoForaneoInput.value = "";
+    }
+    if (ejecutivoSelect && !isForaneo) ejecutivoSelect.setAttribute("name", "ejecutivoNombre");
+    else if (ejecutivoSelect) ejecutivoSelect.removeAttribute("name");
+
+    if (gerenteTerritorialInput) {
+      gerenteTerritorialInput.disabled = isForaneo;
+      if (isForaneo) {
+        gerenteTerritorialInput.removeAttribute("name");
+        gerenteTerritorialInput.value = "";
+      } else {
+        gerenteTerritorialInput.setAttribute("name", "gerenteTerritorial");
+      }
+    }
+    if (gerenteTerritorialForaneo) {
+      gerenteTerritorialForaneo.disabled = !isForaneo;
+      gerenteTerritorialForaneo.required = isForaneo;
+      if (isForaneo) gerenteTerritorialForaneo.setAttribute("name", "gerenteTerritorial");
+      else {
+        gerenteTerritorialForaneo.removeAttribute("name");
+        gerenteTerritorialForaneo.value = "";
+      }
+    }
+    if (gerenteRegionalInput) {
+      if (isForaneo) gerenteRegionalInput.value = FORANEO_REGIONAL;
+      else if (!ejecutivoSelect?.value) gerenteRegionalInput.value = "";
+      else {
+        const row = MATRIZ_VENTAS.find((r) => r[0] === ejecutivoSelect.value);
+        gerenteRegionalInput.value = row ? row[2] : "";
+      }
+    }
+  }
 
   if (ejecutivoSelect) {
     [...MATRIZ_VENTAS]
       .sort((a, b) => a[0].localeCompare(b[0], "es"))
       .forEach(([nombre]) => ejecutivoSelect.add(new Option(nombre, nombre)));
     ejecutivoSelect.addEventListener("change", () => {
+      if (selectedZonaComercial() !== "Centro") return;
       const row = MATRIZ_VENTAS.find((r) => r[0] === ejecutivoSelect.value);
       if (gerenteTerritorialInput) gerenteTerritorialInput.value = row ? row[1] : "";
       if (gerenteRegionalInput) gerenteRegionalInput.value = row ? row[2] : "";
     });
   }
+
+  if (gerenteTerritorialForaneo) {
+    [...FORANEO_TERRITORIALES]
+      .sort((a, b) => a.localeCompare(b, "es"))
+      .forEach((nombre) => gerenteTerritorialForaneo.add(new Option(nombre, nombre)));
+  }
+
+  form?.querySelectorAll('input[name="zonaComercial"]').forEach((input) => {
+    input.addEventListener("change", applyZonaComercial);
+  });
+  applyZonaComercial();
 
   form?.querySelectorAll("input[data-digits]").forEach((input) => {
     input.addEventListener("input", () => {
@@ -1306,6 +1388,11 @@
       return errors;
     }
 
+    if (!selectedZonaComercial()) {
+      errors.push("Indica si la solicitud es de Centro o Foráneo.");
+      markInvalid(form.querySelector('input[name="zonaComercial"]'));
+    }
+
     const requiredText = [
       ["ejecutivoNombre", "Captura el nombre del ejecutivo."],
       ["ejecutivoTelefono", "Captura el teléfono del ejecutivo."],
@@ -1315,6 +1402,9 @@
       ["yaavserTelefono", "Captura el teléfono del YAAVSER."],
       ["puntoVenta", "Captura el nombre del punto de venta."],
     ];
+    if (selectedZonaComercial() === "Foráneo") {
+      requiredText.splice(1, 0, ["gerenteTerritorial", "Selecciona el gerente territorial."]);
+    }
     for (const [name, msg] of requiredText) {
       const el = form.elements[name];
       if (!el || !String(el.value || "").trim()) {
@@ -1489,9 +1579,10 @@
     const mat = selectedMaterial();
     const base = {
       material: mat,
-      ejecutivoNombre: String(form.ejecutivoNombre.value || "").trim(),
+      zonaComercial: selectedZonaComercial(),
+      ejecutivoNombre: String(form.elements.ejecutivoNombre?.value || "").trim(),
       ejecutivoTelefono: String(form.ejecutivoTelefono.value || "").trim(),
-      gerenteTerritorial: String(form.gerenteTerritorial?.value || "").trim(),
+      gerenteTerritorial: String(form.elements.gerenteTerritorial?.value || "").trim(),
       territorioGerente: String(form.territorioGerente?.value || "").trim(),
       gerenteTelefono: String(form.gerenteTelefono?.value || "").trim(),
       yaavserNombre: String(form.yaavserNombre.value || "").trim(),
