@@ -1413,7 +1413,7 @@ button.ghost-link {
 
 .semaphore-choices {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(9.2rem, 1fr));
   gap: 8px;
 }
 

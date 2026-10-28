@@ -64,8 +64,20 @@
     return "";
   }
 
+  function mapLegacyRotulacionEstado(estado) {
+    if (!estado) return "";
+    if (ESTADOS_ROTULACION.some((item) => item.key === estado)) return estado;
+    // Rotulaciones viejas usaban el semáforo de producción.
+    if (estado === "En diseño") return "Diseño de render";
+    if (estado === "En proceso" || estado === "En revisión") return "Render concluido";
+    if (estado === "Terminado") return "Rotulación terminada";
+    return estado;
+  }
+
   function estadoOf(item) {
-    return normalizeEstado(item?.estadoProduccion);
+    const estado = normalizeEstado(item?.estadoProduccion);
+    if (materialKind(item) === "rotulacion") return mapLegacyRotulacionEstado(estado);
+    return estado;
   }
 
   function estadosForItem(item) {
@@ -74,8 +86,13 @@
 
   function activeEstados() {
     if (session?.zonaFilter === "foraneo") return ESTADOS_ROTULACION;
-    if (!session?.seesAll || materialFilter === "rotulacion") return ESTADOS_ROTULACION;
-    return ESTADOS;
+    if (!session?.seesAll) return ESTADOS_ROTULACION;
+    if (materialFilter === "rotulacion") return ESTADOS_ROTULACION;
+    if (materialFilter === "lona" || materialFilter === "toldo" || materialFilter === "caballete") {
+      return ESTADOS;
+    }
+    // Vista "Todos" (Marketing): ambos semáforos para poder filtrar todo.
+    return [...ESTADOS, ...ESTADOS_ROTULACION];
   }
 
   function canEditEstado(item) {

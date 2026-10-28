@@ -1459,8 +1459,9 @@ function mergeBoardItems(localItems, sheetsItems) {
     map.set(k, {
       ...prev,
       ...item,
+      // Preferir lo local (edición del tablero) para que el semáforo no se revierta al refrescar.
       estadoProduccion:
-        String(prev.estadoProduccion || "").trim() || String(item.estadoProduccion || "").trim(),
+        String(item.estadoProduccion || "").trim() || String(prev.estadoProduccion || "").trim(),
       fechaRotulacion:
         String(item.fechaRotulacion || "").trim() || String(prev.fechaRotulacion || "").trim(),
       autorizada: String(item.autorizada || "").trim() || String(prev.autorizada || "").trim(),
