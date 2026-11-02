@@ -181,6 +181,19 @@ function doPost(e) {
         errors: failed,
       });
     }
+    if (data.action === "removeMedia") {
+      var removedNow = removeMediaFromRow_(data.id, data.folio, {
+        storedAs: data.storedAs || "",
+        url: data.url || "",
+        kind: data.kind || "",
+      });
+      return jsonOut_({
+        ok: removedNow.removed > 0,
+        removed: removedNow.removed,
+        mediaCount: (removedNow.media || []).length,
+        media: removedNow.media || [],
+      });
+    }
     if (data.action) {
       return jsonOut_({ ok: false, error: "Acción desconocida: " + data.action });
     }
@@ -396,6 +409,111 @@ function appendMediaToRow_(id, folio, newMedia) {
   }
   sheet.getRange(row + 2, mediaCol + 1).setValue(JSON.stringify(merged));
   return pack_(merged, saved);
+}
+
+function mediaKey_(file) {
+  if (!file) return "";
+  if (file.storedAs) return "s:" + String(file.storedAs);
+  var url = String(file.url || "");
+  var match = url.match(/[?&]id=([\w-]+)/);
+  if (match) return "d:" + match[1];
+  if (url) return "u:" + url;
+  return "";
+}
+
+function isEvidenciaRotulacionMedia_(file) {
+  if (!file) return false;
+  var kind = String(file.kind || "")
+    .toLowerCase()
+    .replace(/\s+/g, "");
+  var field = String(file.field || "").toLowerCase();
+  var group = String(file.group || "").toLowerCase();
+  return (
+    kind === "evidenciarotulacion" ||
+    field === "evidencia_rotulacion" ||
+    group.indexOf("evidencia de rotul") >= 0
+  );
+}
+
+function isProductoFinalMedia_(file) {
+  if (!file) return false;
+  var kind = String(file.kind || "")
+    .toLowerCase()
+    .replace(/\s+/g, "");
+  var field = String(file.field || "").toLowerCase();
+  var group = String(file.group || "").toLowerCase();
+  return (
+    kind === "productofinal" ||
+    field === "producto_final" ||
+    group.indexOf("producto terminado") >= 0
+  );
+}
+
+function trashDriveUrl_(url) {
+  var raw = String(url || "");
+  var match = raw.match(/[?&]id=([\w-]+)/) || raw.match(/\/d\/([\w-]+)/);
+  if (!match) return;
+  try {
+    DriveApp.getFileById(match[1]).setTrashed(true);
+  } catch (err) {}
+}
+
+function removeMediaFromRow_(id, folio, target) {
+  var wantedId = String(id || "").trim();
+  var wantedFolio = String(folio || "").trim();
+  var storedAs = String((target && target.storedAs) || "").trim();
+  var url = String((target && target.url) || "").trim();
+  var kindFilter = String((target && target.kind) || "").trim();
+  if ((!wantedId && !wantedFolio) || (!storedAs && !url)) {
+    return { removed: 0, media: [] };
+  }
+
+  var sheet = ensureSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { removed: 0, media: [] };
+
+  var mediaCol = KEYS.indexOf("media");
+  var materialCol = KEYS.indexOf("material");
+  if (mediaCol < 0) return { removed: 0, media: [] };
+
+  var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getValues();
+  var matches = matchRows_(values, wantedId, wantedFolio).filter(function (r) {
+    return materialCol < 0 || String(values[r][materialCol] || "").trim() !== "";
+  });
+  if (!matches.length) return { removed: 0, media: [] };
+
+  var row = matches[0];
+  var existing = parseMedia_(values[row][mediaCol]);
+  var targetKey = mediaKey_({ storedAs: storedAs, url: url });
+  var kept = [];
+  var removed = [];
+  for (var i = 0; i < existing.length; i++) {
+    var file = existing[i];
+    var same =
+      (storedAs && String(file.storedAs || "") === storedAs) ||
+      (url && String(file.url || "") === url) ||
+      (targetKey && mediaKey_(file) === targetKey);
+    if (!same) {
+      kept.push(file);
+      continue;
+    }
+    if (kindFilter === "evidenciaRotulacion" && !isEvidenciaRotulacionMedia_(file)) {
+      kept.push(file);
+      continue;
+    }
+    if (kindFilter === "productoFinal" && !isProductoFinalMedia_(file)) {
+      kept.push(file);
+      continue;
+    }
+    removed.push(file);
+  }
+  if (!removed.length) return { removed: 0, media: existing };
+
+  sheet.getRange(row + 2, mediaCol + 1).setValue(kept.length ? JSON.stringify(kept) : "");
+  for (var r = 0; r < removed.length; r++) {
+    trashDriveUrl_(removed[r] && removed[r].url);
+  }
+  return { removed: removed.length, media: kept };
 }
 
 /** Filas por id; el folio solo se usa si no hay id que coincida (los folios pueden repetirse). */

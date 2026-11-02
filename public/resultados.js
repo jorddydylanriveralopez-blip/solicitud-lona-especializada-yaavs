@@ -21,6 +21,8 @@
   let productoUploadBusy = false;
   let evidenciaUploadBusy = false;
   let statusFilter = "all";
+  let dateFromFilter = "";
+  let dateToFilter = "";
   let lastFingerprint = null;
   let refreshInFlight = false;
   let session = null;
@@ -154,6 +156,31 @@
     return counts;
   }
 
+  function toDateKey(raw) {
+    const text = String(raw || "").trim();
+    if (!text) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+    const parsed = new Date(text);
+    if (!Number.isFinite(parsed.getTime())) return "";
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, "0");
+    const d = String(parsed.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  function itemMatchesDateFilter(item) {
+    if (!dateFromFilter && !dateToFilter) return true;
+    const received = toDateKey(item?.receivedAt || item?.timestamp || "");
+    const programmed = toDateKey(item?.fechaRotulacion || "");
+    const keys = [received, programmed].filter(Boolean);
+    if (!keys.length) return false;
+    return keys.some((key) => {
+      if (dateFromFilter && key < dateFromFilter) return false;
+      if (dateToFilter && key > dateToFilter) return false;
+      return true;
+    });
+  }
+
   function filteredItems() {
     const byMaterial =
       materialFilter === "all" ? items : items.filter((it) => materialKind(it) === materialFilter);
@@ -161,8 +188,9 @@
       statusFilter === "all"
         ? byMaterial
         : byMaterial.filter((it) => estadoOf(it) === statusFilter);
-    if (!session?.seesAll) return byStatus;
-    return [...byStatus].sort((a, b) => {
+    const byDate = byStatus.filter((it) => itemMatchesDateFilter(it));
+    if (!session?.seesAll) return byDate;
+    return [...byDate].sort((a, b) => {
       const rankA = ESTADO_RANK[estadoOf(a)] || 0;
       const rankB = ESTADO_RANK[estadoOf(b)] || 0;
       if (rankA !== rankB) return rankA - rankB;
@@ -170,8 +198,14 @@
     });
   }
 
+  function canManageProducto() {
+    return Boolean(session?.canManage || session?.canManageRotulacion);
+  }
+
   function statusCounts() {
-    const base = materialFilter === "all" ? items : items.filter((it) => materialKind(it) === materialFilter);
+    const base = (materialFilter === "all" ? items : items.filter((it) => materialKind(it) === materialFilter)).filter(
+      (it) => itemMatchesDateFilter(it),
+    );
     const counts = { all: base.length };
     for (const estado of activeEstados()) counts[estado.key] = 0;
     for (const item of base) {
@@ -179,6 +213,42 @@
       if (counts[estado] != null) counts[estado] += 1;
     }
     return counts;
+  }
+
+  function bindDateFilters() {
+    const fromInput = document.getElementById("dateFromFilter");
+    const toInput = document.getElementById("dateToFilter");
+    const clearBtn = document.getElementById("dateFilterClear");
+    if (!fromInput || !toInput) return;
+
+    const apply = () => {
+      dateFromFilter = String(fromInput.value || "").trim();
+      dateToFilter = String(toInput.value || "").trim();
+      if (dateFromFilter && dateToFilter && dateFromFilter > dateToFilter) {
+        const swap = dateFromFilter;
+        dateFromFilter = dateToFilter;
+        dateToFilter = swap;
+        fromInput.value = dateFromFilter;
+        toInput.value = dateToFilter;
+      }
+      if (clearBtn) clearBtn.hidden = !(dateFromFilter || dateToFilter);
+      index = 0;
+      renderStatusFilters();
+      renderStats();
+      renderList();
+      renderDetail();
+    };
+
+    fromInput.onchange = apply;
+    toInput.onchange = apply;
+    if (clearBtn) {
+      clearBtn.onclick = () => {
+        fromInput.value = "";
+        toInput.value = "";
+        apply();
+      };
+      clearBtn.hidden = !(dateFromFilter || dateToFilter);
+    }
   }
 
   function renderStatusFilters() {
@@ -890,7 +960,11 @@
       return;
     }
     if (!visible.length) {
-      listEl.innerHTML = `<p class="list-empty">No hay solicitudes de ${escapeHtml(filterLabel())}</p>`;
+      const dateHint =
+        dateFromFilter || dateToFilter
+          ? " en ese rango de fechas"
+          : "";
+      listEl.innerHTML = `<p class="list-empty">No hay solicitudes de ${escapeHtml(filterLabel())}${dateHint}</p>`;
       return;
     }
     listEl.innerHTML = visible
@@ -988,7 +1062,7 @@
   }
 
   function productoCardHtml(item) {
-    if (!session?.canManage || materialKind(item) !== "rotulacion") return "";
+    if (!canManageProducto() || materialKind(item) !== "rotulacion") return "";
     const count = productoFinalOf(item).length;
     const id = escapeAttr(item.id || item.folio || "");
     return `
@@ -999,7 +1073,7 @@
   }
 
   function bindProductoCards(root) {
-    if (!session?.canManage || !root) return;
+    if (!canManageProducto() || !root) return;
     root.querySelectorAll(".producto-card").forEach((wrap) => {
       const input = wrap.querySelector(".producto-card-input");
       const button = wrap.querySelector(".producto-card-btn");
@@ -1212,6 +1286,15 @@
     return `<div class="note-stack"><span>Notas guardadas</span>${cards.join("")}</div>`;
   }
 
+  function productoManageActions(idx) {
+    if (!canManageProducto()) return "";
+    return `
+      <div class="evidence-manage">
+        <button type="button" class="evidence-change" data-producto-change="${idx}">Cambiar</button>
+        <button type="button" class="evidence-remove" data-producto-remove="${idx}">Quitar</button>
+      </div>`;
+  }
+
   function productoTile(file, idx) {
     const kindLabel = "Producto terminado";
     if (isImageMime(file.mime, file.name)) {
@@ -1223,6 +1306,7 @@
             ${file.name ? `<small>${escapeHtml(file.name)}</small>` : ""}
           </button>
           ${downloadLink(file)}
+          ${productoManageActions(idx)}
         </div>`;
     }
     const badge = isPdf(file.mime, file.name) ? "PDF" : "DOC";
@@ -1234,20 +1318,22 @@
           <small>${escapeHtml(file.name || "")}</small>
         </a>
         ${downloadLink(file)}
+        ${productoManageActions(idx)}
       </div>`;
   }
 
   function productoFinalHtml(item) {
     if (materialKind(item) !== "rotulacion") return "";
     const files = productoFinalOf(item);
-    if (!session?.canManage && !files.length) return "";
+    if (!canManageProducto() && !files.length) return "";
     const tiles = files.map((file, idx) => productoTile(file, idx)).join("");
-    const uploader = session?.canManage
+    const uploader = canManageProducto()
       ? `
         <div class="producto-upload">
-          <p>Sube aquí el render o el producto terminado.</p>
+          <p>Sube aquí el render o el producto terminado. Si te equivocas, puedes cambiarlo o quitarlo.</p>
           <input id="productoFinalInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf,.pdf" multiple hidden />
-          <button type="button" class="producto-send" id="productoFinalBtn">Subir render</button>
+          <input id="productoFinalReplaceInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf,.pdf" hidden />
+          <button type="button" class="producto-send" id="productoFinalBtn">${files.length ? "Subir otro" : "Subir render"}</button>
         </div>`
       : "";
     return `
@@ -1290,6 +1376,15 @@
       </div>`;
   }
 
+  function evidenciaManageActions(file, idx) {
+    if (!session?.canManageRotulacion) return "";
+    return `
+      <div class="evidence-manage">
+        <button type="button" class="evidence-change" data-evidencia-change="${idx}">Cambiar</button>
+        <button type="button" class="evidence-remove" data-evidencia-remove="${idx}">Quitar</button>
+      </div>`;
+  }
+
   function evidenciaTile(file, idx) {
     const kindLabel = "Evidencia de rotulación";
     if (isImageMime(file.mime, file.name)) {
@@ -1301,6 +1396,7 @@
             ${file.name ? `<small>${escapeHtml(file.name)}</small>` : ""}
           </button>
           ${downloadLink(file)}
+          ${evidenciaManageActions(file, idx)}
         </div>`;
     }
     const badge = isPdf(file.mime, file.name) ? "PDF" : "DOC";
@@ -1312,6 +1408,7 @@
           <small>${escapeHtml(file.name || "")}</small>
         </a>
         ${downloadLink(file)}
+        ${evidenciaManageActions(file, idx)}
       </div>`;
   }
 
@@ -1323,8 +1420,9 @@
     const uploader = session?.canManageRotulacion
       ? `
         <div class="producto-upload">
-          <p>Sube la evidencia de la rotulación terminada.</p>
+          <p>Sube la evidencia de la rotulación terminada. Si te equivocas, puedes cambiarla o quitarla.</p>
           <input id="evidenciaRotulacionInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf,.pdf" multiple hidden />
+          <input id="evidenciaRotulacionReplaceInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf,.pdf" hidden />
           <button type="button" class="producto-send" id="evidenciaRotulacionBtn">${files.length ? "Subir otra evidencia" : "Subir evidencia"}</button>
         </div>`
       : "";
@@ -1614,8 +1712,20 @@
     });
   }
 
+  function dropProductoFromItem(item, target) {
+    if (!item || !target) return;
+    const key = evidenciaFileKey(target);
+    const matches = (file) => {
+      if (!file) return false;
+      if (target.storedAs && String(file.storedAs || "") === String(target.storedAs)) return true;
+      if (target.url && String(file.url || "") === String(target.url)) return true;
+      return Boolean(key && evidenciaFileKey(file) === key);
+    };
+    item.media = (Array.isArray(item.media) ? item.media : []).filter((file) => !matches(file));
+  }
+
   async function uploadProductoFinal(item, files, button) {
-    if (!item || !files?.length || productoUploadBusy || !session?.canManage) return;
+    if (!item || !files?.length || productoUploadBusy || !canManageProducto()) return null;
     productoUploadBusy = true;
     const previous = button?.textContent || "Subir render";
     if (button) {
@@ -1637,30 +1747,126 @@
       if (data.error) window.alert(data.error);
       renderList();
       renderDetail();
+      return data.media;
     } catch (err) {
       if (button) {
         button.disabled = false;
         button.textContent = previous;
       }
       window.alert(err.message || "No se pudo subir el producto terminado");
+      return null;
     } finally {
       productoUploadBusy = false;
     }
   }
 
+  async function removeProductoFinal(item, file, button) {
+    if (!item || !file || productoUploadBusy || !canManageProducto()) return false;
+    productoUploadBusy = true;
+    const previous = button?.textContent || "Quitar";
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Quitando…";
+    }
+    try {
+      const res = await fetch(
+        `/api/responses/${encodeURIComponent(item.id || item.folio || "")}/producto-final`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storedAs: file.storedAs || "",
+            url: file.url || "",
+          }),
+        },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) throw new Error(data.error || "No se pudo quitar el archivo");
+      dropProductoFromItem(item, data.removed || file);
+      lastFingerprint = boardFingerprint(items);
+      renderList();
+      renderDetail();
+      return true;
+    } catch (err) {
+      if (button) {
+        button.disabled = false;
+        button.textContent = previous;
+      }
+      window.alert(err.message || "No se pudo quitar el producto terminado");
+      return false;
+    } finally {
+      productoUploadBusy = false;
+    }
+  }
+
+  async function replaceProductoFinal(item, oldFile, newFiles, button) {
+    if (!item || !oldFile || !newFiles?.length || productoUploadBusy || !canManageProducto()) return;
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Cambiando…";
+    }
+    const uploaded = await uploadProductoFinal(item, newFiles, button);
+    if (!uploaded?.length) return;
+    const removed = await removeProductoFinal(item, oldFile, null);
+    if (!removed) {
+      window.alert("La nueva imagen ya quedó guardada. Quita a mano la anterior si ya no la necesitas.");
+    }
+  }
+
   function bindProductoFinal(item) {
     const input = document.getElementById("productoFinalInput");
+    const replaceInput = document.getElementById("productoFinalReplaceInput");
     const send = document.getElementById("productoFinalBtn");
-    if (!input || !send || !session?.canManage) return;
-    send.onclick = () => {
-      if (!productoUploadBusy) input.click();
-    };
-    input.onchange = () => {
-      const chosen = [...(input.files || [])];
-      input.value = "";
-      if (!chosen.length) return;
-      uploadProductoFinal(item, chosen, send);
-    };
+    if (!canManageProducto()) return;
+    const files = productoFinalOf(item);
+
+    if (input && send) {
+      send.onclick = () => {
+        if (!productoUploadBusy) input.click();
+      };
+      input.onchange = () => {
+        const chosen = [...(input.files || [])];
+        input.value = "";
+        if (!chosen.length) return;
+        uploadProductoFinal(item, chosen, send);
+      };
+    }
+
+    if (replaceInput) {
+      replaceInput.onchange = () => {
+        const idx = Number(replaceInput.dataset.replaceIndex);
+        const chosen = [...(replaceInput.files || [])];
+        replaceInput.value = "";
+        replaceInput.dataset.replaceIndex = "";
+        const oldFile = files[idx];
+        if (!chosen.length || !oldFile) return;
+        const changeBtn = detailEl.querySelector(`[data-producto-change="${idx}"]`);
+        replaceProductoFinal(item, oldFile, chosen.slice(0, 1), changeBtn || send);
+      };
+    }
+
+    detailEl.querySelectorAll("[data-producto-remove]").forEach((btn) => {
+      btn.onclick = async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const idx = Number(btn.dataset.productoRemove);
+        const file = files[idx];
+        if (!file || productoUploadBusy) return;
+        const ok = window.confirm("¿Quitar esta imagen? Podrás subir otra cuando quieras.");
+        if (!ok) return;
+        await removeProductoFinal(item, file, btn);
+      };
+    });
+
+    detailEl.querySelectorAll("[data-producto-change]").forEach((btn) => {
+      btn.onclick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!replaceInput || productoUploadBusy) return;
+        replaceInput.dataset.replaceIndex = btn.dataset.productoChange || "";
+        replaceInput.click();
+      };
+    });
   }
 
   function bindFechaRotulacion(item) {
@@ -1740,8 +1946,30 @@
     }
   }
 
+  function evidenciaFileKey(file) {
+    if (!file) return "";
+    if (file.storedAs) return `stored:${String(file.storedAs).trim().toLowerCase()}`;
+    const url = String(file.url || "").trim();
+    if (!url) return "";
+    const drive = url.match(/[?&]id=([\w-]+)/) || url.match(/\/d\/([\w-]+)/);
+    if (drive) return `drive:${drive[1]}`;
+    return `url:${url.toLowerCase()}`;
+  }
+
+  function dropEvidenciaFromItem(item, target) {
+    if (!item || !target) return;
+    const key = evidenciaFileKey(target);
+    const matches = (file) => {
+      if (!file) return false;
+      if (target.storedAs && String(file.storedAs || "") === String(target.storedAs)) return true;
+      if (target.url && String(file.url || "") === String(target.url)) return true;
+      return Boolean(key && evidenciaFileKey(file) === key);
+    };
+    item.media = (Array.isArray(item.media) ? item.media : []).filter((file) => !matches(file));
+  }
+
   async function uploadEvidenciaRotulacion(item, files, button) {
-    if (!item || !files?.length || evidenciaUploadBusy || !session?.canManageRotulacion) return;
+    if (!item || !files?.length || evidenciaUploadBusy || !session?.canManageRotulacion) return null;
     evidenciaUploadBusy = true;
     const previous = button?.textContent || "Subir evidencia";
     if (button) {
@@ -1763,30 +1991,128 @@
       if (data.error) window.alert(data.error);
       renderList();
       renderDetail();
+      return data.media;
     } catch (err) {
       if (button) {
         button.disabled = false;
         button.textContent = previous;
       }
       window.alert(err.message || "No se pudo subir la evidencia");
+      return null;
     } finally {
       evidenciaUploadBusy = false;
     }
   }
 
+  async function removeEvidenciaRotulacion(item, file, button) {
+    if (!item || !file || evidenciaUploadBusy || !session?.canManageRotulacion) return false;
+    evidenciaUploadBusy = true;
+    const previous = button?.textContent || "Quitar";
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Quitando…";
+    }
+    try {
+      const res = await fetch(
+        `/api/responses/${encodeURIComponent(item.id || item.folio || "")}/evidencia-rotulacion`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storedAs: file.storedAs || "",
+            url: file.url || "",
+          }),
+        },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) throw new Error(data.error || "No se pudo quitar la evidencia");
+      dropEvidenciaFromItem(item, data.removed || file);
+      lastFingerprint = boardFingerprint(items);
+      renderList();
+      renderDetail();
+      return true;
+    } catch (err) {
+      if (button) {
+        button.disabled = false;
+        button.textContent = previous;
+      }
+      window.alert(err.message || "No se pudo quitar la evidencia");
+      return false;
+    } finally {
+      evidenciaUploadBusy = false;
+    }
+  }
+
+  async function replaceEvidenciaRotulacion(item, oldFile, newFiles, button) {
+    if (!item || !oldFile || !newFiles?.length || evidenciaUploadBusy || !session?.canManageRotulacion) {
+      return;
+    }
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Cambiando…";
+    }
+    const uploaded = await uploadEvidenciaRotulacion(item, newFiles, button);
+    if (!uploaded?.length) return;
+    const removed = await removeEvidenciaRotulacion(item, oldFile, null);
+    if (!removed) {
+      window.alert("La nueva evidencia ya quedó guardada. Quita a mano la anterior si ya no la necesitas.");
+    }
+  }
+
   function bindEvidenciaRotulacion(item) {
     const input = document.getElementById("evidenciaRotulacionInput");
+    const replaceInput = document.getElementById("evidenciaRotulacionReplaceInput");
     const send = document.getElementById("evidenciaRotulacionBtn");
-    if (!input || !send || !session?.canManageRotulacion) return;
-    send.onclick = () => {
-      if (!evidenciaUploadBusy) input.click();
-    };
-    input.onchange = () => {
-      const chosen = [...(input.files || [])];
-      input.value = "";
-      if (!chosen.length) return;
-      uploadEvidenciaRotulacion(item, chosen, send);
-    };
+    if (!session?.canManageRotulacion) return;
+    const files = evidenciaRotulacionOf(item);
+
+    if (input && send) {
+      send.onclick = () => {
+        if (!evidenciaUploadBusy) input.click();
+      };
+      input.onchange = () => {
+        const chosen = [...(input.files || [])];
+        input.value = "";
+        if (!chosen.length) return;
+        uploadEvidenciaRotulacion(item, chosen, send);
+      };
+    }
+
+    if (replaceInput) {
+      replaceInput.onchange = () => {
+        const idx = Number(replaceInput.dataset.replaceIndex);
+        const chosen = [...(replaceInput.files || [])];
+        replaceInput.value = "";
+        replaceInput.dataset.replaceIndex = "";
+        const oldFile = files[idx];
+        if (!chosen.length || !oldFile) return;
+        const changeBtn = detailEl.querySelector(`[data-evidencia-change="${idx}"]`);
+        replaceEvidenciaRotulacion(item, oldFile, chosen.slice(0, 1), changeBtn || send);
+      };
+    }
+
+    detailEl.querySelectorAll("[data-evidencia-remove]").forEach((btn) => {
+      btn.onclick = async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const idx = Number(btn.dataset.evidenciaRemove);
+        const file = files[idx];
+        if (!file || evidenciaUploadBusy) return;
+        const ok = window.confirm("¿Quitar esta evidencia? Podrás subir otra cuando quieras.");
+        if (!ok) return;
+        await removeEvidenciaRotulacion(item, file, btn);
+      };
+    });
+
+    detailEl.querySelectorAll("[data-evidencia-change]").forEach((btn) => {
+      btn.onclick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!replaceInput || evidenciaUploadBusy) return;
+        replaceInput.dataset.replaceIndex = btn.dataset.evidenciaChange || "";
+        replaceInput.click();
+      };
+    });
   }
 
   async function setEstado(id, estado) {
@@ -2029,6 +2355,7 @@
       if (filters) filters.hidden = true;
     }
     renderStatusFilters();
+    bindDateFilters();
     document.getElementById("statusFilters")?.addEventListener("click", (e) => {
       const btn = e.target.closest(".status-filter");
       if (!btn || !(session?.seesAll || session?.canManageRotulacion || session?.zonaFilter)) return;

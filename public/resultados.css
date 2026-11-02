@@ -866,6 +866,46 @@ body.lightbox-open {
   min-width: 0;
 }
 
+.evidence-manage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.evidence-change,
+.evidence-remove {
+  appearance: none;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.evidence-change {
+  border: 1.5px solid rgba(0, 151, 178, 0.4);
+  background: #fff;
+  color: var(--blue);
+}
+
+.evidence-remove {
+  border: 1.5px solid rgba(196, 74, 74, 0.35);
+  background: #fff;
+  color: #b42318;
+}
+
+.evidence-change:hover,
+.evidence-remove:hover {
+  filter: brightness(0.97);
+}
+
+.evidence-change:disabled,
+.evidence-remove:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .download-link,
 .zip-link {
   font-size: 0.78rem;
@@ -1130,6 +1170,52 @@ button.ghost-link {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
+}
+
+.date-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.7rem 1rem;
+  margin: 0.15rem 0 0.35rem;
+}
+
+.date-filter-field {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 750;
+  color: var(--muted, #5b6b7c);
+}
+
+.date-filter-field input[type="date"] {
+  appearance: none;
+  border: 1.5px solid rgba(15, 36, 64, 0.14);
+  background: #fff;
+  color: var(--navy);
+  border-radius: 12px;
+  padding: 0.45rem 0.7rem;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  min-width: 10.5rem;
+}
+
+.date-filter-clear {
+  appearance: none;
+  border: 1.5px solid rgba(196, 74, 74, 0.3);
+  background: #fff;
+  color: #b42318;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.date-filter-clear[hidden] {
+  display: none;
 }
 
 .status-filter {

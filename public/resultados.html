@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./resultados.css?v=20261028f" />
+    <link rel="stylesheet" href="./resultados.css?v=20261102b" />
   </head>
   <body>
     <div class="atmosphere" aria-hidden="true">
@@ -66,6 +66,17 @@
         </button>
       </nav>
       <nav class="status-filters" id="statusFilters" hidden aria-label="Filtrar por estado"></nav>
+      <div class="date-filters" id="dateFilters" aria-label="Filtrar por fecha">
+        <label class="date-filter-field">
+          <span>Desde</span>
+          <input type="date" id="dateFromFilter" />
+        </label>
+        <label class="date-filter-field">
+          <span>Hasta</span>
+          <input type="date" id="dateToFilter" />
+        </label>
+        <button type="button" class="date-filter-clear" id="dateFilterClear" hidden>Quitar fechas</button>
+      </div>
       <div class="board-shell">
         <aside class="request-list" id="requestList" aria-label="Lista de solicitudes"></aside>
         <section class="detail" id="detail" aria-live="polite"></section>
@@ -83,6 +94,6 @@
       <button type="button" class="lightbox-nav next" id="lightboxNext" aria-label="Siguiente">›</button>
     </div>
 
-    <script src="./resultados.js?v=20261028f" defer></script>
+    <script src="./resultados.js?v=20261102b" defer></script>
   </body>
 </html>

@@ -1310,6 +1310,75 @@ function rememberMediaOnSheetCache(id, folio, files) {
   row.media = parseMediaField(row.media).concat(files);
 }
 
+function mediaIdentityKey(file) {
+  if (!file) return "";
+  if (file.storedAs) return `stored:${String(file.storedAs).trim().toLowerCase()}`;
+  const url = String(file.url || "").trim();
+  if (!url) return "";
+  const drive = url.match(/[?&]id=([\w-]+)/) || url.match(/\/d\/([\w-]+)/);
+  if (drive) return `drive:${drive[1]}`;
+  return `url:${url.toLowerCase()}`;
+}
+
+function isEvidenciaRotulacionFile(file) {
+  const kind = String(file?.kind || "")
+    .toLowerCase()
+    .replace(/\s+/g, "");
+  const field = String(file?.field || "").toLowerCase();
+  const group = String(file?.group || "").toLowerCase();
+  return (
+    kind === "evidenciarotulacion" ||
+    field === "evidencia_rotulacion" ||
+    group.includes("evidencia de rotul")
+  );
+}
+
+function isProductoFinalFile(file) {
+  const kind = String(file?.kind || "")
+    .toLowerCase()
+    .replace(/\s+/g, "");
+  const field = String(file?.field || "").toLowerCase();
+  const group = String(file?.group || "").toLowerCase();
+  return (
+    kind === "productofinal" ||
+    field === "producto_final" ||
+    group.includes("producto terminado")
+  );
+}
+
+function canManageProductoFinal(role) {
+  return Boolean(role?.canManage || role?.canManageRotulacion);
+}
+
+function mediaMatchesTarget(file, target = {}) {
+  if (!file) return false;
+  const storedAs = String(target.storedAs || "").trim();
+  const url = String(target.url || "").trim();
+  if (storedAs && String(file.storedAs || "") === storedAs) return true;
+  if (url && String(file.url || "") === url) return true;
+  const targetKey = mediaIdentityKey({ storedAs, url });
+  return Boolean(targetKey && mediaIdentityKey(file) === targetKey);
+}
+
+function forgetMediaOnSheetCache(id, folio, target) {
+  sheetsCacheGen += 1;
+  sheetsListInFlight = null;
+  if (!Array.isArray(sheetsListCache.items)) return;
+  const wantedId = String(id || "").trim();
+  const wantedFolio = String(folio || "").trim();
+  sheetsListCache = {
+    at: Date.now(),
+    error: null,
+    items: sheetsListCache.items.map((item) => {
+      const sameId = wantedId && String(item.id || "").trim() === wantedId;
+      const sameFolio = wantedFolio && String(item.folio || "").trim() === wantedFolio;
+      if (!sameId && !sameFolio) return item;
+      const media = parseMediaField(item.media).filter((file) => !mediaMatchesTarget(file, target));
+      return { ...item, media };
+    }),
+  };
+}
+
 function invalidateSheetsCache({ hard = false } = {}) {
   sheetsCacheGen += 1;
   sheetsListInFlight = null;
@@ -1825,8 +1894,8 @@ app.post("/api/responses/:id/producto-final", requireBoard, (req, res) => {
       if (err) {
         return res.status(400).json({ ok: false, error: uploadErrorMessage(err) });
       }
-      if (!req.boardRole.canManage) {
-        return res.status(403).json({ ok: false, error: "Solo Marketing puede subir el producto terminado" });
+      if (!canManageProductoFinal(req.boardRole)) {
+        return res.status(403).json({ ok: false, error: "No tienes permiso para subir el producto terminado" });
       }
       const files = req.files || [];
       if (!files.length) {
@@ -1950,6 +2019,96 @@ app.post("/api/responses/:id/producto-final", requireBoard, (req, res) => {
       dropTmp();
     }
   });
+});
+
+app.delete("/api/responses/:id/producto-final", requireBoard, async (req, res) => {
+  try {
+    if (!canManageProductoFinal(req.boardRole)) {
+      return res.status(403).json({ ok: false, error: "No tienes permiso para quitar el producto terminado" });
+    }
+    const id = String(req.params.id || "").trim();
+    const storedAs = String(req.body?.storedAs || "").trim();
+    const url = String(req.body?.url || "").trim();
+    if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
+    if (!storedAs && !url) {
+      return res.status(400).json({ ok: false, error: "Falta indicar qué archivo quitar" });
+    }
+
+    const board = await boardItems();
+    const item = (board.items || []).find((it) => it.id === id || it.folio === id);
+    if (!item || !isRotulacionItem(item)) {
+      return res.status(404).json({ ok: false, error: "El producto terminado solo se quita en rotulación" });
+    }
+
+    const target = { storedAs, url };
+    const currentMedia = Array.isArray(item.media) ? item.media : [];
+    const match = currentMedia.find((file) => isProductoFinalFile(file) && mediaMatchesTarget(file, target));
+    if (!match) {
+      return res.status(404).json({ ok: false, error: "No se encontró ese producto terminado" });
+    }
+
+    const entryId = item.id || id;
+    const folio = item.folio || "";
+    const removeTarget = {
+      storedAs: String(match.storedAs || storedAs || "").trim(),
+      url: String(match.url || url || "").trim(),
+    };
+
+    const nextList = readResponses();
+    const localEntry = nextList.find(
+      (entry) => entry.id === entryId || entry.folio === folio || entry.folio === id,
+    );
+    if (localEntry) {
+      localEntry.answers =
+        localEntry.answers && typeof localEntry.answers === "object" ? localEntry.answers : {};
+      const prev = Array.isArray(localEntry.answers.productoFinal) ? localEntry.answers.productoFinal : [];
+      localEntry.answers.productoFinal = prev.filter((file) => !mediaMatchesTarget(file, removeTarget));
+      writeResponses(nextList);
+    }
+
+    const diskName = path.basename(String(removeTarget.storedAs || ""));
+    if (diskName) {
+      const diskPath = path.join(uploadsRoot, entryId, diskName);
+      if (fs.existsSync(diskPath)) {
+        try {
+          fs.unlinkSync(diskPath);
+        } catch (_) {}
+      }
+    }
+
+    forgetMediaOnSheetCache(entryId, folio, removeTarget);
+
+    if (SHEETS_WEBHOOK_URL) {
+      const sheetsResult = await postToSheetsRaw(
+        JSON.stringify({
+          action: "removeMedia",
+          id: entryId,
+          folio,
+          storedAs: removeTarget.storedAs,
+          url: removeTarget.url,
+          kind: "productoFinal",
+        }),
+      );
+      if (!sheetsResult.ok) {
+        invalidateSheetsCache({ hard: true });
+        return res.status(502).json({
+          ok: false,
+          error: sheetsResult.body?.error || "No se pudo quitar el producto en Sheets",
+        });
+      }
+    }
+
+    invalidateSheetsCache();
+    res.json({
+      ok: true,
+      id: entryId,
+      folio,
+      removed: removeTarget,
+    });
+  } catch (err) {
+    console.error("Quitar producto final:", err?.message || err);
+    res.status(500).json({ ok: false, error: "No se pudo quitar el producto terminado" });
+  }
 });
 
 app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
@@ -2356,6 +2515,99 @@ app.post("/api/responses/:id/evidencia-rotulacion", requireBoard, (req, res) => 
       }
     }
   });
+});
+
+app.delete("/api/responses/:id/evidencia-rotulacion", requireBoard, async (req, res) => {
+  try {
+    if (!req.boardRole.canManageRotulacion) {
+      return res.status(403).json({ ok: false, error: "Solo mantenimiento puede quitar la evidencia" });
+    }
+    const id = String(req.params.id || "").trim();
+    const storedAs = String(req.body?.storedAs || "").trim();
+    const url = String(req.body?.url || "").trim();
+    if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
+    if (!storedAs && !url) {
+      return res.status(400).json({ ok: false, error: "Falta indicar qué evidencia quitar" });
+    }
+
+    const board = await boardItems();
+    const item = (board.items || []).find((it) => it.id === id || it.folio === id);
+    if (!item || !isRotulacionItem(item)) {
+      return res.status(404).json({ ok: false, error: "La evidencia solo se quita en rotulación" });
+    }
+
+    const target = { storedAs, url };
+    const currentMedia = Array.isArray(item.media) ? item.media : [];
+    const match = currentMedia.find(
+      (file) => isEvidenciaRotulacionFile(file) && mediaMatchesTarget(file, target),
+    );
+    if (!match) {
+      return res.status(404).json({ ok: false, error: "No se encontró esa evidencia" });
+    }
+
+    const entryId = item.id || id;
+    const folio = item.folio || "";
+    const removeTarget = {
+      storedAs: String(match.storedAs || storedAs || "").trim(),
+      url: String(match.url || url || "").trim(),
+    };
+
+    const nextList = readResponses();
+    const localEntry = nextList.find((entry) => entry.id === entryId || entry.folio === folio || entry.folio === id);
+    if (localEntry) {
+      localEntry.answers =
+        localEntry.answers && typeof localEntry.answers === "object" ? localEntry.answers : {};
+      const prev = Array.isArray(localEntry.answers.evidenciaRotulacion)
+        ? localEntry.answers.evidenciaRotulacion
+        : [];
+      localEntry.answers.evidenciaRotulacion = prev.filter((file) => !mediaMatchesTarget(file, removeTarget));
+      writeResponses(nextList);
+    }
+
+    const diskName = path.basename(String(removeTarget.storedAs || ""));
+    if (diskName) {
+      const diskPath = path.join(uploadsRoot, entryId, diskName);
+      if (fs.existsSync(diskPath)) {
+        try {
+          fs.unlinkSync(diskPath);
+        } catch (_) {}
+      }
+    }
+
+    forgetMediaOnSheetCache(entryId, folio, removeTarget);
+
+    if (SHEETS_WEBHOOK_URL) {
+      const sheetsResult = await postToSheetsRaw(
+        JSON.stringify({
+          action: "removeMedia",
+          id: entryId,
+          folio,
+          storedAs: removeTarget.storedAs,
+          url: removeTarget.url,
+          kind: "evidenciaRotulacion",
+        }),
+      );
+      // removed:0 es válido si ya no estaba en Sheets (solo local).
+      if (!sheetsResult.ok) {
+        invalidateSheetsCache({ hard: true });
+        return res.status(502).json({
+          ok: false,
+          error: sheetsResult.body?.error || "No se pudo quitar la evidencia en Sheets",
+        });
+      }
+    }
+
+    invalidateSheetsCache();
+    res.json({
+      ok: true,
+      id: entryId,
+      folio,
+      removed: removeTarget,
+    });
+  } catch (err) {
+    console.error("Quitar evidencia rotulación:", err?.message || err);
+    res.status(500).json({ ok: false, error: "No se pudo quitar la evidencia de rotulación" });
+  }
 });
 
 app.delete("/api/responses/:id", requireBoard, async (req, res) => {
