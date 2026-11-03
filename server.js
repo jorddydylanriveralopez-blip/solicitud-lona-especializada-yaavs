@@ -1469,8 +1469,11 @@ async function persistRemovedMedia({ id, folio, removedFile, remainingMedia }) {
     }),
   );
 
+  const unknownSetMedia = /desconocida|unknown/i.test(String(sheetsResult.body?.error || ""));
   let applied =
-    sheetsResult.ok && sheetsResult.body?.ok !== false && Number(sheetsResult.body?.updated || 0) >= 1;
+    sheetsResult.ok &&
+    sheetsResult.body?.ok !== false &&
+    Number(sheetsResult.body?.updated || 0) >= 1;
 
   // Compatibilidad / reintento: borrar por identidad si setMedia no aplicó.
   if (!applied) {
@@ -1484,9 +1487,27 @@ async function persistRemovedMedia({ id, folio, removedFile, remainingMedia }) {
         kind: removedFile?.kind || "",
       }),
     );
+    const unknownRemove = /desconocida|unknown/i.test(String(removedResult.body?.error || ""));
     if (removedResult.ok && Number(removedResult.body?.removed || 0) > 0) {
       sheetsResult = removedResult;
       applied = true;
+    } else if (
+      // setMedia/removeMedia existen pero ya no hay fila/archivo: no bloquear el borrado local
+      sheetsResult.ok &&
+      !unknownSetMedia &&
+      removedResult.ok &&
+      !unknownRemove &&
+      Number(sheetsResult.body?.updated || 0) === 0 &&
+      Number(removedResult.body?.removed || 0) === 0
+    ) {
+      applied = true;
+      sheetsResult = { ok: true, body: { ok: true, media: payloadMedia } };
+    } else if (unknownSetMedia && unknownRemove) {
+      invalidateSheetsCache({ hard: true });
+      return {
+        ok: false,
+        error: "Apps Script no tiene aún setMedia/removeMedia. Hay que redesplegar la implementación web.",
+      };
     }
   }
 

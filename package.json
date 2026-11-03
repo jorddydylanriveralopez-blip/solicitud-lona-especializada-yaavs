@@ -8,7 +8,7 @@
     "start": "node server.js",
     "dev": "node server.js",
     "build": "node -e \"console.log('No build step')\"",
-    "deploy:gas": "npx @google/clasp push --force && npx @google/clasp deploy --description \"Deploy $(date '+%Y-%m-%d %H:%M')\"",
+    "deploy:gas": "npx @google/clasp push --force && npx @google/clasp deploy --deploymentId \"${GAS_DEPLOYMENT_ID:-AKfycbyXQ_I-K_jFaUjyICpqgns9FH6QUqm3SMNjZr9YCxbLHa83aQAW-8zrcOIZkZ_Gmu6X-Q}\" --description \"Deploy $(date '+%Y-%m-%d %H:%M')\"",
     "deploy:all": "bash scripts/deploy-all.sh"
   },
   "engines": {

@@ -9,7 +9,10 @@ URL: https://solicitud-lona-especializada-yaavs.onrender.com
 ## Apps Script (manual con clasp)
 
 Proyecto: **Lonas y toldos**  
-Implementación web: **Untitled** (la URL en `SHEETS_WEBHOOK_URL` de Render)
+Implementación web activa (URL en `SHEETS_WEBHOOK_URL`):
+`AKfycbyXQ_I-K_jFaUjyICpqgns9FH6QUqm3SMNjZr9YCxbLHa83aQAW-8zrcOIZkZ_Gmu6X-Q`
+
+`npm run deploy:gas` ya actualiza esa misma implementación (no crea otra URL).
 
 ### Primera vez
 
