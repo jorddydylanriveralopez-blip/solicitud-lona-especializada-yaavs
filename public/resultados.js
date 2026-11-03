@@ -21,6 +21,8 @@
   let productoUploadBusy = false;
   let evidenciaUploadBusy = false;
   let statusFilter = "all";
+  let boardBucket = "activas"; // activas | terminadas
+  let quickFilter = "all"; // all | autorizadas | sin-autorizar | faltantes
   let dateFromFilter = "";
   let dateToFilter = "";
   let lastFingerprint = null;
@@ -181,16 +183,44 @@
     });
   }
 
-  function filteredItems() {
+  function isFinished(item) {
+    const estado = estadoOf(item);
+    return estado === "Terminado" || estado === "Rotulación terminada";
+  }
+
+  function isAuthorized(item) {
+    return /^autorizada\b/i.test(String(item?.autorizada || "").trim());
+  }
+
+  function hasFaltante(item) {
+    return Boolean(
+      String(item?.faltanteCliente || "").trim() || String(item?.faltanteHistorial || "").trim(),
+    );
+  }
+
+  function baseFilteredItems() {
     const byMaterial =
       materialFilter === "all" ? items : items.filter((it) => materialKind(it) === materialFilter);
+    return byMaterial.filter((it) => itemMatchesDateFilter(it));
+  }
+
+  function itemMatchesQuickFilter(item) {
+    if (quickFilter === "autorizadas") return isAuthorized(item);
+    if (quickFilter === "sin-autorizar") return !isAuthorized(item);
+    if (quickFilter === "faltantes") return hasFaltante(item);
+    return true;
+  }
+
+  function filteredItems() {
+    const base = baseFilteredItems().filter((it) => itemMatchesQuickFilter(it));
+    const byBucket =
+      boardBucket === "terminadas" ? base.filter((it) => isFinished(it)) : base.filter((it) => !isFinished(it));
     const byStatus =
-      statusFilter === "all"
-        ? byMaterial
-        : byMaterial.filter((it) => estadoOf(it) === statusFilter);
-    const byDate = byStatus.filter((it) => itemMatchesDateFilter(it));
-    if (!session?.seesAll) return byDate;
-    return [...byDate].sort((a, b) => {
+      statusFilter === "all" || boardBucket === "terminadas"
+        ? byBucket
+        : byBucket.filter((it) => estadoOf(it) === statusFilter);
+    if (!session?.seesAll) return byStatus;
+    return [...byStatus].sort((a, b) => {
       const rankA = ESTADO_RANK[estadoOf(a)] || 0;
       const rankB = ESTADO_RANK[estadoOf(b)] || 0;
       if (rankA !== rankB) return rankA - rankB;
@@ -202,10 +232,30 @@
     return Boolean(session?.canManage || session?.canManageRotulacion);
   }
 
-  function statusCounts() {
-    const base = (materialFilter === "all" ? items : items.filter((it) => materialKind(it) === materialFilter)).filter(
-      (it) => itemMatchesDateFilter(it),
+  function bucketCounts() {
+    const base = baseFilteredItems().filter((it) => itemMatchesQuickFilter(it));
+    return {
+      activas: base.filter((it) => !isFinished(it)).length,
+      terminadas: base.filter((it) => isFinished(it)).length,
+    };
+  }
+
+  function quickFilterCounts() {
+    const base = baseFilteredItems().filter((it) =>
+      boardBucket === "terminadas" ? isFinished(it) : !isFinished(it),
     );
+    return {
+      all: base.length,
+      autorizadas: base.filter((it) => isAuthorized(it)).length,
+      "sin-autorizar": base.filter((it) => !isAuthorized(it)).length,
+      faltantes: base.filter((it) => hasFaltante(it)).length,
+    };
+  }
+
+  function statusCounts() {
+    const base = baseFilteredItems()
+      .filter((it) => itemMatchesQuickFilter(it))
+      .filter((it) => (boardBucket === "terminadas" ? isFinished(it) : !isFinished(it)));
     const counts = { all: base.length };
     for (const estado of activeEstados()) counts[estado.key] = 0;
     for (const item of base) {
@@ -213,6 +263,54 @@
       if (counts[estado] != null) counts[estado] += 1;
     }
     return counts;
+  }
+
+  function activeEstadosForFilters() {
+    const estados = activeEstados();
+    if (boardBucket === "terminadas") {
+      return estados.filter((estado) => estado.key === "Terminado" || estado.key === "Rotulación terminada");
+    }
+    return estados.filter((estado) => estado.key !== "Terminado" && estado.key !== "Rotulación terminada");
+  }
+
+  function renderBoardBuckets() {
+    const nav = document.getElementById("boardBuckets");
+    if (!nav) return;
+    const counts = bucketCounts();
+    nav.innerHTML = `
+      <button type="button" class="board-bucket${boardBucket === "activas" ? " is-active" : ""}" data-bucket="activas">
+        Activas <span class="filter-count">${counts.activas}</span>
+      </button>
+      <button type="button" class="board-bucket${boardBucket === "terminadas" ? " is-active" : ""}" data-bucket="terminadas">
+        Terminadas <span class="filter-count">${counts.terminadas}</span>
+      </button>`;
+  }
+
+  function renderQuickFilters() {
+    const nav = document.getElementById("quickFilters");
+    if (!nav) return;
+    const counts = quickFilterCounts();
+    const options = [
+      { key: "all", label: "Todas" },
+      { key: "autorizadas", label: "Autorizadas" },
+      { key: "sin-autorizar", label: "Sin autorizar" },
+      { key: "faltantes", label: "Faltantes" },
+    ];
+    nav.innerHTML = options
+      .map(
+        (opt) => `
+      <button type="button" class="quick-filter${quickFilter === opt.key ? " is-active" : ""}" data-quick="${opt.key}">
+        ${escapeHtml(opt.label)} <span class="filter-count">${counts[opt.key] ?? 0}</span>
+      </button>`,
+      )
+      .join("");
+  }
+
+  function refreshBoardFilters() {
+    renderStatusFilters();
+    renderStats();
+    renderList();
+    renderDetail();
   }
 
   function bindDateFilters() {
@@ -233,10 +331,7 @@
       }
       if (clearBtn) clearBtn.hidden = !(dateFromFilter || dateToFilter);
       index = 0;
-      renderStatusFilters();
-      renderStats();
-      renderList();
-      renderDetail();
+      refreshBoardFilters();
     };
 
     fromInput.onchange = apply;
@@ -255,9 +350,11 @@
     const nav = document.getElementById("statusFilters");
     if (!nav) return;
     const show = Boolean(session?.seesAll || session?.canManageRotulacion || session?.zonaFilter);
-    nav.hidden = !show;
-    if (!show) return;
-    const estados = activeEstados();
+    nav.hidden = !show || boardBucket === "terminadas";
+    renderBoardBuckets();
+    renderQuickFilters();
+    if (!show || boardBucket === "terminadas") return;
+    const estados = activeEstadosForFilters();
     if (!estados.some((estado) => estado.key === statusFilter)) statusFilter = "all";
     const counts = statusCounts();
     nav.innerHTML = `
@@ -960,11 +1057,14 @@
       return;
     }
     if (!visible.length) {
-      const dateHint =
-        dateFromFilter || dateToFilter
-          ? " en ese rango de fechas"
-          : "";
-      listEl.innerHTML = `<p class="list-empty">No hay solicitudes de ${escapeHtml(filterLabel())}${dateHint}</p>`;
+      const hints = [];
+      if (boardBucket === "terminadas") hints.push("terminadas");
+      if (quickFilter === "autorizadas") hints.push("autorizadas");
+      if (quickFilter === "sin-autorizar") hints.push("sin autorizar");
+      if (quickFilter === "faltantes") hints.push("con faltantes");
+      if (dateFromFilter || dateToFilter) hints.push("en ese rango de fechas");
+      const hintText = hints.length ? ` (${hints.join(", ")})` : "";
+      listEl.innerHTML = `<p class="list-empty">No hay solicitudes de ${escapeHtml(filterLabel())}${escapeHtml(hintText)}</p>`;
       return;
     }
     listEl.innerHTML = visible
@@ -998,6 +1098,11 @@
                 </div>
                 <p>${escapeHtml(item.puntoVenta || item.yaavserNombre || "—")}</p>
                 <small>${escapeHtml(formatDate(item.receivedAt))}${mediaCount ? ` · ${mediaCount} archivo${mediaCount === 1 ? "" : "s"}` : ""}</small>
+                ${
+                  isAuthorized(item)
+                    ? `<p class="card-auth">Autorizada</p>`
+                    : `<p class="card-auth is-pending">Sin autorizar</p>`
+                }
                 ${
                   item.faltanteCliente && (session?.seesAll || materialKind(item) === "rotulacion")
                     ? `<p class="card-note">${session?.seesAll ? "" : "Marketing: "}${escapeHtml(item.faltanteCliente)}</p>`
@@ -1041,10 +1146,6 @@
     bindSemaphore(listEl);
     bindProductoCards(listEl);
     bindAutorizacion(listEl);
-  }
-
-  function isAuthorized(item) {
-    return /^autorizada\b/i.test(String(item?.autorizada || "").trim());
   }
 
   function autorizacionCardHtml(item) {
@@ -2332,10 +2433,28 @@
     statusFilter = "all";
     index = 0;
     renderMaterialFilters();
-    renderStatusFilters();
-    renderStats();
-    renderList();
-    renderDetail();
+    refreshBoardFilters();
+  });
+
+  document.getElementById("boardBuckets")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".board-bucket");
+    if (!btn) return;
+    const next = btn.dataset.bucket || "activas";
+    if (next === boardBucket) return;
+    boardBucket = next;
+    statusFilter = "all";
+    index = 0;
+    refreshBoardFilters();
+  });
+
+  document.getElementById("quickFilters")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".quick-filter");
+    if (!btn) return;
+    const next = btn.dataset.quick || "all";
+    if (next === quickFilter) return;
+    quickFilter = next;
+    index = 0;
+    refreshBoardFilters();
   });
 
   async function loadSession() {
@@ -2363,10 +2482,7 @@
       if (next === statusFilter) return;
       statusFilter = next;
       index = 0;
-      renderStatusFilters();
-      renderStats();
-      renderList();
-      renderDetail();
+      refreshBoardFilters();
     });
     document.getElementById("logoutBtn")?.addEventListener("click", async () => {
       await fetch("/api/logout", { method: "POST" }).catch(() => {});

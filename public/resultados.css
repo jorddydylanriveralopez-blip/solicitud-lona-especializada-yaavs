@@ -1166,10 +1166,61 @@ button.ghost-link {
   display: none;
 }
 
+.board-buckets,
+.quick-filters,
 .status-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
+}
+
+.board-buckets {
+  margin: 0.1rem 0 0.15rem;
+}
+
+.board-bucket,
+.quick-filter {
+  appearance: none;
+  border: 1.5px solid rgba(15, 36, 64, 0.12);
+  background: #fff;
+  color: var(--navy);
+  border-radius: 999px;
+  padding: 0.55rem 0.95rem;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 780;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.board-bucket.is-active {
+  background: #0b1f38;
+  color: #fff;
+  border-color: transparent;
+}
+
+.board-bucket[data-bucket="terminadas"].is-active {
+  background: #1f9d55;
+}
+
+.quick-filter.is-active {
+  background: #12324a;
+  color: #fff;
+  border-color: transparent;
+}
+
+.quick-filter[data-quick="autorizadas"].is-active {
+  background: #0f766e;
+}
+
+.quick-filter[data-quick="faltantes"].is-active {
+  background: #b45309;
+}
+
+.quick-filter[data-quick="sin-autorizar"].is-active {
+  background: #7c3aed;
 }
 
 .date-filters {
@@ -1302,6 +1353,17 @@ button.ghost-link {
 .semaphore-dot[data-tone="terminado"],
 .estado-pill[data-tone="terminado"] .status-light {
   background: #1f9d55;
+}
+
+.card-auth {
+  margin: 6px 0 0;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #0f766e;
+}
+
+.card-auth.is-pending {
+  color: #7c3aed;
 }
 
 .card-note {
