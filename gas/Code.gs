@@ -194,6 +194,15 @@ function doPost(e) {
         media: removedNow.media || [],
       });
     }
+    if (data.action === "setMedia") {
+      var setNow = setMediaOnRow_(data.id, data.folio, data.media || []);
+      return jsonOut_({
+        ok: setNow.updated > 0,
+        updated: setNow.updated,
+        mediaCount: (setNow.media || []).length,
+        media: setNow.media || [],
+      });
+    }
     if (data.action) {
       return jsonOut_({ ok: false, error: "Acción desconocida: " + data.action });
     }
@@ -497,11 +506,15 @@ function removeMediaFromRow_(id, folio, target) {
       kept.push(file);
       continue;
     }
-    if (kindFilter === "evidenciaRotulacion" && !isEvidenciaRotulacionMedia_(file)) {
-      kept.push(file);
-      continue;
-    }
-    if (kindFilter === "productoFinal" && !isProductoFinalMedia_(file)) {
+    // Si hay filtro de tipo y NO coincide, solo conservar cuando tampoco hay identidad clara.
+    // Con identidad (storedAs/url) siempre se elimina de forma permanente.
+    if (
+      kindFilter &&
+      !storedAs &&
+      !url &&
+      ((kindFilter === "evidenciaRotulacion" && !isEvidenciaRotulacionMedia_(file)) ||
+        (kindFilter === "productoFinal" && !isProductoFinalMedia_(file)))
+    ) {
       kept.push(file);
       continue;
     }
@@ -514,6 +527,62 @@ function removeMediaFromRow_(id, folio, target) {
     trashDriveUrl_(removed[r] && removed[r].url);
   }
   return { removed: removed.length, media: kept };
+}
+
+function sanitizeMediaForSheet_(media) {
+  var list = Object.prototype.toString.call(media) === "[object Array]" ? media : [];
+  var out = [];
+  for (var i = 0; i < list.length; i++) {
+    var file = list[i];
+    if (!file || !file.url) continue;
+    var url = String(file.url || "");
+    if (url.indexOf("/uploads/") === 0) continue;
+    out.push({
+      name: file.name || "",
+      mime: file.mime || "",
+      url: url,
+      storedAs: file.storedAs || "",
+      field: file.field || "",
+      kind: file.kind || "",
+      group: file.group || "",
+      label: file.label || "",
+    });
+  }
+  return out;
+}
+
+function setMediaOnRow_(id, folio, media) {
+  var wantedId = String(id || "").trim();
+  var wantedFolio = String(folio || "").trim();
+  if (!wantedId && !wantedFolio) return { updated: 0, media: [] };
+
+  var sheet = ensureSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { updated: 0, media: [] };
+
+  var mediaCol = KEYS.indexOf("media");
+  var materialCol = KEYS.indexOf("material");
+  if (mediaCol < 0) return { updated: 0, media: [] };
+
+  var values = sheet.getRange(2, 1, lastRow, HEADERS.length).getValues();
+  var matches = matchRows_(values, wantedId, wantedFolio).filter(function (r) {
+    return materialCol < 0 || String(values[r][materialCol] || "").trim() !== "";
+  });
+  if (!matches.length) return { updated: 0, media: [] };
+
+  var next = sanitizeMediaForSheet_(media);
+  var existing = parseMedia_(values[matches[0]][mediaCol]);
+  var nextKeys = {};
+  for (var n = 0; n < next.length; n++) nextKeys[mediaKey_(next[n])] = true;
+  for (var e = 0; e < existing.length; e++) {
+    var key = mediaKey_(existing[e]);
+    if (key && !nextKeys[key]) trashDriveUrl_(existing[e] && existing[e].url);
+  }
+
+  for (var i = 0; i < matches.length; i++) {
+    sheet.getRange(matches[i] + 2, mediaCol + 1).setValue(next.length ? JSON.stringify(next) : "");
+  }
+  return { updated: matches.length, media: next };
 }
 
 /** Filas por id; el folio solo se usa si no hay id que coincida (los folios pueden repetirse). */

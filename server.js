@@ -1379,6 +1379,138 @@ function forgetMediaOnSheetCache(id, folio, target) {
   };
 }
 
+/** Evita que un media borrado "resucite" desde Sheets mientras se sincroniza. */
+const removedMediaTombstones = new Map();
+const REMOVED_MEDIA_TTL_MS = 30 * 60 * 1000;
+
+function tombstoneScopeKey(id, folio) {
+  const wantedId = String(id || "").trim();
+  const wantedFolio = String(folio || "").trim();
+  if (wantedId) return `id:${wantedId}`;
+  if (wantedFolio) return `folio:${wantedFolio}`;
+  return "";
+}
+
+function rememberRemovedMedia(id, folio, file) {
+  const scope = tombstoneScopeKey(id, folio);
+  const key = mediaIdentityKey(file);
+  if (!scope || !key) return;
+  removedMediaTombstones.set(`${scope}|${key}`, Date.now() + REMOVED_MEDIA_TTL_MS);
+}
+
+function pruneRemovedMediaTombstones() {
+  const now = Date.now();
+  for (const [key, until] of removedMediaTombstones) {
+    if (until <= now) removedMediaTombstones.delete(key);
+  }
+}
+
+function isRemovedMediaTombstoned(id, folio, file) {
+  pruneRemovedMediaTombstones();
+  const key = mediaIdentityKey(file);
+  if (!key) return false;
+  const wantedId = String(id || "").trim();
+  const wantedFolio = String(folio || "").trim();
+  if (wantedId && removedMediaTombstones.has(`id:${wantedId}|${key}`)) return true;
+  if (wantedFolio && removedMediaTombstones.has(`folio:${wantedFolio}|${key}`)) return true;
+  return false;
+}
+
+function replaceMediaOnSheetCache(id, folio, media) {
+  sheetsCacheGen += 1;
+  sheetsListInFlight = null;
+  if (!Array.isArray(sheetsListCache.items)) return;
+  const wantedId = String(id || "").trim();
+  const wantedFolio = String(folio || "").trim();
+  sheetsListCache = {
+    at: Date.now(),
+    error: null,
+    items: sheetsListCache.items.map((item) => {
+      const sameId = wantedId && String(item.id || "").trim() === wantedId;
+      const sameFolio = wantedFolio && String(item.folio || "").trim() === wantedFolio;
+      if (!sameId && !sameFolio) return item;
+      return { ...item, media: Array.isArray(media) ? media : [] };
+    }),
+  };
+}
+
+function mediaForSheetsPersist(media) {
+  return (Array.isArray(media) ? media : [])
+    .filter((file) => file && file.url && !String(file.url).startsWith("/uploads/"))
+    .map((file) => ({
+      name: file.name || "",
+      mime: file.mime || "",
+      url: file.url,
+      storedAs: file.storedAs || "",
+      field: file.field || "",
+      kind: file.kind || "",
+      group: file.group || "",
+      label: file.label || "",
+    }));
+}
+
+async function persistRemovedMedia({ id, folio, removedFile, remainingMedia }) {
+  forgetMediaOnSheetCache(id, folio, removedFile);
+  replaceMediaOnSheetCache(id, folio, remainingMedia);
+
+  if (!SHEETS_WEBHOOK_URL) {
+    rememberRemovedMedia(id, folio, removedFile);
+    invalidateSheetsCache({ hard: true });
+    return { ok: true, skipped: true };
+  }
+
+  const payloadMedia = mediaForSheetsPersist(remainingMedia);
+  let sheetsResult = await postToSheetsRaw(
+    JSON.stringify({
+      action: "setMedia",
+      id,
+      folio,
+      media: payloadMedia,
+    }),
+  );
+
+  let applied =
+    sheetsResult.ok && sheetsResult.body?.ok !== false && Number(sheetsResult.body?.updated || 0) >= 1;
+
+  // Compatibilidad / reintento: borrar por identidad si setMedia no aplicó.
+  if (!applied) {
+    const removedResult = await postToSheetsRaw(
+      JSON.stringify({
+        action: "removeMedia",
+        id,
+        folio,
+        storedAs: removedFile?.storedAs || "",
+        url: removedFile?.url || "",
+        kind: removedFile?.kind || "",
+      }),
+    );
+    if (removedResult.ok && Number(removedResult.body?.removed || 0) > 0) {
+      sheetsResult = removedResult;
+      applied = true;
+    }
+  }
+
+  if (!applied) {
+    invalidateSheetsCache({ hard: true });
+    return {
+      ok: false,
+      error:
+        sheetsResult.body?.error ||
+        sheetsResult.error ||
+        "No se pudo borrar la imagen en Sheets",
+    };
+  }
+
+  rememberRemovedMedia(id, folio, removedFile);
+  replaceMediaOnSheetCache(
+    id,
+    folio,
+    Array.isArray(sheetsResult.body?.media) ? sheetsResult.body.media : payloadMedia,
+  );
+  invalidateSheetsCache({ hard: true });
+  return { ok: true, media: sheetsResult.body?.media || payloadMedia };
+}
+
 function invalidateSheetsCache({ hard = false } = {}) {
   sheetsCacheGen += 1;
   sheetsListInFlight = null;
@@ -1449,17 +1581,14 @@ async function loadSheetsItems() {
   }
 }
 
-function mergeMediaLists(localMedia, sheetMedia) {
+function mergeMediaLists(localMedia, sheetMedia, { id = "", folio = "" } = {}) {
   const out = [];
   const indexByKey = new Map();
-  const keyOf = (f) => {
-    if (f?.storedAs) return `stored:${String(f.storedAs).trim().toLowerCase()}`;
-    if (f?.url) return `url:${String(f.url).trim().toLowerCase()}`;
-    return "";
-  };
+  const keyOf = (f) => mediaIdentityKey(f);
 
   const upsert = (file) => {
     if (!file || !file.url) return;
+    if (isRemovedMediaTombstoned(id, folio, file)) return;
     const key = keyOf(file);
     if (!key) {
       out.push(file);
@@ -1489,6 +1618,7 @@ function mergeMediaLists(localMedia, sheetMedia) {
   const nameGroup = (f) => `${String(f?.name || "").toLowerCase()}|${String(f?.group || "").toLowerCase()}`;
   const replaced = new Set();
   for (const f of sheetMedia || []) {
+    if (isRemovedMediaTombstoned(id, folio, f)) continue;
     if (!f?.storedAs && String(f?.url || "").includes("drive.google")) {
       const idx = out.findIndex(
         (prev, i) =>
@@ -1517,14 +1647,22 @@ function mergeBoardItems(localItems, sheetsItems) {
     return `row:${item?.receivedAt || ""}|${item?.claveYaavser || ""}|${item?.material || ""}`;
   };
   for (const item of sheetsItems || []) {
-    map.set(keyOf(item), enrichSheetItem(item));
+    const enriched = enrichSheetItem(item);
+    const media = mergeMediaLists([], Array.isArray(enriched.media) ? enriched.media : [], {
+      id: enriched.id || "",
+      folio: enriched.folio || "",
+    });
+    map.set(keyOf(item), { ...enriched, media });
   }
   for (const item of localItems || []) {
     const k = keyOf(item);
     const prev = map.get(k) || {};
     const localMedia = Array.isArray(item.media) ? item.media : [];
     const sheetMedia = Array.isArray(prev.media) ? prev.media : [];
-    const media = mergeMediaLists(localMedia, sheetMedia);
+    const media = mergeMediaLists(localMedia, sheetMedia, {
+      id: item.id || prev.id || "",
+      folio: item.folio || prev.folio || "",
+    });
     map.set(k, {
       ...prev,
       ...item,
@@ -2052,7 +2190,11 @@ app.delete("/api/responses/:id/producto-final", requireBoard, async (req, res) =
     const removeTarget = {
       storedAs: String(match.storedAs || storedAs || "").trim(),
       url: String(match.url || url || "").trim(),
+      kind: match.kind || "productoFinal",
+      name: match.name || "",
+      mime: match.mime || "",
     };
+    const remainingMedia = currentMedia.filter((file) => !mediaMatchesTarget(file, removeTarget));
 
     const nextList = readResponses();
     const localEntry = nextList.find(
@@ -2076,29 +2218,19 @@ app.delete("/api/responses/:id/producto-final", requireBoard, async (req, res) =
       }
     }
 
-    forgetMediaOnSheetCache(entryId, folio, removeTarget);
-
-    if (SHEETS_WEBHOOK_URL) {
-      const sheetsResult = await postToSheetsRaw(
-        JSON.stringify({
-          action: "removeMedia",
-          id: entryId,
-          folio,
-          storedAs: removeTarget.storedAs,
-          url: removeTarget.url,
-          kind: "productoFinal",
-        }),
-      );
-      if (!sheetsResult.ok) {
-        invalidateSheetsCache({ hard: true });
-        return res.status(502).json({
-          ok: false,
-          error: sheetsResult.body?.error || "No se pudo quitar el producto en Sheets",
-        });
-      }
+    const persisted = await persistRemovedMedia({
+      id: entryId,
+      folio,
+      removedFile: removeTarget,
+      remainingMedia,
+    });
+    if (!persisted.ok) {
+      return res.status(502).json({
+        ok: false,
+        error: persisted.error || "No se pudo borrar la imagen de forma permanente",
+      });
     }
 
-    invalidateSheetsCache();
     res.json({
       ok: true,
       id: entryId,
@@ -2550,7 +2682,11 @@ app.delete("/api/responses/:id/evidencia-rotulacion", requireBoard, async (req, 
     const removeTarget = {
       storedAs: String(match.storedAs || storedAs || "").trim(),
       url: String(match.url || url || "").trim(),
+      kind: match.kind || "evidenciaRotulacion",
+      name: match.name || "",
+      mime: match.mime || "",
     };
+    const remainingMedia = currentMedia.filter((file) => !mediaMatchesTarget(file, removeTarget));
 
     const nextList = readResponses();
     const localEntry = nextList.find((entry) => entry.id === entryId || entry.folio === folio || entry.folio === id);
@@ -2574,30 +2710,19 @@ app.delete("/api/responses/:id/evidencia-rotulacion", requireBoard, async (req, 
       }
     }
 
-    forgetMediaOnSheetCache(entryId, folio, removeTarget);
-
-    if (SHEETS_WEBHOOK_URL) {
-      const sheetsResult = await postToSheetsRaw(
-        JSON.stringify({
-          action: "removeMedia",
-          id: entryId,
-          folio,
-          storedAs: removeTarget.storedAs,
-          url: removeTarget.url,
-          kind: "evidenciaRotulacion",
-        }),
-      );
-      // removed:0 es válido si ya no estaba en Sheets (solo local).
-      if (!sheetsResult.ok) {
-        invalidateSheetsCache({ hard: true });
-        return res.status(502).json({
-          ok: false,
-          error: sheetsResult.body?.error || "No se pudo quitar la evidencia en Sheets",
-        });
-      }
+    const persisted = await persistRemovedMedia({
+      id: entryId,
+      folio,
+      removedFile: removeTarget,
+      remainingMedia,
+    });
+    if (!persisted.ok) {
+      return res.status(502).json({
+        ok: false,
+        error: persisted.error || "No se pudo borrar la imagen de forma permanente",
+      });
     }
 
-    invalidateSheetsCache();
     res.json({
       ok: true,
       id: entryId,
