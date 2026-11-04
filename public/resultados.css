@@ -1004,13 +1004,8 @@ body.lightbox-open {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .material-filters {
-    gap: 0.45rem;
-  }
-
-  .material-filter {
-    padding: 0.48rem 0.75rem;
-    font-size: 0.82rem;
+  .filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
