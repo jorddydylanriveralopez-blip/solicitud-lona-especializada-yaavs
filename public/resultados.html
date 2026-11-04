@@ -12,9 +12,10 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./resultados.css?v=20261104a" />
+    <link rel="stylesheet" href="./resultados.css?v=20261104b" />
   </head>
-  <body>
+  <!-- Hecho por Jordy Dylan Rivera Lopez -->
+  <body data-maker="Jordy Dylan Rivera Lopez">
     <div class="atmosphere" aria-hidden="true">
       <div class="scene-photo"></div>
       <div class="scene-overlay"></div>
@@ -49,17 +50,30 @@
     <main class="layout">
       <section class="stats" id="stats" aria-label="Resumen"></section>
       <div class="board-search" id="boardSearch">
-        <label class="board-search-field" for="searchQuery">
-          <span>Buscar</span>
-          <input
-            type="search"
-            id="searchQuery"
-            placeholder="Folio, punto de venta, yaavser, clave…"
-            autocomplete="off"
-            spellcheck="false"
-            enterkeyhint="search"
-          />
-        </label>
+        <div class="board-search-wrap">
+          <label class="board-search-field" for="searchQuery">
+            <span>Buscar</span>
+            <input
+              type="search"
+              id="searchQuery"
+              placeholder="Folio, punto de venta, yaavser, clave…"
+              autocomplete="off"
+              spellcheck="false"
+              enterkeyhint="search"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="searchSuggestions"
+              aria-expanded="false"
+            />
+          </label>
+          <ul
+            class="search-suggestions"
+            id="searchSuggestions"
+            role="listbox"
+            aria-label="Coincidencias"
+            hidden
+          ></ul>
+        </div>
         <button type="button" class="board-search-clear" id="searchClear" hidden>Limpiar</button>
       </div>
       <nav class="material-filters" id="materialFilters" aria-label="Filtrar por material">
@@ -97,6 +111,7 @@
         <aside class="request-list" id="requestList" aria-label="Lista de solicitudes"></aside>
         <section class="detail" id="detail" aria-live="polite"></section>
       </div>
+      <p class="maker-mark" aria-hidden="true" title="">Hecho por Jordy Dylan Rivera Lopez</p>
     </main>
 
     <div class="lightbox" id="lightbox" hidden>
@@ -110,6 +125,6 @@
       <button type="button" class="lightbox-nav next" id="lightboxNext" aria-label="Siguiente">›</button>
     </div>
 
-    <script src="./resultados.js?v=20261104a" defer></script>
+    <script src="./resultados.js?v=20261104b" defer></script>
   </body>
 </html>

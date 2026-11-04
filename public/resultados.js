@@ -30,6 +30,8 @@
   let refreshInFlight = false;
   let session = null;
   let searchTimer = null;
+  let suggestionItems = [];
+  let suggestionIndex = -1;
 
   const ESTADOS = [
     { key: "En diseño", tone: "diseno" },
@@ -221,6 +223,43 @@
     return Boolean(normalizeSearch(searchQuery));
   }
 
+  function searchCandidateItems() {
+    return session?.seesAll ? items : items.filter((it) => materialKind(it) === "rotulacion");
+  }
+
+  function scoreSearchItem(item, q) {
+    if (!q) return 0;
+    const folio = normalizeSearch(item?.folio);
+    const pv = normalizeSearch(item?.puntoVenta);
+    const yaavser = normalizeSearch(item?.yaavserNombre);
+    const clave = normalizeSearch(item?.claveYaavser);
+    const ejecutivo = normalizeSearch(item?.ejecutivoNombre);
+    const gerente = normalizeSearch(item?.gerenteTerritorial);
+    if (folio === q) return 1000;
+    if (folio.startsWith(q)) return 900;
+    if (folio.includes(q)) return 800;
+    if (pv.startsWith(q) || yaavser.startsWith(q)) return 700;
+    if (clave.startsWith(q)) return 650;
+    if (pv.includes(q) || yaavser.includes(q) || clave.includes(q)) return 500;
+    if (ejecutivo.includes(q) || gerente.includes(q)) return 300;
+    if (itemSearchBlob(item).includes(q)) return 100;
+    return 0;
+  }
+
+  function rankedSearchMatches(limit = 8) {
+    const q = normalizeSearch(searchQuery);
+    if (!q) return [];
+    return searchCandidateItems()
+      .map((item) => ({ item, score: scoreSearchItem(item, q) }))
+      .filter((row) => row.score > 0)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return new Date(b.item.receivedAt || 0).getTime() - new Date(a.item.receivedAt || 0).getTime();
+      })
+      .slice(0, limit)
+      .map((row) => row.item);
+  }
+
   function isFinished(item) {
     const estado = estadoOf(item);
     return estado === "Terminado" || estado === "Rotulación terminada";
@@ -397,35 +436,154 @@
     }
   }
 
+  function hideSearchSuggestions() {
+    const box = document.getElementById("searchSuggestions");
+    const input = document.getElementById("searchQuery");
+    suggestionItems = [];
+    suggestionIndex = -1;
+    if (box) {
+      box.hidden = true;
+      box.innerHTML = "";
+    }
+    if (input) input.setAttribute("aria-expanded", "false");
+  }
+
+  function renderSearchSuggestions() {
+    const box = document.getElementById("searchSuggestions");
+    const input = document.getElementById("searchQuery");
+    if (!box || !input) return;
+    const q = normalizeSearch(searchQuery);
+    if (!q) {
+      hideSearchSuggestions();
+      return;
+    }
+    suggestionItems = rankedSearchMatches(8);
+    if (!suggestionItems.length) {
+      suggestionIndex = -1;
+      box.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+      box.innerHTML = `<li><p class="search-suggestion-empty">Sin coincidencias todavía…</p></li>`;
+      return;
+    }
+    if (suggestionIndex >= suggestionItems.length) suggestionIndex = suggestionItems.length - 1;
+    box.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+    box.innerHTML = suggestionItems
+      .map((item, i) => {
+        const name = item.puntoVenta || item.yaavserNombre || "Sin nombre";
+        const metaBits = [];
+        if (item.yaavserNombre && item.puntoVenta) metaBits.push(item.yaavserNombre);
+        if (item.receivedAt) metaBits.push(formatDate(item.receivedAt));
+        const meta = metaBits.join(" · ");
+        return `
+          <li role="presentation">
+            <button
+              type="button"
+              class="search-suggestion${i === suggestionIndex ? " is-active" : ""}"
+              role="option"
+              id="search-option-${i}"
+              data-suggest-index="${i}"
+              aria-selected="${i === suggestionIndex ? "true" : "false"}"
+            >
+              <span class="search-suggestion-folio">${escapeHtml(item.folio || "Sin folio")}</span>
+              <span class="search-suggestion-badge">${escapeHtml(materialLabel(item))}</span>
+              <span class="search-suggestion-meta">${escapeHtml(name)}${meta ? ` · ${escapeHtml(meta)}` : ""}</span>
+            </button>
+          </li>`;
+      })
+      .join("");
+    box.querySelectorAll(".search-suggestion").forEach((btn) => {
+      btn.onmousedown = (e) => e.preventDefault();
+      btn.onclick = () => {
+        const i = Number(btn.dataset.suggestIndex);
+        if (Number.isFinite(i)) selectSearchSuggestion(i);
+      };
+    });
+  }
+
+  function selectSearchSuggestion(i) {
+    const item = suggestionItems[i];
+    const input = document.getElementById("searchQuery");
+    const clearBtn = document.getElementById("searchClear");
+    if (!item) return;
+    const folio = String(item.folio || "").trim();
+    searchQuery = folio || String(item.puntoVenta || item.yaavserNombre || "");
+    if (input) input.value = searchQuery;
+    if (clearBtn) clearBtn.hidden = !normalizeSearch(searchQuery);
+    hideSearchSuggestions();
+    refreshBoardFilters();
+    const visible = filteredItems();
+    const found = visible.findIndex((it) => (it.id && it.id === item.id) || (folio && it.folio === folio));
+    index = found >= 0 ? found : 0;
+    renderList();
+    renderDetail();
+    listEl?.querySelector(".request-card.is-active")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
   function bindSearchFilter() {
     const input = document.getElementById("searchQuery");
     const clearBtn = document.getElementById("searchClear");
     if (!input) return;
 
-    const apply = (value) => {
+    const apply = (value, { keepSuggestions = true } = {}) => {
       searchQuery = String(value || "");
       if (clearBtn) clearBtn.hidden = !normalizeSearch(searchQuery);
       index = 0;
       refreshBoardFilters();
+      if (keepSuggestions) renderSearchSuggestions();
+      else hideSearchSuggestions();
     };
 
     input.oninput = () => {
       if (clearBtn) clearBtn.hidden = !normalizeSearch(input.value);
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => apply(input.value), 120);
+      searchTimer = setTimeout(() => apply(input.value), 80);
+    };
+    input.onfocus = () => {
+      if (normalizeSearch(input.value)) renderSearchSuggestions();
+    };
+    input.onblur = () => {
+      setTimeout(() => hideSearchSuggestions(), 120);
     };
     input.onkeydown = (e) => {
-      if (e.key === "Escape" && input.value) {
+      const open = suggestionItems.length > 0 || (normalizeSearch(input.value) && !document.getElementById("searchSuggestions")?.hidden);
+      if (e.key === "ArrowDown" && open) {
         e.preventDefault();
-        input.value = "";
-        apply("");
+        if (!suggestionItems.length) renderSearchSuggestions();
+        if (!suggestionItems.length) return;
+        suggestionIndex = (suggestionIndex + 1) % suggestionItems.length;
+        renderSearchSuggestions();
+        return;
+      }
+      if (e.key === "ArrowUp" && open) {
+        e.preventDefault();
+        if (!suggestionItems.length) return;
+        suggestionIndex = suggestionIndex <= 0 ? suggestionItems.length - 1 : suggestionIndex - 1;
+        renderSearchSuggestions();
+        return;
+      }
+      if (e.key === "Enter" && suggestionIndex >= 0 && suggestionItems[suggestionIndex]) {
+        e.preventDefault();
+        selectSearchSuggestion(suggestionIndex);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (!document.getElementById("searchSuggestions")?.hidden) {
+          hideSearchSuggestions();
+          return;
+        }
+        if (input.value) {
+          input.value = "";
+          apply("", { keepSuggestions: false });
+        }
       }
     };
     if (clearBtn) {
       clearBtn.onclick = () => {
         input.value = "";
         input.focus();
-        apply("");
+        apply("", { keepSuggestions: false });
       };
       clearBtn.hidden = !normalizeSearch(searchQuery);
     }
