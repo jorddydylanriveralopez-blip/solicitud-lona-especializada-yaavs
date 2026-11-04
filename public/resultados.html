@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./resultados.css?v=20261103b" />
+    <link rel="stylesheet" href="./resultados.css?v=20261104a" />
   </head>
   <body>
     <div class="atmosphere" aria-hidden="true">
@@ -48,6 +48,20 @@
 
     <main class="layout">
       <section class="stats" id="stats" aria-label="Resumen"></section>
+      <div class="board-search" id="boardSearch">
+        <label class="board-search-field" for="searchQuery">
+          <span>Buscar</span>
+          <input
+            type="search"
+            id="searchQuery"
+            placeholder="Folio, punto de venta, yaavser, clave…"
+            autocomplete="off"
+            spellcheck="false"
+            enterkeyhint="search"
+          />
+        </label>
+        <button type="button" class="board-search-clear" id="searchClear" hidden>Limpiar</button>
+      </div>
       <nav class="material-filters" id="materialFilters" aria-label="Filtrar por material">
         <button type="button" class="material-filter is-active" data-filter="all">
           Todos <span class="filter-count" data-count="all">0</span>
@@ -96,6 +110,6 @@
       <button type="button" class="lightbox-nav next" id="lightboxNext" aria-label="Siguiente">›</button>
     </div>
 
-    <script src="./resultados.js?v=20261103b" defer></script>
+    <script src="./resultados.js?v=20261104a" defer></script>
   </body>
 </html>

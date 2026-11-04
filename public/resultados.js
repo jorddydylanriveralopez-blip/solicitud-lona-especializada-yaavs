@@ -25,9 +25,11 @@
   let quickFilter = "all"; // all | autorizadas | sin-autorizar | faltantes
   let dateFromFilter = "";
   let dateToFilter = "";
+  let searchQuery = "";
   let lastFingerprint = null;
   let refreshInFlight = false;
   let session = null;
+  let searchTimer = null;
 
   const ESTADOS = [
     { key: "En diseño", tone: "diseno" },
@@ -183,6 +185,42 @@
     });
   }
 
+  function normalizeSearch(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  }
+
+  function itemSearchBlob(item) {
+    return normalizeSearch(
+      [
+        item?.folio,
+        item?.puntoVenta,
+        item?.yaavserNombre,
+        item?.claveYaavser,
+        item?.ejecutivoNombre,
+        item?.gerenteTerritorial,
+        item?.territorioGerente,
+        item?.material,
+        item?.zonaComercial,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
+  }
+
+  function itemMatchesSearch(item) {
+    const q = normalizeSearch(searchQuery);
+    if (!q) return true;
+    return itemSearchBlob(item).includes(q);
+  }
+
+  function hasActiveSearch() {
+    return Boolean(normalizeSearch(searchQuery));
+  }
+
   function isFinished(item) {
     const estado = estadoOf(item);
     return estado === "Terminado" || estado === "Rotulación terminada";
@@ -201,6 +239,8 @@
   function baseFilteredItems() {
     const byMaterial =
       materialFilter === "all" ? items : items.filter((it) => materialKind(it) === materialFilter);
+    // Con búsqueda: ignora fechas para encontrar folio/nombre al instante.
+    if (hasActiveSearch()) return byMaterial.filter((it) => itemMatchesSearch(it));
     return byMaterial.filter((it) => itemMatchesDateFilter(it));
   }
 
@@ -212,6 +252,17 @@
   }
 
   function filteredItems() {
+    // Con texto: busca en activas y terminadas (no pierdas una solicitud ya cerrada).
+    if (hasActiveSearch()) {
+      const matched = baseFilteredItems();
+      if (!session?.seesAll) return matched;
+      return [...matched].sort((a, b) => {
+        const rankA = ESTADO_RANK[estadoOf(a)] || 0;
+        const rankB = ESTADO_RANK[estadoOf(b)] || 0;
+        if (rankA !== rankB) return rankA - rankB;
+        return new Date(b.receivedAt || 0).getTime() - new Date(a.receivedAt || 0).getTime();
+      });
+    }
     const base = baseFilteredItems().filter((it) => itemMatchesQuickFilter(it));
     const byBucket =
       boardBucket === "terminadas" ? base.filter((it) => isFinished(it)) : base.filter((it) => !isFinished(it));
@@ -343,6 +394,40 @@
         apply();
       };
       clearBtn.hidden = !(dateFromFilter || dateToFilter);
+    }
+  }
+
+  function bindSearchFilter() {
+    const input = document.getElementById("searchQuery");
+    const clearBtn = document.getElementById("searchClear");
+    if (!input) return;
+
+    const apply = (value) => {
+      searchQuery = String(value || "");
+      if (clearBtn) clearBtn.hidden = !normalizeSearch(searchQuery);
+      index = 0;
+      refreshBoardFilters();
+    };
+
+    input.oninput = () => {
+      if (clearBtn) clearBtn.hidden = !normalizeSearch(input.value);
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => apply(input.value), 120);
+    };
+    input.onkeydown = (e) => {
+      if (e.key === "Escape" && input.value) {
+        e.preventDefault();
+        input.value = "";
+        apply("");
+      }
+    };
+    if (clearBtn) {
+      clearBtn.onclick = () => {
+        input.value = "";
+        input.focus();
+        apply("");
+      };
+      clearBtn.hidden = !normalizeSearch(searchQuery);
     }
   }
 
@@ -1027,7 +1112,7 @@
     const counts = materialCounts();
     statsEl.innerHTML = `
       <div class="stat stat-accent">
-        <span>${materialFilter === "all" ? "Solicitudes" : filterLabel()}</span>
+        <span>${hasActiveSearch() ? "Resultados" : materialFilter === "all" ? "Solicitudes" : filterLabel()}</span>
         <strong>${visible.length}</strong>
       </div>
       <div class="stat">
@@ -1057,6 +1142,10 @@
       return;
     }
     if (!visible.length) {
+      if (hasActiveSearch()) {
+        listEl.innerHTML = `<p class="list-empty">Sin coincidencias para “${escapeHtml(searchQuery.trim())}”</p>`;
+        return;
+      }
       const hints = [];
       if (boardBucket === "terminadas") hints.push("terminadas");
       if (quickFilter === "autorizadas") hints.push("autorizadas");
@@ -2475,6 +2564,7 @@
     }
     renderStatusFilters();
     bindDateFilters();
+    bindSearchFilter();
     document.getElementById("statusFilters")?.addEventListener("click", (e) => {
       const btn = e.target.closest(".status-filter");
       if (!btn || !(session?.seesAll || session?.canManageRotulacion || session?.zonaFilter)) return;
