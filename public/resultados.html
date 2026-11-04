@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./resultados.css?v=20261104b" />
+    <link rel="stylesheet" href="./resultados.css?v=20261104c" />
   </head>
   <!-- Hecho por Jordy Dylan Rivera Lopez -->
   <body data-maker="Jordy Dylan Rivera Lopez">
@@ -76,37 +76,35 @@
         </div>
         <button type="button" class="board-search-clear" id="searchClear" hidden>Limpiar</button>
       </div>
-      <nav class="material-filters" id="materialFilters" aria-label="Filtrar por material">
-        <button type="button" class="material-filter is-active" data-filter="all">
-          Todos <span class="filter-count" data-count="all">0</span>
-        </button>
-        <button type="button" class="material-filter" data-filter="lona">
-          Lona <span class="filter-count" data-count="lona">0</span>
-        </button>
-        <button type="button" class="material-filter" data-filter="toldo">
-          Toldo <span class="filter-count" data-count="toldo">0</span>
-        </button>
-        <button type="button" class="material-filter" data-filter="caballete">
-          Caballete <span class="filter-count" data-count="caballete">0</span>
-        </button>
-        <button type="button" class="material-filter" data-filter="rotulacion">
-          Rotulación <span class="filter-count" data-count="rotulacion">0</span>
-        </button>
-      </nav>
-      <nav class="board-buckets" id="boardBuckets" aria-label="Activas o terminadas"></nav>
-      <nav class="quick-filters" id="quickFilters" aria-label="Filtros rápidos"></nav>
-      <nav class="status-filters" id="statusFilters" hidden aria-label="Filtrar por estado"></nav>
-      <div class="date-filters" id="dateFilters" aria-label="Filtrar por fecha">
-        <label class="date-filter-field">
-          <span>Desde</span>
-          <input type="date" id="dateFromFilter" />
-        </label>
-        <label class="date-filter-field">
-          <span>Hasta</span>
-          <input type="date" id="dateToFilter" />
-        </label>
-        <button type="button" class="date-filter-clear" id="dateFilterClear" hidden>Quitar fechas</button>
-      </div>
+      <section class="filter-panel" id="filterPanel" aria-label="Filtros del tablero">
+        <div class="filter-panel-top">
+          <p class="filter-panel-label">Vista</p>
+          <nav class="board-buckets" id="boardBuckets" aria-label="Activas o terminadas"></nav>
+        </div>
+        <div class="filter-grid" id="filterGrid">
+          <label class="filter-field" id="materialFilterField">
+            <span>Material</span>
+            <select id="materialSelect" aria-label="Filtrar por material"></select>
+          </label>
+          <label class="filter-field" id="quickFilterField">
+            <span>Autorización</span>
+            <select id="quickSelect" aria-label="Filtrar por autorización"></select>
+          </label>
+          <label class="filter-field" id="statusFilterField" hidden>
+            <span>Estado</span>
+            <select id="statusSelect" aria-label="Filtrar por estado"></select>
+          </label>
+          <label class="filter-field">
+            <span>Desde</span>
+            <input type="date" id="dateFromFilter" />
+          </label>
+          <label class="filter-field">
+            <span>Hasta</span>
+            <input type="date" id="dateToFilter" />
+          </label>
+          <button type="button" class="date-filter-clear" id="dateFilterClear" hidden>Quitar fechas</button>
+        </div>
+      </section>
       <div class="board-shell">
         <aside class="request-list" id="requestList" aria-label="Lista de solicitudes"></aside>
         <section class="detail" id="detail" aria-live="polite"></section>
@@ -125,6 +123,6 @@
       <button type="button" class="lightbox-nav next" id="lightboxNext" aria-label="Siguiente">›</button>
     </div>
 
-    <script src="./resultados.js?v=20261104b" defer></script>
+    <script src="./resultados.js?v=20261104c" defer></script>
   </body>
 </html>

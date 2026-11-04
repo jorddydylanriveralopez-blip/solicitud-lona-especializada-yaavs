@@ -377,8 +377,10 @@
   }
 
   function renderQuickFilters() {
-    const nav = document.getElementById("quickFilters");
-    if (!nav) return;
+    const select = document.getElementById("quickSelect");
+    const field = document.getElementById("quickFilterField");
+    if (!select) return;
+    if (field) field.hidden = false;
     const counts = quickFilterCounts();
     const options = [
       { key: "all", label: "Todas" },
@@ -386,18 +388,17 @@
       { key: "sin-autorizar", label: "Sin autorizar" },
       { key: "faltantes", label: "Faltantes" },
     ];
-    nav.innerHTML = options
+    if (!options.some((opt) => opt.key === quickFilter)) quickFilter = "all";
+    select.innerHTML = options
       .map(
-        (opt) => `
-      <button type="button" class="quick-filter${quickFilter === opt.key ? " is-active" : ""}" data-quick="${opt.key}">
-        ${escapeHtml(opt.label)} <span class="filter-count">${counts[opt.key] ?? 0}</span>
-      </button>`,
+        (opt) =>
+          `<option value="${escapeAttr(opt.key)}"${opt.key === quickFilter ? " selected" : ""}>${escapeHtml(opt.label)} (${counts[opt.key] ?? 0})</option>`,
       )
       .join("");
   }
 
   function refreshBoardFilters() {
-    renderStatusFilters();
+    renderBoardControls();
     renderStats();
     renderList();
     renderDetail();
@@ -590,29 +591,33 @@
   }
 
   function renderStatusFilters() {
-    const nav = document.getElementById("statusFilters");
-    if (!nav) return;
+    const select = document.getElementById("statusSelect");
+    const field = document.getElementById("statusFilterField");
+    if (!select || !field) return;
     const show = Boolean(session?.seesAll || session?.canManageRotulacion || session?.zonaFilter);
-    nav.hidden = !show || boardBucket === "terminadas";
-    renderBoardBuckets();
-    renderQuickFilters();
-    if (!show || boardBucket === "terminadas") return;
+    const visible = show && boardBucket !== "terminadas" && !hasActiveSearch();
+    field.hidden = !visible;
+    if (!visible) {
+      if (boardBucket === "terminadas") statusFilter = "all";
+      return;
+    }
     const estados = activeEstadosForFilters();
     if (!estados.some((estado) => estado.key === statusFilter)) statusFilter = "all";
     const counts = statusCounts();
-    nav.innerHTML = `
-      <button type="button" class="status-filter${statusFilter === "all" ? " is-active" : ""}" data-status="all">
-        Todas
-      </button>
-      ${estados
-        .map(
-          (estado) => `
-        <button type="button" class="status-filter${statusFilter === estado.key ? " is-active" : ""}" data-status="${escapeAttr(estado.key)}" data-tone="${estado.tone}">
-          <span class="status-light" aria-hidden="true"></span>
-          ${escapeHtml(estado.key)} <span class="filter-count" data-status-count="${escapeAttr(estado.key)}">${counts[estado.key] ?? 0}</span>
-        </button>`,
-        )
-        .join("")}`;
+    select.innerHTML = [
+      `<option value="all"${statusFilter === "all" ? " selected" : ""}>Todos los estados (${counts.all ?? 0})</option>`,
+      ...estados.map(
+        (estado) =>
+          `<option value="${escapeAttr(estado.key)}"${statusFilter === estado.key ? " selected" : ""}>${escapeHtml(estado.key)} (${counts[estado.key] ?? 0})</option>`,
+      ),
+    ].join("");
+  }
+
+  function renderBoardControls() {
+    renderBoardBuckets();
+    renderMaterialFilters();
+    renderQuickFilters();
+    renderStatusFilters();
   }
 
   function semaphoreHtml(item, { compact = false } = {}) {
@@ -651,13 +656,18 @@
   }
 
   function renderMaterialFilters() {
+    const select = document.getElementById("materialSelect");
+    const field = document.getElementById("materialFilterField");
+    if (!select) return;
+    if (field) field.hidden = Boolean(session && !session.seesAll);
+    if (session && !session.seesAll) return;
     const counts = materialCounts();
-    document.querySelectorAll(".material-filter").forEach((btn) => {
-      const key = btn.dataset.filter;
-      btn.classList.toggle("is-active", key === materialFilter);
-      const countEl = btn.querySelector("[data-count]");
-      if (countEl && key) countEl.textContent = String(counts[key] ?? 0);
-    });
+    if (!MATERIAL_FILTERS.some((f) => f.key === materialFilter)) materialFilter = "all";
+    select.innerHTML = MATERIAL_FILTERS.map((f) => {
+      const count = counts[f.key] ?? 0;
+      const label = f.key === "all" ? `Todos (${count})` : `${f.label} (${count})`;
+      return `<option value="${escapeAttr(f.key)}"${f.key === materialFilter ? " selected" : ""}>${escapeHtml(label)}</option>`;
+    }).join("");
   }
 
   const SECTIONS = [
@@ -2468,7 +2478,7 @@
     if (!item || !canEditEstado(item)) return;
     const previous = item.estadoProduccion || "";
     item.estadoProduccion = estado;
-    renderStatusFilters();
+    renderBoardControls();
     renderList();
     renderDetail();
     try {
@@ -2483,7 +2493,7 @@
       lastFingerprint = boardFingerprint(items);
     } catch (err) {
       item.estadoProduccion = previous;
-      renderStatusFilters();
+      renderBoardControls();
       renderList();
       renderDetail();
       window.alert(err.message || "No se pudo guardar el semáforo");
@@ -2626,8 +2636,7 @@
           (fechaBox && document.activeElement === fechaBox),
       );
       if (dataChanged && !lightboxOpen && !writingNotice && !productoUploadBusy) {
-        renderMaterialFilters();
-        renderStatusFilters();
+        renderBoardControls();
         renderStats();
         renderList();
         renderDetail();
@@ -2635,7 +2644,7 @@
           detailEl.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       } else if (!dataChanged) {
-        renderMaterialFilters();
+        renderBoardControls();
       }
     } catch (_) {
       liveStatus.textContent = "Sin conexión · reintentando…";
@@ -2671,18 +2680,6 @@
       .join("||");
   }
 
-  document.getElementById("materialFilters")?.addEventListener("click", (e) => {
-    const btn = e.target.closest(".material-filter");
-    if (!btn) return;
-    const next = btn.dataset.filter || "all";
-    if (next === materialFilter) return;
-    materialFilter = next;
-    statusFilter = "all";
-    index = 0;
-    renderMaterialFilters();
-    refreshBoardFilters();
-  });
-
   document.getElementById("boardBuckets")?.addEventListener("click", (e) => {
     const btn = e.target.closest(".board-bucket");
     if (!btn) return;
@@ -2694,15 +2691,40 @@
     refreshBoardFilters();
   });
 
-  document.getElementById("quickFilters")?.addEventListener("click", (e) => {
-    const btn = e.target.closest(".quick-filter");
-    if (!btn) return;
-    const next = btn.dataset.quick || "all";
-    if (next === quickFilter) return;
-    quickFilter = next;
-    index = 0;
-    refreshBoardFilters();
-  });
+  function bindFilterSelects() {
+    const materialSelect = document.getElementById("materialSelect");
+    const quickSelect = document.getElementById("quickSelect");
+    const statusSelect = document.getElementById("statusSelect");
+    if (materialSelect) {
+      materialSelect.onchange = () => {
+        const next = materialSelect.value || "all";
+        if (next === materialFilter) return;
+        materialFilter = next;
+        statusFilter = "all";
+        index = 0;
+        refreshBoardFilters();
+      };
+    }
+    if (quickSelect) {
+      quickSelect.onchange = () => {
+        const next = quickSelect.value || "all";
+        if (next === quickFilter) return;
+        quickFilter = next;
+        index = 0;
+        refreshBoardFilters();
+      };
+    }
+    if (statusSelect) {
+      statusSelect.onchange = () => {
+        if (!(session?.seesAll || session?.canManageRotulacion || session?.zonaFilter)) return;
+        const next = statusSelect.value || "all";
+        if (next === statusFilter) return;
+        statusFilter = next;
+        index = 0;
+        refreshBoardFilters();
+      };
+    }
+  }
 
   async function loadSession() {
     const res = await fetch("/api/session", { cache: "no-store" });
@@ -2717,21 +2739,13 @@
       roleChip.hidden = false;
     }
     if (!session.seesAll) {
-      const filters = document.getElementById("materialFilters");
-      if (filters) filters.hidden = true;
+      const field = document.getElementById("materialFilterField");
+      if (field) field.hidden = true;
     }
-    renderStatusFilters();
+    renderBoardControls();
     bindDateFilters();
     bindSearchFilter();
-    document.getElementById("statusFilters")?.addEventListener("click", (e) => {
-      const btn = e.target.closest(".status-filter");
-      if (!btn || !(session?.seesAll || session?.canManageRotulacion || session?.zonaFilter)) return;
-      const next = btn.dataset.status || "all";
-      if (next === statusFilter) return;
-      statusFilter = next;
-      index = 0;
-      refreshBoardFilters();
-    });
+    bindFilterSelects();
     document.getElementById("logoutBtn")?.addEventListener("click", async () => {
       await fetch("/api/logout", { method: "POST" }).catch(() => {});
       location.replace("/resultados");
