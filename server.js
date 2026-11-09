@@ -449,6 +449,24 @@ function isRotulacionItem(item) {
   return String(item?.material || "").toLowerCase().includes("rotul");
 }
 
+function itemMaterialKind(item) {
+  const m = String(item?.material || "").toLowerCase();
+  if (m.includes("toldo")) return "toldo";
+  if (m.includes("caballete")) return "caballete";
+  if (m.includes("rotul")) return "rotulacion";
+  if (m.includes("lona")) return "lona";
+  return "lona";
+}
+
+function canUploadEvidenciaItem(item) {
+  const kind = itemMaterialKind(item);
+  return kind === "lona" || kind === "caballete" || kind === "rotulacion";
+}
+
+function evidenciaLabelForItem(item) {
+  return itemMaterialKind(item) === "rotulacion" ? "Evidencia de rotulación" : "Evidencia";
+}
+
 function canAuthorizeRole(role) {
   return Array.isArray(role?.zoneNames) && role.zoneNames.length > 0;
 }
@@ -503,13 +521,22 @@ function itemInAuthorizeZone(role, item) {
 }
 
 function scopeItems(items, role) {
-  let list = role?.seesAll
-    ? items || []
-    : (items || []).filter(isRotulacionItem).map((item) => ({
-        ...item,
-        faltanteCliente: isRotulacionItem(item) ? item.faltanteCliente || "" : "",
-        faltanteHistorial: isRotulacionItem(item) ? item.faltanteHistorial || "" : "",
-      }));
+  let list;
+  if (role?.seesAll) {
+    list = items || [];
+  } else if (role?.canManageRotulacion) {
+    list = (items || []).filter(canUploadEvidenciaItem).map((item) => ({
+      ...item,
+      faltanteCliente: isRotulacionItem(item) ? item.faltanteCliente || "" : "",
+      faltanteHistorial: isRotulacionItem(item) ? item.faltanteHistorial || "" : "",
+    }));
+  } else {
+    list = (items || []).filter(isRotulacionItem).map((item) => ({
+      ...item,
+      faltanteCliente: item.faltanteCliente || "",
+      faltanteHistorial: item.faltanteHistorial || "",
+    }));
+  }
   if (role?.zonaFilter) {
     list = list.filter((item) => itemMatchesZonaFilter(role, item));
   }
@@ -1325,10 +1352,14 @@ function isEvidenciaRotulacionFile(file) {
     .toLowerCase()
     .replace(/\s+/g, "");
   const field = String(file?.field || "").toLowerCase();
-  const group = String(file?.group || "").toLowerCase();
+  const group = String(file?.group || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
   return (
     kind === "evidenciarotulacion" ||
     field === "evidencia_rotulacion" ||
+    group === "evidencia" ||
     group.includes("evidencia de rotul")
   );
 }
@@ -2542,17 +2573,21 @@ app.post("/api/responses/:id/evidencia-rotulacion", requireBoard, (req, res) => 
       }
       const files = req.files || [];
       if (!files.length) {
-        return res.status(400).json({ ok: false, error: "Elige la evidencia de rotulación terminada" });
+        return res.status(400).json({ ok: false, error: "Elige la evidencia terminada" });
       }
       const id = String(req.params.id || "").trim();
       if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
 
       const board = await boardItems();
       const item = (board.items || []).find((it) => it.id === id || it.folio === id);
-      if (!item || !isRotulacionItem(item)) {
-        return res.status(404).json({ ok: false, error: "La evidencia solo se sube en rotulación" });
+      if (!item || !canUploadEvidenciaItem(item)) {
+        return res.status(404).json({
+          ok: false,
+          error: "La evidencia se sube en lona, caballete o rotulación",
+        });
       }
 
+      const evidenciaLabel = evidenciaLabelForItem(item);
       const saved = [];
       const failed = [];
       const entryId = item.id || id;
@@ -2578,8 +2613,8 @@ app.post("/api/responses/:id/evidencia-rotulacion", requireBoard, (req, res) => 
             name: file.originalname || storedAs,
             mime: file.mimetype || "application/octet-stream",
             kind: "evidenciaRotulacion",
-            group: "Evidencia de rotulación",
-            label: "Evidencia de rotulación",
+            group: evidenciaLabel,
+            label: evidenciaLabel,
             field: "evidencia_rotulacion",
             storedAs,
             data: fs.readFileSync(target).toString("base64"),
@@ -2617,15 +2652,15 @@ app.post("/api/responses/:id/evidencia-rotulacion", requireBoard, (req, res) => 
             name: att.name,
             mime: att.mime,
             kind: "evidenciaRotulacion",
-            group: "Evidencia de rotulación",
-            label: "Evidencia de rotulación",
+            group: evidenciaLabel,
+            label: evidenciaLabel,
             field: "evidencia_rotulacion",
             storedAs,
             url,
           });
         } catch (fileErr) {
           failed.push(file.originalname || storedAs);
-          console.error("Evidencia rotulación:", fileErr?.message || fileErr);
+          console.error("Evidencia:", fileErr?.message || fileErr);
         }
       }
 
@@ -2649,7 +2684,7 @@ app.post("/api/responses/:id/evidencia-rotulacion", requireBoard, (req, res) => 
       if (!saved.length) {
         return res.status(502).json({
           ok: false,
-          error: "No se pudo guardar la evidencia de rotulación",
+          error: "No se pudo guardar la evidencia",
           failed,
         });
       }
@@ -2661,10 +2696,10 @@ app.post("/api/responses/:id/evidencia-rotulacion", requireBoard, (req, res) => 
         failed,
       });
     } catch (uploadErr) {
-      console.error("Evidencia rotulación:", uploadErr?.message || uploadErr);
+      console.error("Evidencia:", uploadErr?.message || uploadErr);
       dropTmp();
       if (!res.headersSent) {
-        res.status(500).json({ ok: false, error: "No se pudo subir la evidencia de rotulación" });
+        res.status(500).json({ ok: false, error: "No se pudo subir la evidencia" });
       }
     }
   });
@@ -2685,8 +2720,11 @@ app.delete("/api/responses/:id/evidencia-rotulacion", requireBoard, async (req, 
 
     const board = await boardItems();
     const item = (board.items || []).find((it) => it.id === id || it.folio === id);
-    if (!item || !isRotulacionItem(item)) {
-      return res.status(404).json({ ok: false, error: "La evidencia solo se quita en rotulación" });
+    if (!item || !canUploadEvidenciaItem(item)) {
+      return res.status(404).json({
+        ok: false,
+        error: "La evidencia se quita en lona, caballete o rotulación",
+      });
     }
 
     const target = { storedAs, url };
@@ -3025,7 +3063,9 @@ app.use("/uploads", requireBoard, (req, res, next) => {
   if (req.boardRole.seesAll) return next();
   const entryId = decodeURIComponent(req.path.split("/")[1] || "");
   const entry = readResponses().find((e) => e.id === entryId);
-  if (entry && isRotulacionItem(entry.answers || entry)) return next();
+  const scoped = entry?.answers || entry;
+  if (entry && isRotulacionItem(scoped)) return next();
+  if (entry && req.boardRole.canManageRotulacion && canUploadEvidenciaItem(scoped)) return next();
   res.status(404).json({ ok: false, error: "Not found" });
 });
 

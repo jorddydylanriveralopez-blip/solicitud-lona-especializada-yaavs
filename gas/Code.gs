@@ -436,10 +436,13 @@ function isEvidenciaRotulacionMedia_(file) {
     .toLowerCase()
     .replace(/\s+/g, "");
   var field = String(file.field || "").toLowerCase();
-  var group = String(file.group || "").toLowerCase();
+  var group = String(file.group || "")
+    .toLowerCase()
+    .replace(/[\u0300-\u036f]/g, "");
   return (
     kind === "evidenciarotulacion" ||
     field === "evidencia_rotulacion" ||
+    group === "evidencia" ||
     group.indexOf("evidencia de rotul") >= 0
   );
 }

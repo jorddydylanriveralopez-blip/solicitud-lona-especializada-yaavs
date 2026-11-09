@@ -124,10 +124,20 @@
     { key: "rotulacion", label: "Rotulación" },
   ];
 
+  function supportsEvidencia(item) {
+    const kind = materialKind(item);
+    return kind === "lona" || kind === "caballete" || kind === "rotulacion";
+  }
+
+  function evidenciaLabel(item) {
+    return materialKind(item) === "rotulacion" ? "Evidencia de rotulación" : "Evidencia";
+  }
+
   function itemsForSession(list) {
     const rows = Array.isArray(list) ? list : [];
-    // El servidor ya filtra por zona/material; aquí solo reforzamos rotulación para perfiles sin seesAll.
+    // El servidor ya filtra por zona/material; aquí solo reforzamos el alcance del perfil.
     if (session?.seesAll) return rows;
+    if (session?.canManageRotulacion) return rows.filter((it) => supportsEvidencia(it));
     return rows.filter((it) => materialKind(it) === "rotulacion");
   }
 
@@ -224,7 +234,9 @@
   }
 
   function searchCandidateItems() {
-    return session?.seesAll ? items : items.filter((it) => materialKind(it) === "rotulacion");
+    if (session?.seesAll) return items;
+    if (session?.canManageRotulacion) return items.filter((it) => supportsEvidencia(it));
+    return items.filter((it) => materialKind(it) === "rotulacion");
   }
 
   function scoreSearchItem(item, q) {
@@ -771,12 +783,15 @@
   function isEvidenciaRotulacion(file) {
     const kind = String(file?.kind || "").toLowerCase();
     const field = String(file?.field || "").toLowerCase();
-    const group = String(file?.group || "").toLowerCase();
+    const group = String(file?.group || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
     return (
       kind === "evidenciarotulacion" ||
       field === "evidencia_rotulacion" ||
-      group.includes("evidencia de rotulación") ||
-      group.includes("evidencia de rotulacion")
+      group === "evidencia" ||
+      group.includes("evidencia de rotul")
     );
   }
 
@@ -813,17 +828,19 @@
         field: file.field || "producto_final",
       };
     }
+    const groupNorm = groupRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     if (
       kind === "evidenciarotulacion" ||
       field === "evidencia_rotulacion" ||
-      groupRaw.includes("evidencia de rotulación") ||
-      groupRaw.includes("evidencia de rotulacion")
+      groupNorm === "evidencia" ||
+      groupNorm.includes("evidencia de rotul")
     ) {
+      const label = evidenciaLabel(item);
       return {
         ...file,
         kind: "evidenciaRotulacion",
-        group: "Evidencia de rotulación",
-        label: "Evidencia de rotulación",
+        group: label,
+        label,
         field: file.field || "evidencia_rotulacion",
       };
     }
@@ -1376,7 +1393,7 @@
                     : ""
                 }
                 ${
-                  materialKind(item) === "rotulacion" && evidenciaRotulacionOf(item).length
+                  supportsEvidencia(item) && evidenciaRotulacionOf(item).length
                     ? `<p class="card-producto">Evidencia lista</p>`
                     : ""
                 }
@@ -1743,8 +1760,8 @@
       </div>`;
   }
 
-  function evidenciaTile(file, idx) {
-    const kindLabel = "Evidencia de rotulación";
+  function evidenciaTile(file, idx, item) {
+    const kindLabel = evidenciaLabel(item);
     if (isImageMime(file.mime, file.name)) {
       return `
         <div class="evidence-tile-wrap">
@@ -1771,29 +1788,30 @@
   }
 
   function evidenciaRotulacionHtml(item) {
-    if (materialKind(item) !== "rotulacion") return "";
+    if (!supportsEvidencia(item)) return "";
     const files = evidenciaRotulacionOf(item);
     if (!session?.canManageRotulacion && !files.length) return "";
-    const tiles = files.map((file, idx) => evidenciaTile(file, idx)).join("");
+    const title = evidenciaLabel(item);
+    const tiles = files.map((file, idx) => evidenciaTile(file, idx, item)).join("");
     const uploader = session?.canManageRotulacion
       ? `
         <div class="producto-upload">
-          <p>Sube la evidencia de la rotulación terminada. Si te equivocas, puedes cambiarla o quitarla.</p>
+          <p>Sube la evidencia terminada. Si te equivocas, puedes cambiarla o quitarla.</p>
           <input id="evidenciaRotulacionInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf,.pdf" multiple hidden />
           <input id="evidenciaRotulacionReplaceInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,application/pdf,.pdf" hidden />
           <button type="button" class="producto-send" id="evidenciaRotulacionBtn">${files.length ? "Subir otra evidencia" : "Subir evidencia"}</button>
         </div>`
       : "";
     return `
-      <section class="panel producto-panel" aria-label="Evidencia de rotulación">
+      <section class="panel producto-panel" aria-label="${escapeAttr(title)}">
         <div class="panel-head">
-          <h3>Evidencia de rotulación</h3>
+          <h3>${escapeHtml(title)}</h3>
           ${files.length ? `<span class="pill">${files.length}</span>` : ""}
         </div>
         ${
           tiles
             ? `<div class="evidence-gallery">${tiles}</div>`
-            : `<p class="empty-evidence">Todavía no hay evidencia de rotulación terminada.</p>`
+            : `<p class="empty-evidence">Todavía no hay evidencia terminada.</p>`
         }
         ${uploader}
       </section>`;
