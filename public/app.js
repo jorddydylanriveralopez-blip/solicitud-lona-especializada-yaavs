@@ -138,22 +138,11 @@
   }
 
   function applyMaterialOptionsForZona() {
-    const zona = selectedZonaComercial();
-    const isForaneo = zona === "Foráneo";
     form?.querySelectorAll("[data-material-option]").forEach((label) => {
-      const value = label.getAttribute("data-material-option");
       const input = label.querySelector('input[name="material"]');
-      const onlyRotulacion = isForaneo && value !== "Rotulación";
-      label.hidden = onlyRotulacion;
-      if (input) {
-        input.disabled = onlyRotulacion;
-        if (onlyRotulacion && input.checked) input.checked = false;
-      }
+      label.hidden = false;
+      if (input) input.disabled = false;
     });
-    if (isForaneo) {
-      const rotul = form?.querySelector('input[name="material"][value="Rotulación"]');
-      if (rotul && !rotul.disabled) rotul.checked = true;
-    }
   }
 
   function syncZona() {
@@ -1393,12 +1382,6 @@
 
     if (!selectedMaterial()) {
       errors.push("Selecciona el material a solicitar.");
-      markInvalid(form.querySelector('input[name="material"]'));
-      return errors;
-    }
-
-    if (selectedZonaComercial() === "Foráneo" && selectedMaterial() !== "Rotulación") {
-      errors.push("En Foráneo solo se puede solicitar rotulación.");
       markInvalid(form.querySelector('input[name="material"]'));
       return errors;
     }

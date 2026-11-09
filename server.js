@@ -315,9 +315,17 @@ const BOARD_ROLES = {
     envPassword: "BOARD_PASSWORD_MANTENIMIENTO",
     hash: "27dac4b638a77bafc55f94b1650d00df:8fc996e954e1044cfc17f4ba44be5e013ccfda2e5b584daefe716cb8803f5e0c",
   },
+  compras: {
+    label: "Compras · Ramiro",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    envPassword: "BOARD_PASSWORD_COMPRAS",
+    hash: "0d03dc47a7591745c36836d2445662e0:d940b947ab779ff917a7c9bfa75b079ce2c92d3722b424e2a75c204c8b7e2bca",
+  },
   "gerente-henonin": {
     label: "Foráneo · Alejandro Henonin",
-    seesAll: false,
+    seesAll: true,
     canManage: false,
     canDelete: false,
     zonaFilter: "foraneo",
@@ -1378,6 +1386,10 @@ function isProductoFinalFile(file) {
 }
 
 function canManageProductoFinal(role) {
+  return Boolean(role?.canManage || role?.canManageRotulacion);
+}
+
+function canManageEvidencia(role) {
   return Boolean(role?.canManage || role?.canManageRotulacion);
 }
 
@@ -2568,8 +2580,8 @@ app.post("/api/responses/:id/evidencia-rotulacion", requireBoard, (req, res) => 
       if (err) {
         return res.status(400).json({ ok: false, error: uploadErrorMessage(err) });
       }
-      if (!req.boardRole.canManageRotulacion) {
-        return res.status(403).json({ ok: false, error: "Solo mantenimiento puede subir la evidencia" });
+      if (!canManageEvidencia(req.boardRole)) {
+        return res.status(403).json({ ok: false, error: "No tienes permiso para subir la evidencia" });
       }
       const files = req.files || [];
       if (!files.length) {
@@ -2707,8 +2719,8 @@ app.post("/api/responses/:id/evidencia-rotulacion", requireBoard, (req, res) => 
 
 app.delete("/api/responses/:id/evidencia-rotulacion", requireBoard, async (req, res) => {
   try {
-    if (!req.boardRole.canManageRotulacion) {
-      return res.status(403).json({ ok: false, error: "Solo mantenimiento puede quitar la evidencia" });
+    if (!canManageEvidencia(req.boardRole)) {
+      return res.status(403).json({ ok: false, error: "No tienes permiso para quitar la evidencia" });
     }
     const id = String(req.params.id || "").trim();
     const storedAs = String(req.body?.storedAs || "").trim();
@@ -2887,9 +2899,6 @@ function missingSubmissionError(answers, files) {
   const zona = text("zonaComercial").toLowerCase();
   if (zona !== "centro" && zona !== "foráneo" && zona !== "foraneo") {
     return "Indica si la solicitud es de Centro o Foráneo.";
-  }
-  if ((zona === "foráneo" || zona === "foraneo") && !material.includes("rotul")) {
-    return "En Foráneo solo se puede solicitar rotulación.";
   }
   const requiredText = [
     ["ejecutivoNombre", "Falta el nombre del ejecutivo."],

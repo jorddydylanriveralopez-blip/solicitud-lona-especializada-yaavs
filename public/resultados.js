@@ -93,7 +93,6 @@
   }
 
   function activeEstados() {
-    if (session?.zonaFilter === "foraneo") return ESTADOS_ROTULACION;
     if (!session?.seesAll) return ESTADOS_ROTULACION;
     if (materialFilter === "rotulacion") return ESTADOS_ROTULACION;
     if (materialFilter === "lona" || materialFilter === "toldo" || materialFilter === "caballete") {
@@ -331,6 +330,10 @@
   }
 
   function canManageProducto() {
+    return Boolean(session?.canManage || session?.canManageRotulacion);
+  }
+
+  function canManageEvidencia() {
     return Boolean(session?.canManage || session?.canManageRotulacion);
   }
 
@@ -1752,7 +1755,7 @@
   }
 
   function evidenciaManageActions(file, idx) {
-    if (!session?.canManageRotulacion) return "";
+    if (!canManageEvidencia()) return "";
     return `
       <div class="evidence-manage">
         <button type="button" class="evidence-change" data-evidencia-change="${idx}">Cambiar</button>
@@ -1790,10 +1793,10 @@
   function evidenciaRotulacionHtml(item) {
     if (!supportsEvidencia(item)) return "";
     const files = evidenciaRotulacionOf(item);
-    if (!session?.canManageRotulacion && !files.length) return "";
+    if (!canManageEvidencia() && !files.length) return "";
     const title = evidenciaLabel(item);
     const tiles = files.map((file, idx) => evidenciaTile(file, idx, item)).join("");
-    const uploader = session?.canManageRotulacion
+    const uploader = canManageEvidencia()
       ? `
         <div class="producto-upload">
           <p>Sube la evidencia terminada. Si te equivocas, puedes cambiarla o quitarla.</p>
@@ -2345,7 +2348,7 @@
   }
 
   async function uploadEvidenciaRotulacion(item, files, button) {
-    if (!item || !files?.length || evidenciaUploadBusy || !session?.canManageRotulacion) return null;
+    if (!item || !files?.length || evidenciaUploadBusy || !canManageEvidencia()) return null;
     evidenciaUploadBusy = true;
     const previous = button?.textContent || "Subir evidencia";
     if (button) {
@@ -2381,7 +2384,7 @@
   }
 
   async function removeEvidenciaRotulacion(item, file, button) {
-    if (!item || !file || evidenciaUploadBusy || !session?.canManageRotulacion) return false;
+    if (!item || !file || evidenciaUploadBusy || !canManageEvidencia()) return false;
     evidenciaUploadBusy = true;
     const previous = button?.textContent || "Quitar";
     if (button) {
@@ -2420,7 +2423,7 @@
   }
 
   async function replaceEvidenciaRotulacion(item, oldFile, newFiles, button) {
-    if (!item || !oldFile || !newFiles?.length || evidenciaUploadBusy || !session?.canManageRotulacion) {
+    if (!item || !oldFile || !newFiles?.length || evidenciaUploadBusy || !canManageEvidencia()) {
       return;
     }
     if (button) {
@@ -2439,7 +2442,7 @@
     const input = document.getElementById("evidenciaRotulacionInput");
     const replaceInput = document.getElementById("evidenciaRotulacionReplaceInput");
     const send = document.getElementById("evidenciaRotulacionBtn");
-    if (!session?.canManageRotulacion) return;
+    if (!canManageEvidencia()) return;
     const files = evidenciaRotulacionOf(item);
 
     if (input && send) {
