@@ -833,6 +833,19 @@ function extractEvidenciaRotulacionMedia(answers) {
     }));
 }
 
+function extractXrayClienteMedia(answers) {
+  const files = Array.isArray(answers?.xrayCliente) ? answers.xrayCliente : [];
+  return files
+    .filter((f) => f && (f.url || f.storedAs))
+    .map((f) => ({
+      ...f,
+      kind: "xray",
+      group: "X-ray del cliente",
+      label: "X-ray del cliente",
+      field: f.field || "xray_cliente",
+    }));
+}
+
 function extractMedia(entry) {
   const answers = entry?.answers && typeof entry.answers === "object" ? entry.answers : {};
   return dedupeMedia([
@@ -841,6 +854,7 @@ function extractMedia(entry) {
     ...extractMediaFromItems(answers.caballetes, "caballete"),
     ...extractToldoPuntoVentaMedia(answers),
     ...extractRotulacionMedia(answers),
+    ...extractXrayClienteMedia(answers),
     ...extractProductoFinalMedia(answers),
     ...extractEvidenciaRotulacionMedia(answers),
   ]);
@@ -2905,6 +2919,9 @@ function missingSubmissionError(answers, files) {
     if (!okForaneo) {
       return "En Foráneo solo se puede solicitar Lona especializada o Rotulación.";
     }
+    if (!has("xray_cliente")) {
+      return "Falta la captura de X-ray por cliente. No se envió la solicitud.";
+    }
   }
   const requiredText = [
     ["ejecutivoNombre", "Falta el nombre del ejecutivo."],
@@ -3037,6 +3054,20 @@ app.post("/api/submit", (req, res) => {
             fotoFiles,
           };
         }
+      }
+      const zonaRaw = String(entry.answers.zonaComercial || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+      if (zonaRaw === "foraneo") {
+        const xrayFiles = saveNamedFiles(entry.id, "xray_cliente", files).map((f) => ({
+          ...f,
+          kind: "xray",
+          group: "X-ray del cliente",
+          label: "X-ray del cliente",
+          field: "xray_cliente",
+        }));
+        if (xrayFiles.length) entry.answers.xrayCliente = xrayFiles;
       }
 
       const list = readResponses();

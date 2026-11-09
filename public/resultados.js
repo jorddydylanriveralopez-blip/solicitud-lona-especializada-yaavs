@@ -847,6 +847,15 @@
         field: file.field || "evidencia_rotulacion",
       };
     }
+    if (kind === "xray" || field === "xray_cliente" || groupNorm.includes("x-ray") || groupNorm.includes("xray")) {
+      return {
+        ...file,
+        kind: "xray",
+        group: "X-ray del cliente",
+        label: "X-ray del cliente",
+        field: file.field || "xray_cliente",
+      };
+    }
     const material = String(item?.material || "").toLowerCase();
     const isRotul =
       material.includes("rotul") || field.includes("rotulacion_foto") || field.includes("rotulacion_permiso");
@@ -942,10 +951,25 @@
 
   function mediaGroupOrder(name) {
     const g = String(name || "").toLowerCase();
-    if (g.includes("permiso")) return 0;
-    if (g.includes("fachada") || g.includes("punto de venta")) return 1;
-    if (g.includes("logo") || g.includes("referencia")) return 2;
-    return 3;
+    if (g.includes("x-ray") || g.includes("xray")) return 0;
+    if (g.includes("permiso")) return 1;
+    if (g.includes("fachada") || g.includes("punto de venta")) return 2;
+    if (g.includes("logo") || g.includes("referencia")) return 3;
+    return 4;
+  }
+
+  function isXrayMedia(file) {
+    const kind = String(file?.kind || "").toLowerCase();
+    const field = String(file?.field || "").toLowerCase();
+    const group = String(file?.group || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    return kind === "xray" || field === "xray_cliente" || group.includes("x-ray") || group.includes("xray");
+  }
+
+  function xrayOf(item) {
+    return mediaOf(item).filter((file) => isXrayMedia(file));
   }
 
   function isPuntoVentaMedia(file, item) {
@@ -955,6 +979,7 @@
     const field = String(file?.field || "").toLowerCase();
     const material = String(item?.material || "").toLowerCase();
     if (kind === "permiso" || field.includes("permiso")) return false;
+    if (isXrayMedia(file)) return false;
     // Dedicated PV photo for rotulación
     if (field.includes("foto_pv") || (group === "punto de venta" && label.includes("punto de venta"))) {
       return true;
@@ -976,15 +1001,55 @@
     const field = String(file?.field || "").toLowerCase();
     if (field.includes("foto_pv")) return false;
     if (field.includes("permiso")) return false;
+    if (isXrayMedia(file)) return false;
     if (field.includes("rotulacion_foto_1") || field.includes("rotulacion_foto_2")) return true;
     if (group.includes("fachada") || label.includes("fachada")) return true;
     return false;
+  }
+
+  function xrayHtml(item) {
+    const files = xrayOf(item);
+    if (!files.length) return "";
+    const tiles = files
+      .map((file, idx) => {
+        if (isImageMime(file.mime, file.name)) {
+          return `
+            <div class="evidence-tile-wrap">
+              <button type="button" class="evidence-item image-tile" data-xray-index="${idx}">
+                <img src="${escapeAttr(viewUrl(file))}" alt="${escapeAttr(file.name || "X-ray del cliente")}" loading="lazy" />
+                <span>X-ray del cliente</span>
+                ${file.name ? `<small>${escapeHtml(file.name)}</small>` : ""}
+              </button>
+              ${downloadLink(file)}
+            </div>`;
+        }
+        const badge = isPdf(file.mime, file.name) ? "PDF" : "DOC";
+        return `
+          <div class="evidence-tile-wrap">
+            <a class="evidence-item file-tile" href="${escapeAttr(file.url)}" target="_blank" rel="noopener">
+              <div class="evidence-file-tile">${badge}</div>
+              <span>X-ray del cliente</span>
+              <small>${escapeHtml(file.name || "")}</small>
+            </a>
+            ${downloadLink(file)}
+          </div>`;
+      })
+      .join("");
+    return `
+      <section class="panel producto-panel" aria-label="X-ray del cliente">
+        <div class="panel-head">
+          <h3>X-ray del cliente</h3>
+          <span class="pill">${files.length}</span>
+        </div>
+        <div class="evidence-gallery">${tiles}</div>
+      </section>`;
   }
 
   function mediaLabel(file, item) {
     if (file?.label) return file.label;
     const kind = String(file?.kind || "").toLowerCase();
     const field = String(file?.field || "").toLowerCase();
+    if (kind === "xray" || field === "xray_cliente") return "X-ray del cliente";
     if (kind === "logo") return "Logotipo";
     if (kind === "referencia") return "Referencia de diseño";
     if (kind === "permiso") return "Evidencia de permiso";
@@ -1394,6 +1459,9 @@
                   materialKind(item) === "rotulacion" && item.fechaRotulacion
                     ? `<p class="card-fecha">Programada: ${escapeHtml(formatFechaRotulacion(item.fechaRotulacion))}</p>`
                     : ""
+                }
+                ${
+                  xrayOf(item).length ? `<p class="card-producto">X-ray listo</p>` : ""
                 }
                 ${
                   supportsEvidencia(item) && evidenciaRotulacionOf(item).length
@@ -1916,9 +1984,12 @@
 
     const item = visible[index] || visible[0];
     const kind = materialKind(item);
-    const media = mediaOf(item).filter((file) => !isProductoFinal(file) && !isEvidenciaRotulacion(file));
+    const media = mediaOf(item).filter(
+      (file) => !isProductoFinal(file) && !isEvidenciaRotulacion(file) && !isXrayMedia(file),
+    );
     const producto = productoFinalOf(item);
     const evidencia = evidenciaRotulacionOf(item);
+    const xray = xrayOf(item);
     const lonas = specsLonas(item);
     const toldos = specsToldos(item);
     const caballetes = specsCaballetes(item);
@@ -1950,6 +2021,8 @@
         ${autorizacionDetailHtml(item)}
 
         ${semaphoreHtml(item)}
+
+        ${xrayHtml(item)}
 
         ${productoFinalHtml(item)}
 
@@ -2087,6 +2160,12 @@
       btn.onclick = () => {
         const idx = Number(btn.dataset.evidenciaIndex);
         openLightbox(evidencia, Number.isFinite(idx) && idx >= 0 ? idx : 0);
+      };
+    });
+    detailEl.querySelectorAll("[data-xray-index]").forEach((btn) => {
+      btn.onclick = () => {
+        const idx = Number(btn.dataset.xrayIndex);
+        openLightbox(xray, Number.isFinite(idx) && idx >= 0 ? idx : 0);
       };
     });
   }

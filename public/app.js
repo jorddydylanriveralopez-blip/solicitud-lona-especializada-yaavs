@@ -445,9 +445,15 @@
     syncFormSteps();
   }
 
+  function isForaneo() {
+    return selectedZonaComercial() === "Foráneo";
+  }
+
   function isStepApplicable(section) {
     if (!section) return false;
     if (section.id === "secObjetivo" && isRotulacion()) return false;
+    if (section.id === "secXrayForaneoLona") return isForaneo() && isLona();
+    if (section.id === "secXrayForaneoRotul") return isForaneo() && isRotulacion();
     if (section.closest("#flowLona") && (!flowLona || flowLona.hidden)) return false;
     if (section.closest("#flowToldo") && (!flowToldo || flowToldo.hidden)) return false;
     if (section.closest("#flowCaballete") && (!flowCaballete || flowCaballete.hidden)) return false;
@@ -550,6 +556,15 @@
         section.hidden = true;
         section.classList.remove("is-step-active");
       }
+    });
+
+    // Solo un input xray activo: el del paso Foráneo visible.
+    form.querySelectorAll('input[name="xray_cliente"]').forEach((input) => {
+      const section = input.closest("[data-form-step]");
+      const on = Boolean(section && isStepApplicable(section) && !section.hidden);
+      input.disabled = !on;
+      input.required = on;
+      if (!on) input.value = "";
     });
 
     if (actions) {
@@ -1401,6 +1416,17 @@
       errors.push("En Foráneo solo se puede solicitar Lona especializada o Rotulación.");
       markInvalid(form.querySelector('input[name="material"]'));
       return errors;
+    }
+
+    if (isForaneo() && (isLona() || isRotulacion())) {
+      const xray = [...form.querySelectorAll('input[name="xray_cliente"]')].find(
+        (input) => !input.disabled && !input.closest("[hidden]"),
+      );
+      if (!xray?.files?.length) {
+        errors.push("Sube la captura de X-ray por cliente.");
+        markInvalid(xray);
+        return errors;
+      }
     }
 
     const requiredText = [

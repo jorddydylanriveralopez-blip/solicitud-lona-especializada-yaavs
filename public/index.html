@@ -17,7 +17,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles-base.css?v=20261005a" />
-    <link rel="stylesheet" href="./lona.css?v=20261109d" />
+    <link rel="stylesheet" href="./lona.css?v=20261109e" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -295,6 +295,38 @@
             </fieldset>
           </section>
 
+          <section class="card-section" id="secXrayForaneoLona" data-form-step hidden>
+            <header class="section-head">
+              <span>6</span>
+              <h2>X-ray del cliente</h2>
+            </header>
+            <p class="multi-hint">Sube la captura de X-ray del cliente para esta solicitud foránea.</p>
+            <label class="field file-field">
+              <span>Sube la captura de X-ray por cliente <span class="req">*</span></span>
+              <div class="file-drop">
+                <input
+                  type="file"
+                  name="xray_cliente"
+                  accept=".jpg,.jpeg,.png,.heic,.heif,.pdf,image/jpeg,image/png,image/heic,image/heif,application/pdf"
+                  data-preview
+                  multiple
+                  required
+                />
+                <div class="file-drop-copy">
+                  <strong>Sube o selecciona la captura</strong>
+                  <small>Puedes elegir varias. JPG, PNG o PDF</small>
+                </div>
+                <div class="file-preview" hidden>
+                  <div class="file-preview-media"></div>
+                  <div class="file-preview-meta">
+                    <strong class="file-preview-name"></strong>
+                    <small class="file-preview-size"></small>
+                  </div>
+                </div>
+              </div>
+            </label>
+          </section>
+
           <div id="flowLona">
           <section class="card-section" data-form-step>
             <header class="section-head">
@@ -353,6 +385,38 @@
               Te recomendamos tramitar y obtener los permisos necesarios a la brevedad para garantizar
               la viabilidad de la rotulación.
             </div>
+          </section>
+
+          <section class="card-section" id="secXrayForaneoRotul" data-form-step hidden>
+            <header class="section-head">
+              <span>6</span>
+              <h2>X-ray del cliente</h2>
+            </header>
+            <p class="multi-hint">Sube la captura de X-ray del cliente para esta solicitud foránea.</p>
+            <label class="field file-field">
+              <span>Sube la captura de X-ray por cliente <span class="req">*</span></span>
+              <div class="file-drop">
+                <input
+                  type="file"
+                  name="xray_cliente"
+                  accept=".jpg,.jpeg,.png,.heic,.heif,.pdf,image/jpeg,image/png,image/heic,image/heif,application/pdf"
+                  data-preview
+                  multiple
+                  required
+                />
+                <div class="file-drop-copy">
+                  <strong>Sube o selecciona la captura</strong>
+                  <small>Puedes elegir varias. JPG, PNG o PDF</small>
+                </div>
+                <div class="file-preview" hidden>
+                  <div class="file-preview-media"></div>
+                  <div class="file-preview-meta">
+                    <strong class="file-preview-name"></strong>
+                    <small class="file-preview-size"></small>
+                  </div>
+                </div>
+              </div>
+            </label>
           </section>
 
           <section class="card-section" data-form-step>
@@ -630,6 +694,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20261109d" defer></script>
+    <script src="./app.js?v=20261109e" defer></script>
   </body>
 </html>
