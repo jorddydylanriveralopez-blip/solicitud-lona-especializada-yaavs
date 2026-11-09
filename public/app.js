@@ -138,10 +138,17 @@
   }
 
   function applyMaterialOptionsForZona() {
+    const isForaneo = selectedZonaComercial() === "Foráneo";
     form?.querySelectorAll("[data-material-option]").forEach((label) => {
+      const value = label.getAttribute("data-material-option");
       const input = label.querySelector('input[name="material"]');
-      label.hidden = false;
-      if (input) input.disabled = false;
+      // Foráneo: Lona especializada y Rotulación. Centro: todos.
+      const allowed = !isForaneo || value === "Lona" || value === "Rotulación";
+      label.hidden = !allowed;
+      if (input) {
+        input.disabled = !allowed;
+        if (!allowed && input.checked) input.checked = false;
+      }
     });
   }
 
@@ -1382,6 +1389,16 @@
 
     if (!selectedMaterial()) {
       errors.push("Selecciona el material a solicitar.");
+      markInvalid(form.querySelector('input[name="material"]'));
+      return errors;
+    }
+
+    if (
+      selectedZonaComercial() === "Foráneo" &&
+      selectedMaterial() !== "Lona" &&
+      selectedMaterial() !== "Rotulación"
+    ) {
+      errors.push("En Foráneo solo se puede solicitar Lona especializada o Rotulación.");
       markInvalid(form.querySelector('input[name="material"]'));
       return errors;
     }

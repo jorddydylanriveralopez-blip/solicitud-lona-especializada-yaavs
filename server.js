@@ -2900,6 +2900,12 @@ function missingSubmissionError(answers, files) {
   if (zona !== "centro" && zona !== "foráneo" && zona !== "foraneo") {
     return "Indica si la solicitud es de Centro o Foráneo.";
   }
+  if (zona === "foráneo" || zona === "foraneo") {
+    const okForaneo = material.includes("lona") || material.includes("rotul");
+    if (!okForaneo) {
+      return "En Foráneo solo se puede solicitar Lona especializada o Rotulación.";
+    }
+  }
   const requiredText = [
     ["ejecutivoNombre", "Falta el nombre del ejecutivo."],
     ["ejecutivoTelefono", "Falta el teléfono del ejecutivo."],

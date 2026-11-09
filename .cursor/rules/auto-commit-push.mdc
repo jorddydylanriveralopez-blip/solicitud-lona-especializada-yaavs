@@ -1,0 +1,22 @@
+---
+description: Commit, push y deploy automáticos al terminar cambios
+alwaysApply: true
+---
+
+# Commit + push automático
+
+El usuario pidió que **de aquí en adelante** los cambios funcionales se suban solos, sin preguntar.
+
+## Al terminar un cambio funcional
+
+1. Haz commit de los archivos relacionados (mensaje conciso en español, estilo del repo).
+2. `git push` a la rama actual.
+3. Si la rama no es `main`, mergea a `main` y haz `git push origin main` para que Render/Hostinger desplieguen.
+4. Si tocaste `gas/Code.gs`, corre `npm run deploy:gas`.
+5. No preguntes permiso para commit/push/deploy de estos cambios; ya está autorizado de forma permanente en este proyecto.
+
+## Excepciones (sí preguntar)
+
+- Secrets (`.env`, credenciales)
+- Force push / reset destructivo
+- Cambios ajenos al pedido del usuario
