@@ -832,6 +832,23 @@
       if (!current) return "";
       return `<p class="estado-pill" data-tone="${tone}"><span class="status-light" aria-hidden="true"></span>${escapeHtml(current)}</p>`;
     }
+    const id = escapeAttr(item.id || item.folio || "");
+    if (compact) {
+      const options = estadosForItem(item)
+        .map(
+          (estado) =>
+            `<option value="${escapeAttr(estado.key)}"${current === estado.key ? " selected" : ""}>${escapeHtml(estado.key)}</option>`,
+        )
+        .join("");
+      return `
+        <label class="semaphore-select-wrap">
+          <span class="semaphore-hint">Estado</span>
+          <select class="semaphore-select" data-id="${id}" aria-label="Estado de la solicitud">
+            <option value=""${current ? "" : " selected"} disabled>Elige el estado</option>
+            ${options}
+          </select>
+        </label>`;
+    }
     const choices = estadosForItem(item)
       .map(
         (estado) => `
@@ -840,7 +857,7 @@
           class="semaphore-choice${current === estado.key ? " is-on" : ""}"
           data-tone="${estado.tone}"
           data-estado="${escapeAttr(estado.key)}"
-          data-id="${escapeAttr(item.id || item.folio || "")}"
+          data-id="${id}"
           aria-pressed="${current === estado.key ? "true" : "false"}"
         >
           <span class="status-light" aria-hidden="true"></span>
@@ -850,7 +867,7 @@
       .join("");
     const hint = current ? `Va en: ${current}` : "Elige el estado:";
     return `
-      <section class="semaphore${compact ? " is-compact" : ""}" aria-label="Estado de la solicitud">
+      <section class="semaphore" aria-label="Estado de la solicitud">
         <p class="semaphore-hint">${escapeHtml(hint)}</p>
         <div class="semaphore-choices">${choices}</div>
       </section>`;
@@ -2828,6 +2845,16 @@
         if (!id || !estado) return;
         setEstado(id, estado);
       };
+    });
+    root.querySelectorAll(".semaphore-select").forEach((select) => {
+      select.onchange = (event) => {
+        event.stopPropagation();
+        const id = select.dataset.id || "";
+        const estado = select.value || "";
+        if (!id || !estado) return;
+        setEstado(id, estado);
+      };
+      select.onclick = (event) => event.stopPropagation();
     });
   }
 
