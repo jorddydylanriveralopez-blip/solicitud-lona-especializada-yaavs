@@ -578,6 +578,15 @@ function canAuthorizeRole(role) {
   return Array.isArray(role?.zoneNames) && role.zoneNames.length > 0;
 }
 
+function personName(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function isForaneoZona(value) {
   return String(value || "")
     .normalize("NFD")
@@ -586,9 +595,40 @@ function isForaneoZona(value) {
     .includes("foran");
 }
 
-function isForaneoItem(item) {
+const FORANEO_ZONE_NAMES = [
+  "Alejandro Henonin",
+  "Alan Alarcon Morales",
+  "Cesar Gutierrez Escarcega",
+  "Erendira Trujillo Aleman",
+  "Leon Perez Zamudio",
+  "Marco Antonio Calderon Martinez",
+  "Olyver Alain Guerrero Lozano",
+  "Subdirección Foráneo",
+].map(personName);
+
+function itemLooksForaneoByPeople(item) {
   const answers = item?.answers && typeof item.answers === "object" ? item.answers : {};
-  return isForaneoZona(item?.zonaComercial || answers.zonaComercial);
+  const territorial = personName(item?.gerenteTerritorial || answers.gerenteTerritorial);
+  const regional = personName(item?.territorioGerente || answers.territorioGerente);
+  if (!territorial && !regional) return false;
+  if (regional.includes("henonin") || territorial.includes("henonin")) return true;
+  return FORANEO_ZONE_NAMES.some((name) => name && (name === territorial || name === regional));
+}
+
+function resolvedZonaComercial(item) {
+  const answers = item?.answers && typeof item.answers === "object" ? item.answers : {};
+  const raw = String(item?.zonaComercial || answers.zonaComercial || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+  if (raw.includes("foran")) return "foraneo";
+  if (raw.includes("centro")) return "centro";
+  return itemLooksForaneoByPeople(item) ? "foraneo" : "centro";
+}
+
+function isForaneoItem(item) {
+  return resolvedZonaComercial(item) === "foraneo";
 }
 
 function parseForaneoAuthChain(raw) {
@@ -646,22 +686,8 @@ function authorName(role) {
   return name || "Gerente";
 }
 
-function personName(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function itemZonaComercial(item) {
-  const answers = item?.answers && typeof item.answers === "object" ? item.answers : {};
-  return String(item?.zonaComercial || answers.zonaComercial || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
+  return resolvedZonaComercial(item);
 }
 
 function itemMatchesZonaFilter(role, item) {
@@ -671,7 +697,7 @@ function itemMatchesZonaFilter(role, item) {
     .toLowerCase()
     .trim();
   if (!filter) return true;
-  const zona = itemZonaComercial(item);
+  const zona = resolvedZonaComercial(item);
   if (filter === "foraneo") return zona === "foraneo";
   if (filter === "centro") return zona === "centro";
   return zona === filter;
@@ -717,7 +743,14 @@ function scopeItems(items, role) {
   if (role?.zonaFilter) {
     list = list.filter((item) => itemMatchesZonaFilter(role, item));
   }
-  return list.map((item) => ({ ...item, enMiZona: itemInAuthorizeZone(role, item) }));
+  return list.map((item) => {
+    const zona = resolvedZonaComercial(item);
+    return {
+      ...item,
+      zonaComercial: item.zonaComercial || (zona === "foraneo" ? "Foráneo" : "Centro"),
+      enMiZona: itemInAuthorizeZone(role, item),
+    };
+  });
 }
 
 const loginAttempts = new Map();
