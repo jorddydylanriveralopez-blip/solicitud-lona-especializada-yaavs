@@ -1968,6 +1968,38 @@ button.ghost-link {
   font-weight: 750;
 }
 
+.auth-chain {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.auth-chain-step {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.7rem;
+  margin: 0;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 36, 64, 0.08);
+  font-size: 0.86rem;
+}
+
+.auth-chain-step strong {
+  min-width: 8.5rem;
+  color: #6b7280;
+}
+
+.auth-chain-step.is-on {
+  background: #eefaf3;
+  border-color: #b7e4c7;
+}
+
+.auth-chain-step.is-on strong {
+  color: #146c43;
+}
+
 .autorizacion-panel .autorizacion-btn {
   width: auto;
   flex: 0 0 auto;

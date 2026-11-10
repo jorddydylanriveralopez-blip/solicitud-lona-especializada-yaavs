@@ -324,13 +324,84 @@ const BOARD_ROLES = {
     hash: "0d03dc47a7591745c36836d2445662e0:d940b947ab779ff917a7c9bfa75b079ce2c92d3722b424e2a75c204c8b7e2bca",
   },
   "gerente-henonin": {
-    label: "Foráneo · Alejandro Henonin",
+    label: "Gerente regional · Alejandro Henonin",
     seesAll: true,
     canManage: false,
     canDelete: false,
     zonaFilter: "foraneo",
+    authorizeLevel: "regional",
     zoneNames: ["Alejandro Henonin"],
     hash: "4e30eee4fc75fa906ec7b2e6206e45a8:af082f811e6b0cbb60ed00196003958360dd7e6110ab0e74a8d08508ac6406b1",
+  },
+  "foraneo-alan": {
+    label: "Gerente territorial · Alan Alarcon Morales",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "foraneo",
+    authorizeLevel: "territorial",
+    zoneNames: ["Alan Alarcon Morales"],
+    hash: "5cb05942976b76d1e3a37e8537c8f875:3e24c8d2e2eb31462d636ad0cc1f1d59b4bed22f0c784bcbd7fa6b065d2d98e0",
+  },
+  "foraneo-cesar": {
+    label: "Gerente territorial · Cesar Gutierrez Escarcega",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "foraneo",
+    authorizeLevel: "territorial",
+    zoneNames: ["Cesar Gutierrez Escarcega"],
+    hash: "da0794eba391d2df943443014cec31a0:25c44b606e68ae8a30e9fdf942e72131763559c11152ad88cc851cd6ca66391e",
+  },
+  "foraneo-erendira": {
+    label: "Gerente territorial · Erendira Trujillo Aleman",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "foraneo",
+    authorizeLevel: "territorial",
+    zoneNames: ["Erendira Trujillo Aleman"],
+    hash: "6c1a27b22f7209708e90a979a8755b98:9740a435d4df48b8e41f3aa4415456e93dbbc5d3f8c4c033aa5e0d63e88b360f",
+  },
+  "foraneo-leon": {
+    label: "Gerente territorial · Leon Perez Zamudio",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "foraneo",
+    authorizeLevel: "territorial",
+    zoneNames: ["Leon Perez Zamudio"],
+    hash: "a9a49bd78238eebff2791b892762c88c:c30e56ac8069ea6714a9f14b0f1d43589728c7e35b660f28b82aa1a19ee42974",
+  },
+  "foraneo-marco": {
+    label: "Gerente territorial · Marco Antonio Calderon Martinez",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "foraneo",
+    authorizeLevel: "territorial",
+    zoneNames: ["Marco Antonio Calderon Martinez"],
+    hash: "fed9019a8cc2a5474dee74fa78d21e90:bef590296c6837531f30af1342099fa1a58606a5fdf91486148dc4b9b92d9b1a",
+  },
+  "foraneo-olyver": {
+    label: "Gerente territorial · Olyver Alain Guerrero Lozano",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "foraneo",
+    authorizeLevel: "territorial",
+    zoneNames: ["Olyver Alain Guerrero Lozano"],
+    hash: "cb85d7a5b4630706057b7b57d4b1b4d4:c52e9c5291e75715c026da1c40e5eb17fecefa879007cc3c75ad19291eefb8f7",
+  },
+  "foraneo-subdireccion": {
+    label: "Subdirección · Foráneo",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "foraneo",
+    authorizeLevel: "subdireccion",
+    zoneNames: ["Subdirección Foráneo"],
+    hash: "dd3bfdb1090489ef82b9f8302ae2c73a:8e6f61336aff1c43579a9299daf36a3f9f7344c75789ed5824c329f06eb904fb",
   },
   "gerente-jimenez": {
     label: "Centro · David Jimenez",
@@ -479,6 +550,68 @@ function canAuthorizeRole(role) {
   return Array.isArray(role?.zoneNames) && role.zoneNames.length > 0;
 }
 
+function isForaneoZona(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .includes("foran");
+}
+
+function isForaneoItem(item) {
+  const answers = item?.answers && typeof item.answers === "object" ? item.answers : {};
+  return isForaneoZona(item?.zonaComercial || answers.zonaComercial);
+}
+
+function parseForaneoAuthChain(raw) {
+  const text = String(raw || "").trim();
+  if (!text) {
+    return { territorial: "", regional: "", subdireccion: "", legacy: false, complete: false };
+  }
+  const hasMarkers = /\bT:/.test(text) || /Territorial\s*·/i.test(text);
+  if (/^autorizada\b/i.test(text) && !hasMarkers) {
+    return { territorial: "", regional: "", subdireccion: "", legacy: true, complete: true };
+  }
+  const territorial =
+    text.match(/(?:^|\|\s*)T:\s*([^|]+)/i)?.[1]?.trim() ||
+    text.match(/Territorial\s*·\s*([^|]+)/i)?.[1]?.trim() ||
+    "";
+  const regional =
+    text.match(/(?:^|\|\s*)R:\s*([^|]+)/i)?.[1]?.trim() ||
+    text.match(/Regional\s*·\s*([^|]+)/i)?.[1]?.trim() ||
+    "";
+  const subdireccion =
+    text.match(/(?:^|\|\s*)S:\s*([^|]+)/i)?.[1]?.trim() ||
+    text.match(/Subdirecci[oó]n\s*·\s*([^|]+)/i)?.[1]?.trim() ||
+    "";
+  return {
+    territorial,
+    regional,
+    subdireccion,
+    legacy: false,
+    complete: Boolean(territorial && regional && subdireccion),
+  };
+}
+
+function formatForaneoAuthChain(steps) {
+  const parts = [];
+  if (steps.territorial) parts.push(`T:${steps.territorial}`);
+  if (steps.regional) parts.push(`R:${steps.regional}`);
+  if (steps.subdireccion) parts.push(`S:${steps.subdireccion}`);
+  if (!parts.length) return "";
+  if (steps.territorial && steps.regional && steps.subdireccion) {
+    return `Autorizada · ${parts.join(" | ")}`;
+  }
+  return parts.join(" | ");
+}
+
+function isItemAuthorized(item) {
+  if (isForaneoItem(item)) {
+    return parseForaneoAuthChain(item?.autorizada).complete;
+  }
+  return /^autorizada\b/i.test(String(item?.autorizada || "").trim());
+}
+
 function authorName(role) {
   const label = String(role?.label || "Gerente");
   const name = label.split("·").pop().trim();
@@ -523,6 +656,14 @@ function itemInAuthorizeZone(role, item) {
   const territorial = personName(item.gerenteTerritorial || answers.gerenteTerritorial);
   const regional = personName(item.territorioGerente || answers.territorioGerente);
   const zona = itemZonaComercial(item);
+  const level = String(role?.authorizeLevel || "").toLowerCase();
+  if (level === "subdireccion" && zona === "foraneo") return true;
+  if (level === "regional" && names.includes(personName("Alejandro Henonin")) && zona === "foraneo") {
+    return true;
+  }
+  if (level === "territorial" && zona === "foraneo") {
+    return names.some((name) => name === territorial);
+  }
   if (names.includes(personName("Alejandro Henonin")) && zona === "foraneo") return true;
   if (names.includes(personName("David Jimenez")) && zona === "centro") return true;
   return names.some((name) => name === territorial || name === regional);
@@ -601,6 +742,7 @@ app.get("/api/session", (req, res) => {
     canAuthorize: canAuthorizeRole(role),
     canDelete: role.canDelete,
     zonaFilter: role.zonaFilter || "",
+    authorizeLevel: role.authorizeLevel || "",
   });
 });
 
@@ -2326,7 +2468,6 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
     return res.status(403).json({ ok: false, error: "Solo un gerente puede autorizar la solicitud" });
   }
   const aceptar = req.body?.aceptar === true || req.body?.aceptar === "1" || req.body?.aceptar === 1;
-  const autorizada = aceptar ? `Autorizada · ${authorName(req.boardRole)}` : "";
   const id = String(req.params.id || "").trim();
   if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
 
@@ -2337,11 +2478,57 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
   if (!localEntry && !row) return res.status(404).json({ ok: false, error: "Solicitud no encontrada" });
   const answers = localEntry?.answers && typeof localEntry.answers === "object" ? localEntry.answers : {};
   const zoneItem = {
+    zonaComercial: String(row?.zonaComercial || answers.zonaComercial || "").trim(),
     gerenteTerritorial: String(row?.gerenteTerritorial || answers.gerenteTerritorial || "").trim(),
     territorioGerente: String(row?.territorioGerente || answers.territorioGerente || "").trim(),
+    autorizada: String(row?.autorizada || answers.autorizada || "").trim(),
   };
   if (!itemInAuthorizeZone(req.boardRole, zoneItem)) {
     return res.status(403).json({ ok: false, error: "Esta solicitud es de otra zona" });
+  }
+
+  const who = authorName(req.boardRole);
+  const level = String(req.boardRole.authorizeLevel || "").toLowerCase();
+  let autorizada = "";
+  if (isForaneoItem(zoneItem) && (level === "territorial" || level === "regional" || level === "subdireccion")) {
+    const chain = parseForaneoAuthChain(zoneItem.autorizada);
+    if (aceptar) {
+      if (level === "territorial") {
+        chain.territorial = who;
+        chain.regional = "";
+        chain.subdireccion = "";
+      } else if (level === "regional") {
+        if (!chain.territorial && !chain.legacy) {
+          return res.status(403).json({
+            ok: false,
+            error: "Primero debe autorizar el gerente territorial",
+          });
+        }
+        if (!chain.territorial && chain.legacy) chain.territorial = "Previa";
+        chain.regional = who;
+        chain.subdireccion = "";
+      } else if (level === "subdireccion") {
+        if (!chain.territorial || !chain.regional) {
+          return res.status(403).json({
+            ok: false,
+            error: "Falta la autorización territorial o regional",
+          });
+        }
+        chain.subdireccion = who;
+      }
+    } else if (level === "territorial") {
+      chain.territorial = "";
+      chain.regional = "";
+      chain.subdireccion = "";
+    } else if (level === "regional") {
+      chain.regional = "";
+      chain.subdireccion = "";
+    } else if (level === "subdireccion") {
+      chain.subdireccion = "";
+    }
+    autorizada = formatForaneoAuthChain(chain);
+  } else {
+    autorizada = aceptar ? `Autorizada · ${who}` : "";
   }
 
   let folio = "";
@@ -2376,7 +2563,13 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
     return res.status(502).json({ ok: false, error: "No se pudo guardar la autorización" });
   }
 
-  res.json({ ok: true, id, folio, autorizada });
+  res.json({
+    ok: true,
+    id,
+    folio,
+    autorizada,
+    authChain: isForaneoItem(zoneItem) ? parseForaneoAuthChain(autorizada) : null,
+  });
 });
 
 app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {

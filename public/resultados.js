@@ -276,8 +276,118 @@
     return estado === "Terminado" || estado === "Rotulación terminada";
   }
 
+  function isForaneoItem(item) {
+    return String(item?.zonaComercial || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .includes("foran");
+  }
+
+  function parseForaneoAuthChain(raw) {
+    const text = String(raw || "").trim();
+    if (!text) {
+      return { territorial: "", regional: "", subdireccion: "", legacy: false, complete: false };
+    }
+    const hasMarkers = /\bT:/.test(text) || /Territorial\s*·/i.test(text);
+    if (/^autorizada\b/i.test(text) && !hasMarkers) {
+      return { territorial: "", regional: "", subdireccion: "", legacy: true, complete: true };
+    }
+    const territorial =
+      text.match(/(?:^|\|\s*)T:\s*([^|]+)/i)?.[1]?.trim() ||
+      text.match(/Territorial\s*·\s*([^|]+)/i)?.[1]?.trim() ||
+      "";
+    const regional =
+      text.match(/(?:^|\|\s*)R:\s*([^|]+)/i)?.[1]?.trim() ||
+      text.match(/Regional\s*·\s*([^|]+)/i)?.[1]?.trim() ||
+      "";
+    const subdireccion =
+      text.match(/(?:^|\|\s*)S:\s*([^|]+)/i)?.[1]?.trim() ||
+      text.match(/Subdirecci[oó]n\s*·\s*([^|]+)/i)?.[1]?.trim() ||
+      "";
+    return {
+      territorial,
+      regional,
+      subdireccion,
+      legacy: false,
+      complete: Boolean(territorial && regional && subdireccion),
+    };
+  }
+
   function isAuthorized(item) {
+    if (isForaneoItem(item)) return parseForaneoAuthChain(item?.autorizada).complete;
     return /^autorizada\b/i.test(String(item?.autorizada || "").trim());
+  }
+
+  function foraneoAuthAction(item) {
+    if (!session?.canAuthorize || !item?.enMiZona || !isForaneoItem(item)) return null;
+    const level = String(session?.authorizeLevel || "").toLowerCase();
+    if (!level) return null;
+    const chain = parseForaneoAuthChain(item?.autorizada);
+    if (level === "territorial") {
+      if (chain.territorial && !chain.regional && !chain.subdireccion) {
+        return { aceptar: false, label: "Quitar autorización territorial" };
+      }
+      if (!chain.territorial && !chain.complete) {
+        return { aceptar: true, label: "Autorizar (territorial)" };
+      }
+      return null;
+    }
+    if (level === "regional") {
+      if (!chain.territorial && !chain.legacy) return null;
+      if (chain.regional && !chain.subdireccion) {
+        return { aceptar: false, label: "Quitar autorización regional" };
+      }
+      if (chain.territorial && !chain.regional) {
+        return { aceptar: true, label: "Autorizar (regional)" };
+      }
+      if (chain.legacy && !chain.regional) {
+        return { aceptar: true, label: "Autorizar (regional)" };
+      }
+      return null;
+    }
+    if (level === "subdireccion") {
+      if (!chain.territorial || !chain.regional) return null;
+      if (chain.subdireccion) {
+        return { aceptar: false, label: "Quitar autorización de subdirección" };
+      }
+      return { aceptar: true, label: "Autorizar (subdirección)" };
+    }
+    return null;
+  }
+
+  function authStatusLabel(item) {
+    if (!isForaneoItem(item)) {
+      return isAuthorized(item) ? "Autorizada" : "Pendiente de autorización";
+    }
+    const chain = parseForaneoAuthChain(item?.autorizada);
+    if (chain.complete || chain.legacy) return "Autorizada (cadena completa)";
+    if (!chain.territorial) return "Pendiente: gerente territorial";
+    if (!chain.regional) return "Pendiente: gerente regional";
+    if (!chain.subdireccion) return "Pendiente: subdirección";
+    return "Pendiente de autorización";
+  }
+
+  function foraneoAuthStepsHtml(item) {
+    if (!isForaneoItem(item)) return "";
+    const chain = parseForaneoAuthChain(item?.autorizada);
+    const steps = [
+      { key: "territorial", label: "1. Territorial", value: chain.territorial },
+      { key: "regional", label: "2. Regional", value: chain.regional },
+      { key: "subdireccion", label: "3. Subdirección", value: chain.subdireccion },
+    ];
+    return `
+      <div class="auth-chain">
+        ${steps
+          .map(
+            (step) => `
+          <p class="auth-chain-step${step.value ? " is-on" : ""}">
+            <strong>${escapeHtml(step.label)}</strong>
+            <span>${step.value ? escapeHtml(step.value) : "Pendiente"}</span>
+          </p>`,
+          )
+          .join("")}
+      </div>`;
   }
 
   function hasFaltante(item) {
@@ -1442,8 +1552,8 @@
                 <small>${escapeHtml(formatDate(item.receivedAt))}${mediaCount ? ` · ${mediaCount} archivo${mediaCount === 1 ? "" : "s"}` : ""}</small>
                 ${
                   isAuthorized(item)
-                    ? `<p class="card-auth">Autorizada</p>`
-                    : `<p class="card-auth is-pending">Sin autorizar</p>`
+                    ? `<p class="card-auth">${escapeHtml(authStatusLabel(item))}</p>`
+                    : `<p class="card-auth is-pending">${escapeHtml(authStatusLabel(item))}</p>`
                 }
                 ${
                   item.faltanteCliente && (session?.seesAll || materialKind(item) === "rotulacion")
@@ -1496,7 +1606,16 @@
   function autorizacionCardHtml(item) {
     const ok = isAuthorized(item);
     const id = escapeAttr(item.id || item.folio || "");
-    if (session?.canAuthorize && item?.enMiZona) {
+    const foraneoAction = foraneoAuthAction(item);
+    if (foraneoAction) {
+      return `
+        <div class="autorizacion-card">
+          <button type="button" class="autorizacion-btn${foraneoAction.aceptar ? "" : " is-on"}" data-id="${id}" data-aceptar="${foraneoAction.aceptar ? "1" : "0"}">
+            ${escapeHtml(foraneoAction.label)}
+          </button>
+        </div>`;
+    }
+    if (session?.canAuthorize && item?.enMiZona && !isForaneoItem(item)) {
       return `
         <div class="autorizacion-card">
           <button type="button" class="autorizacion-btn${ok ? " is-on" : ""}" data-id="${id}" data-aceptar="${ok ? "0" : "1"}">
@@ -1504,7 +1623,7 @@
           </button>
         </div>`;
     }
-    return `<p class="autorizacion-flag${ok ? " is-on" : ""}">${ok ? "Autorizada" : "Pendiente de autorización"}</p>`;
+    return `<p class="autorizacion-flag${ok ? " is-on" : ""}">${escapeHtml(authStatusLabel(item))}</p>`;
   }
 
   function productoCardHtml(item) {
@@ -1548,16 +1667,33 @@
       .join("·")
       .trim();
     const id = escapeAttr(item.id || item.folio || "");
-    const mine = session?.canAuthorize && item?.enMiZona;
-    const action = mine
-      ? `<button type="button" class="autorizacion-btn${ok ? " is-on" : ""}" data-id="${id}" data-aceptar="${ok ? "0" : "1"}">${ok ? "Quitar autorización" : "Aceptar para Marketing"}</button>`
-      : "";
-    const fuera = session?.canAuthorize && !item?.enMiZona ? " La autoriza el gerente de esta zona." : "";
+    const foraneo = isForaneoItem(item);
+    const foraneoAction = foraneoAuthAction(item);
+    const mine = session?.canAuthorize && item?.enMiZona && !foraneo;
+    let action = "";
+    if (foraneoAction) {
+      action = `<button type="button" class="autorizacion-btn${foraneoAction.aceptar ? "" : " is-on"}" data-id="${id}" data-aceptar="${foraneoAction.aceptar ? "1" : "0"}">${escapeHtml(foraneoAction.label)}</button>`;
+    } else if (mine) {
+      action = `<button type="button" class="autorizacion-btn${ok ? " is-on" : ""}" data-id="${id}" data-aceptar="${ok ? "0" : "1"}">${ok ? "Quitar autorización" : "Aceptar para Marketing"}</button>`;
+    }
+    const fuera =
+      session?.canAuthorize && item?.enMiZona === false
+        ? " La autoriza el gerente de esta zona."
+        : foraneo && session?.canAuthorize && item?.enMiZona && !foraneoAction
+          ? " Espera el paso anterior de la cadena."
+          : "";
     return `
       <section class="autorizacion-panel${ok ? " is-on" : ""}">
         <div>
-          <p class="autorizacion-kicker">Autorización del gerente</p>
-          <p class="autorizacion-state">${ok ? `Autorizada${quien ? ` · ${escapeHtml(quien)}` : ""}` : `Pendiente de autorización${fuera}`}</p>
+          <p class="autorizacion-kicker">${foraneo ? "Autorización Foráneo (cadena)" : "Autorización del gerente"}</p>
+          <p class="autorizacion-state">${
+            foraneo
+              ? `${escapeHtml(authStatusLabel(item))}${fuera}`
+              : ok
+                ? `Autorizada${quien ? ` · ${escapeHtml(quien)}` : ""}`
+                : `Pendiente de autorización${fuera}`
+          }</p>
+          ${foraneo ? foraneoAuthStepsHtml(item) : ""}
         </div>
         ${action}
       </section>`;
@@ -1579,6 +1715,7 @@
   async function setAutorizacion(id, aceptar) {
     const item = items.find((it) => it.id === id || it.folio === id);
     if (!item || !session?.canAuthorize || !item.enMiZona) return;
+    if (isForaneoItem(item) && !foraneoAuthAction(item)) return;
     const previous = item.autorizada || "";
     item.autorizada = aceptar ? "Autorizada" : "";
     renderList();

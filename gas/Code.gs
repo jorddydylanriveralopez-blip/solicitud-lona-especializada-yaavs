@@ -140,7 +140,7 @@ function doPost(e) {
       return jsonOut_({ ok: updated > 0, updated: updated, estado: estado });
     }
     if (data.action === "setAutorizada") {
-      var autorizada = String(data.autorizada || "").trim().slice(0, 180);
+      var autorizada = String(data.autorizada || "").trim().slice(0, 500);
       var updatedAut = setAutorizada_(data.id, data.folio, autorizada);
       return jsonOut_({ ok: updatedAut > 0, updated: updatedAut, autorizada: autorizada });
     }
