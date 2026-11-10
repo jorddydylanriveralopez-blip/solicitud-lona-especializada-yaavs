@@ -1301,8 +1301,78 @@ button.ghost-link {
 }
 
 .role-chip[hidden],
-.login-error[hidden] {
-  display: none;
+.login-error[hidden],
+.zone-pick-card[hidden] {
+  display: none !important;
+}
+
+.zone-pick-card {
+  width: min(460px, 100%);
+}
+
+.zone-pick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.zone-pick-btn {
+  appearance: none;
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 12px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  display: grid;
+  gap: 4px;
+  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.zone-pick-btn:hover {
+  transform: translateY(-2px);
+}
+
+.zone-pick-btn.is-preferred {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.zone-pick-centro {
+  border-color: rgba(0, 151, 178, 0.35);
+  background: linear-gradient(160deg, #f7fcff 0%, #e8f6fb 100%);
+}
+
+.zone-pick-foraneo {
+  border-color: rgba(194, 65, 12, 0.35);
+  background: linear-gradient(160deg, #fffaf5 0%, #ffedd5 100%);
+}
+
+.zone-pick-name {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.zone-pick-foraneo .zone-pick-name {
+  color: #7c2d12;
+}
+
+.zone-pick-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.zone-pick-ambos {
+  justify-self: center;
+  margin-top: 4px;
+}
+
+@media (max-width: 520px) {
+  .zone-pick-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .board-buckets {

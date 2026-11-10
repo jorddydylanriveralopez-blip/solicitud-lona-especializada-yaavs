@@ -13,7 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./resultados.css?v=20261003d" />
+    <link rel="stylesheet" href="./resultados.css?v=20261110c" />
   </head>
   <body class="login-page">
     <div class="atmosphere" aria-hidden="true">
@@ -33,14 +33,59 @@
         <p class="login-error" id="loginError" role="alert" hidden></p>
         <button type="submit" class="login-btn" id="loginBtn">Entrar</button>
       </form>
+
+      <section class="login-card zone-pick-card" id="zonePick" hidden>
+        <img src="./assets/logo-yaavs.png" alt="YAAVS" width="160" height="56" class="brand-logo" />
+        <p class="dashboard-kicker" id="zonePickRole">Marketing</p>
+        <h1>¿Qué dashboard quieres ver?</h1>
+        <p class="login-lede">Elige Centro o Foráneo. Después puedes cambiarlo en el tablero.</p>
+        <div class="zone-pick-grid" role="group" aria-label="Elegir dashboard">
+          <button type="button" class="zone-pick-btn zone-pick-centro" data-zone="centro">
+            <span class="zone-pick-name">Centro</span>
+            <span class="zone-pick-hint">Solicitudes de zona Centro</span>
+          </button>
+          <button type="button" class="zone-pick-btn zone-pick-foraneo" data-zone="foraneo">
+            <span class="zone-pick-name">Foráneo</span>
+            <span class="zone-pick-hint">Solicitudes de zona Foráneo</span>
+          </button>
+        </div>
+        <button type="button" class="ghost-link zone-pick-ambos" data-zone="all">Ver ambos</button>
+      </section>
     </main>
 
     <script>
       (() => {
+        const ZONE_KEY = "yaavs_zone_dashboard";
         const form = document.getElementById("loginForm");
         const input = document.getElementById("loginPassword");
         const errorEl = document.getElementById("loginError");
         const btn = document.getElementById("loginBtn");
+        const zonePick = document.getElementById("zonePick");
+        const zonePickRole = document.getElementById("zonePickRole");
+
+        function goBoard(zone) {
+          try {
+            localStorage.setItem(ZONE_KEY, zone);
+          } catch (_) {}
+          location.replace("/resultados");
+        }
+
+        function showZonePick(label) {
+          form.hidden = true;
+          zonePick.hidden = false;
+          if (zonePickRole) zonePickRole.textContent = label || "Marketing";
+          const saved = (() => {
+            try {
+              return localStorage.getItem(ZONE_KEY) || "";
+            } catch (_) {
+              return "";
+            }
+          })();
+          zonePick.querySelectorAll("[data-zone]").forEach((el) => {
+            el.classList.toggle("is-preferred", el.dataset.zone === saved);
+          });
+        }
+
         form.addEventListener("submit", async (e) => {
           e.preventDefault();
           errorEl.hidden = true;
@@ -59,6 +104,10 @@
             });
             const data = await res.json().catch(() => ({}));
             if (res.ok && data.ok) {
+              if (data.canPickDashboard) {
+                showZonePick(data.label);
+                return;
+              }
               location.replace("/resultados");
               return;
             }
@@ -72,6 +121,12 @@
             btn.disabled = false;
             btn.textContent = "Entrar";
           }
+        });
+
+        zonePick?.addEventListener("click", (e) => {
+          const pick = e.target.closest("[data-zone]");
+          if (!pick) return;
+          goBoard(pick.dataset.zone || "centro");
         });
       })();
     </script>

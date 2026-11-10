@@ -24,6 +24,7 @@
   let boardBucket = "activas"; // activas | terminadas
   let quickFilter = "all"; // all | autorizadas | sin-autorizar | faltantes
   let zoneDashboard = "centro"; // centro | foraneo | all
+  const ZONE_DASHBOARD_KEY = "yaavs_zone_dashboard";
   let dateFromFilter = "";
   let dateToFilter = "";
   let searchQuery = "";
@@ -288,6 +289,20 @@
 
   function canSwitchZoneDashboard() {
     return Boolean(session?.seesAll) && !session?.zonaFilter;
+  }
+
+  function readStoredZoneDashboard() {
+    try {
+      const value = String(localStorage.getItem(ZONE_DASHBOARD_KEY) || "").toLowerCase();
+      if (value === "centro" || value === "foraneo" || value === "all") return value;
+    } catch (_) {}
+    return "";
+  }
+
+  function persistZoneDashboard(zone) {
+    try {
+      localStorage.setItem(ZONE_DASHBOARD_KEY, zone);
+    } catch (_) {}
   }
 
   function resolvedZoneDashboard() {
@@ -2999,6 +3014,7 @@
     const next = btn.dataset.zone || "centro";
     if (next === zoneDashboard) return;
     zoneDashboard = next;
+    persistZoneDashboard(next);
     index = 0;
     applyDashboardTheme();
     renderZoneDashboardTabs();
@@ -3056,7 +3072,7 @@
     if (lockedZona === "centro" || lockedZona === "foraneo") {
       zoneDashboard = lockedZona;
     } else if (session.seesAll) {
-      zoneDashboard = "centro";
+      zoneDashboard = readStoredZoneDashboard() || "centro";
     }
     if (!session.seesAll) {
       const field = document.getElementById("materialFilterField");

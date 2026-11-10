@@ -745,7 +745,15 @@ app.post("/api/login", (req, res) => {
       BOARD_SESSION_DAYS * 86400
     }${req.secure ? "; Secure" : ""}`,
   );
-  res.json({ ok: true, role: roleKey, label: BOARD_ROLES[roleKey].label });
+  const role = BOARD_ROLES[roleKey];
+  res.json({
+    ok: true,
+    role: roleKey,
+    label: role.label,
+    seesAll: Boolean(role.seesAll),
+    zonaFilter: role.zonaFilter || "",
+    canPickDashboard: Boolean(role.seesAll) && !role.zonaFilter,
+  });
 });
 
 app.post("/api/logout", (req, res) => {
