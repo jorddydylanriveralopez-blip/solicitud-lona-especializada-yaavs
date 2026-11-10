@@ -421,6 +421,15 @@ const BOARD_ROLES = {
     envPassword: "BOARD_PASSWORD_TRADE_MONICA",
     hash: "2131378437c8d7281f022df95e1fdff5:83bd26bc16bc24020d877f5f8f00d42aeec51ec70d5f07e3b1a9fc9b2864d53c",
   },
+  "trade-noemi": {
+    label: "Trade Marketing · Noemí · Centro",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "centro",
+    envPassword: "BOARD_PASSWORD_TRADE_NOEMI",
+    hash: "aadbf23f717aa5bbbab0bbadf9225cf5:7b48fc28f6b8b81b0a626686a2bd2d5f3c5f908134edc33b752f0b715870b937",
+  },
 };
 const PRODUCCION_ESTADOS = ["En diseño", "En proceso", "En revisión", "Terminado"];
 const ROTULACION_ESTADOS = [
