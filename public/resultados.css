@@ -4,15 +4,47 @@
   --blue: #2563b5;
   --teal: #0097b2;
   --teal-soft: rgba(0, 151, 178, 0.14);
+  --accent: #0097b2;
+  --accent-soft: rgba(0, 151, 178, 0.14);
+  --accent-strong: #2563b5;
   --ink: #0f2440;
   --muted: #5a738c;
   --line: rgba(15, 36, 64, 0.1);
   --surface: #ffffff;
+  --page-bg: #f7fbff;
   --font: "Manrope", "Segoe UI", sans-serif;
   --display: "Sora", "Manrope", sans-serif;
   --shadow: 0 16px 40px rgba(15, 36, 64, 0.08);
   --radius: 20px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dash-glow-a: rgba(0, 151, 178, 0.22);
+  --dash-glow-b: rgba(37, 99, 181, 0.18);
+  --dash-chip: #0f766e;
+}
+
+body.dashboard-foraneo {
+  --navy: #1f140c;
+  --navy-mid: #3a2416;
+  --blue: #b45309;
+  --teal: #c2410c;
+  --teal-soft: rgba(194, 65, 12, 0.14);
+  --accent: #c2410c;
+  --accent-soft: rgba(194, 65, 12, 0.14);
+  --accent-strong: #92400e;
+  --ink: #1f140c;
+  --muted: #7c5a45;
+  --line: rgba(31, 20, 12, 0.12);
+  --page-bg: #fff7ed;
+  --shadow: 0 16px 40px rgba(70, 30, 8, 0.1);
+  --dash-glow-a: rgba(194, 65, 12, 0.22);
+  --dash-glow-b: rgba(146, 64, 14, 0.18);
+  --dash-chip: #b45309;
+}
+
+body.dashboard-ambos {
+  --accent: #0f766e;
+  --accent-soft: rgba(15, 118, 110, 0.12);
+  --dash-chip: #334155;
 }
 
 * {
@@ -24,7 +56,8 @@ body {
   min-height: 100vh;
   font-family: var(--font);
   color: var(--ink);
-  background: #f7fbff;
+  background: var(--page-bg);
+  transition: background-color 0.35s var(--ease), color 0.35s var(--ease);
 }
 
 body.lightbox-open {
@@ -38,6 +71,15 @@ body.lightbox-open {
   pointer-events: none;
   overflow: hidden;
   background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 38%, #edf6fa 100%);
+  transition: background 0.4s var(--ease);
+}
+
+body.dashboard-foraneo .atmosphere {
+  background: linear-gradient(180deg, #fffaf5 0%, #fff1e6 40%, #ffe8d6 100%);
+}
+
+body.dashboard-ambos .atmosphere {
+  background: linear-gradient(180deg, #ffffff 0%, #f5f7f9 40%, #eef2f5 100%);
 }
 
 .atmosphere::before,
@@ -47,6 +89,7 @@ body.lightbox-open {
   border-radius: 50%;
   filter: blur(90px);
   opacity: 0.55;
+  transition: background 0.4s var(--ease);
 }
 
 .atmosphere::before {
@@ -54,7 +97,7 @@ body.lightbox-open {
   height: min(520px, 70vw);
   top: -160px;
   right: -120px;
-  background: rgba(0, 151, 178, 0.22);
+  background: var(--dash-glow-a);
 }
 
 .atmosphere::after {
@@ -62,7 +105,7 @@ body.lightbox-open {
   height: min(460px, 65vw);
   bottom: -140px;
   left: -100px;
-  background: rgba(37, 99, 181, 0.18);
+  background: var(--dash-glow-b);
 }
 
 .scene-photo {
@@ -77,6 +120,13 @@ body.lightbox-open {
   animation: none;
 }
 
+body.dashboard-foraneo .scene-photo {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(194, 65, 12, 0.1) 0 2px, transparent 2px),
+    radial-gradient(circle at 88% 24%, rgba(146, 64, 14, 0.08) 0 2px, transparent 2px);
+  background-size: 32px 32px;
+}
+
 .scene-overlay {
   position: absolute;
   inset: 0;
@@ -84,6 +134,13 @@ body.lightbox-open {
     radial-gradient(ellipse 80% 60% at 50% -10%, rgba(255, 255, 255, 0.95), transparent 70%),
     radial-gradient(ellipse 55% 40% at 100% 50%, rgba(0, 151, 178, 0.1), transparent 62%),
     radial-gradient(ellipse 50% 38% at 0% 78%, rgba(37, 99, 181, 0.08), transparent 60%);
+}
+
+body.dashboard-foraneo .scene-overlay {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(255, 250, 245, 0.95), transparent 70%),
+    radial-gradient(ellipse 55% 40% at 100% 50%, rgba(194, 65, 12, 0.12), transparent 62%),
+    radial-gradient(ellipse 50% 38% at 0% 78%, rgba(146, 64, 14, 0.1), transparent 60%);
 }
 
 .topbar,
@@ -111,6 +168,84 @@ body.lightbox-open {
   width: 130px;
   height: auto;
   filter: drop-shadow(0 4px 14px rgba(15, 36, 64, 0.08));
+}
+
+.dashboard-kicker {
+  margin: 0 0 2px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dash-chip);
+}
+
+.zone-dashboard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin: 0 clamp(16px, 4vw, 40px) 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 88%, var(--accent-soft));
+  box-shadow: var(--shadow);
+}
+
+.zone-dashboard[hidden] {
+  display: none !important;
+}
+
+.zone-dashboard-label {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.zone-dashboard-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+}
+
+.zone-tab {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.zone-tab:hover {
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.zone-tab.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+body.dashboard-centro .zone-tab[data-zone="centro"].is-active {
+  background: linear-gradient(135deg, #0097b2, #2563b5);
+}
+
+body.dashboard-foraneo .zone-tab[data-zone="foraneo"].is-active {
+  background: linear-gradient(135deg, #c2410c, #92400e);
 }
 
 .topbar h1 {
@@ -1193,13 +1328,31 @@ button.ghost-link {
 }
 
 .board-bucket.is-active {
-  background: #0b1f38;
+  background: var(--navy);
   color: #fff;
   border-color: transparent;
 }
 
+body.dashboard-foraneo .board-bucket.is-active {
+  background: linear-gradient(135deg, #c2410c, #92400e);
+}
+
 .board-bucket[data-bucket="terminadas"].is-active {
   background: #1f9d55;
+}
+
+body.dashboard-foraneo .board-bucket[data-bucket="terminadas"].is-active {
+  background: #15803d;
+}
+
+body.dashboard-foraneo .role-chip {
+  color: #c2410c;
+  background: rgba(194, 65, 12, 0.12);
+}
+
+body.dashboard-foraneo .primary-link {
+  background: linear-gradient(135deg, #c2410c, #92400e);
+  border-color: transparent;
 }
 
 .board-search {

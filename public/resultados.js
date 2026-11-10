@@ -23,6 +23,7 @@
   let statusFilter = "all";
   let boardBucket = "activas"; // activas | terminadas
   let quickFilter = "all"; // all | autorizadas | sin-autorizar | faltantes
+  let zoneDashboard = "centro"; // centro | foraneo | all
   let dateFromFilter = "";
   let dateToFilter = "";
   let searchQuery = "";
@@ -163,8 +164,9 @@
   }
 
   function materialCounts() {
-    const counts = { all: items.length, lona: 0, toldo: 0, caballete: 0, rotulacion: 0 };
-    for (const it of items) {
+    const scoped = items.filter((it) => itemMatchesZoneDashboard(it));
+    const counts = { all: scoped.length, lona: 0, toldo: 0, caballete: 0, rotulacion: 0 };
+    for (const it of scoped) {
       const kind = materialKind(it);
       if (counts[kind] != null) counts[kind] += 1;
     }
@@ -284,6 +286,66 @@
       .includes("foran");
   }
 
+  function canSwitchZoneDashboard() {
+    return Boolean(session?.seesAll) && !session?.zonaFilter;
+  }
+
+  function resolvedZoneDashboard() {
+    const locked = String(session?.zonaFilter || "").toLowerCase();
+    if (locked === "centro" || locked === "foraneo") return locked;
+    if (zoneDashboard === "foraneo" || zoneDashboard === "all") return zoneDashboard;
+    return "centro";
+  }
+
+  function itemMatchesZoneDashboard(item) {
+    const zone = resolvedZoneDashboard();
+    if (zone === "all") return true;
+    if (zone === "foraneo") return isForaneoItem(item);
+    return !isForaneoItem(item);
+  }
+
+  function applyDashboardTheme() {
+    const zone = resolvedZoneDashboard();
+    const body = document.body;
+    body.classList.remove("dashboard-centro", "dashboard-foraneo", "dashboard-ambos");
+    const themeClass =
+      zone === "foraneo" ? "dashboard-foraneo" : zone === "all" ? "dashboard-ambos" : "dashboard-centro";
+    body.classList.add(themeClass);
+    body.dataset.dashboard = zone;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      meta.setAttribute("content", zone === "foraneo" ? "#fff7ed" : zone === "all" ? "#f5f7f9" : "#f7fbff");
+    }
+    const kicker = document.getElementById("dashboardKicker");
+    const title = document.getElementById("dashboardTitle");
+    if (kicker) {
+      kicker.textContent =
+        zone === "foraneo" ? "Dashboard Foráneo" : zone === "all" ? "Dashboard general" : "Dashboard Centro";
+    }
+    if (title) {
+      title.textContent =
+        zone === "foraneo"
+          ? "Material especializado · Foráneo"
+          : zone === "all"
+            ? "Solicitudes Centro y Foráneo"
+            : "Material especializado · Centro";
+    }
+  }
+
+  function renderZoneDashboardTabs() {
+    const wrap = document.getElementById("zoneDashboard");
+    const nav = document.getElementById("zoneDashboardTabs");
+    if (!wrap || !nav) return;
+    const show = canSwitchZoneDashboard();
+    wrap.hidden = !show;
+    if (!show) return;
+    const current = resolvedZoneDashboard();
+    nav.querySelectorAll(".zone-tab").forEach((btn) => {
+      const zone = btn.dataset.zone || "centro";
+      btn.classList.toggle("is-active", zone === current);
+    });
+  }
+
   function parseForaneoAuthChain(raw) {
     const text = String(raw || "").trim();
     if (!text) {
@@ -397,8 +459,9 @@
   }
 
   function baseFilteredItems() {
+    const byZone = items.filter((it) => itemMatchesZoneDashboard(it));
     const byMaterial =
-      materialFilter === "all" ? items : items.filter((it) => materialKind(it) === materialFilter);
+      materialFilter === "all" ? byZone : byZone.filter((it) => materialKind(it) === materialFilter);
     // Con búsqueda: ignora fechas para encontrar folio/nombre al instante.
     if (hasActiveSearch()) return byMaterial.filter((it) => itemMatchesSearch(it));
     return byMaterial.filter((it) => itemMatchesDateFilter(it));
@@ -739,6 +802,8 @@
   }
 
   function renderBoardControls() {
+    applyDashboardTheme();
+    renderZoneDashboardTabs();
     renderBoardBuckets();
     renderMaterialFilters();
     renderQuickFilters();
@@ -2928,6 +2993,18 @@
     refreshBoardFilters();
   });
 
+  document.getElementById("zoneDashboardTabs")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".zone-tab");
+    if (!btn || !canSwitchZoneDashboard()) return;
+    const next = btn.dataset.zone || "centro";
+    if (next === zoneDashboard) return;
+    zoneDashboard = next;
+    index = 0;
+    applyDashboardTheme();
+    renderZoneDashboardTabs();
+    refreshBoardFilters();
+  });
+
   function bindFilterSelects() {
     const materialSelect = document.getElementById("materialSelect");
     const quickSelect = document.getElementById("quickSelect");
@@ -2974,6 +3051,12 @@
     if (roleChip) {
       roleChip.textContent = session.label || "";
       roleChip.hidden = false;
+    }
+    const lockedZona = String(session.zonaFilter || "").toLowerCase();
+    if (lockedZona === "centro" || lockedZona === "foraneo") {
+      zoneDashboard = lockedZona;
+    } else if (session.seesAll) {
+      zoneDashboard = "centro";
     }
     if (!session.seesAll) {
       const field = document.getElementById("materialFilterField");
