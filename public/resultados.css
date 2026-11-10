@@ -314,10 +314,13 @@ body.dashboard-foraneo .zone-tab[data-zone="foraneo"].is-active {
 }
 
 .layout {
-  width: min(1280px, calc(100% - 28px));
+  width: min(1280px, calc(100% - 32px));
   margin: 12px auto 40px;
   display: grid;
   gap: 16px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-inline: 0;
 }
 
 .stats {
@@ -442,22 +445,27 @@ body.dashboard-foraneo .zone-tab[data-zone="foraneo"].is-active {
 
 .board-shell {
   display: grid;
-  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: 23.5rem minmax(0, 1fr);
+  gap: 18px;
   align-items: start;
+  width: 100%;
+  min-width: 0;
 }
 
 .request-list {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   max-height: calc(100vh - 220px);
-  overflow-x: hidden;
-  overflow-y: auto;
-  padding: 8px 10px 18px 6px;
-  margin: -8px -4px -10px -2px;
+  overflow: auto;
+  padding: 2px 6px 14px 2px;
+  margin: 0;
   position: sticky;
   top: 12px;
-  scrollbar-gutter: stable;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .list-empty {
@@ -476,13 +484,15 @@ body.dashboard-foraneo .zone-tab[data-zone="foraneo"].is-active {
   border-radius: 18px;
   padding: 12px;
   display: grid;
-  grid-template-columns: 64px 1fr;
+  grid-template-columns: 64px minmax(0, 1fr);
   gap: 10px;
   text-align: left;
   cursor: pointer;
   min-width: 0;
+  max-width: 100%;
   width: 100%;
-  overflow: visible;
+  box-sizing: border-box;
+  overflow: hidden;
   box-shadow: 0 8px 22px rgba(15, 36, 64, 0.06);
   transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
 }
@@ -1885,21 +1895,31 @@ body.dashboard-foraneo .primary-link {
 
 .semaphore.is-compact {
   margin: 0;
-  padding: 4px 0 0;
+  padding: 2px 0 0;
   background: transparent;
   border: 0;
   min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .semaphore.is-compact .semaphore-hint {
-  padding: 0 2px;
+  padding: 0;
+}
+
+.semaphore.is-compact .semaphore-choices {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
 }
 
 .semaphore.is-compact .semaphore-choice {
   min-width: 0;
+  max-width: 100%;
   width: 100%;
-  padding: 0.42rem 0.4rem;
-  font-size: 0.74rem;
+  box-sizing: border-box;
+  padding: 0.4rem 0.35rem;
+  font-size: 0.72rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2104,21 +2124,37 @@ body.dashboard-foraneo .primary-link {
   background: transparent;
   padding: 0;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-columns: 56px minmax(0, 1fr);
   gap: 10px;
   text-align: left;
   cursor: pointer;
   font: inherit;
   color: inherit;
+  box-sizing: border-box;
+}
+
+.request-card .request-card-thumb {
+  width: 56px;
+  height: 56px;
 }
 
 .autorizacion-card,
 .producto-card {
   min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
   padding-left: 0;
   padding-right: 0;
+}
+
+.autorizacion-btn,
+.producto-card-btn {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .card-producto {
