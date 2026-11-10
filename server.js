@@ -235,12 +235,22 @@ const BOARD_ROLES = {
     hash: "027aa9c9b2e048233f0e322a4a106eae:f41028090bc1d6027308afc7c3fd952abf23268b3a3a619daed11e76b17b8a25",
   },
   ejecutivo: {
-    label: "Ejecutivo de ventas · Rotulación",
+    label: "Ejecutivo de ventas · Centro",
     seesAll: false,
     canManage: false,
     canDelete: false,
+    zonaFilter: "centro",
     envPassword: "BOARD_PASSWORD_EJECUTIVO",
     hash: "102d46f591c1ec63ba75e79340bbda4f:9aaac3482ca9368c40f3d8bbe9660865de40322a708e7a79cb3c94eec5e2e55b",
+  },
+  "ejecutivo-foraneo": {
+    label: "Ejecutivo de ventas · Foráneo",
+    seesAll: false,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "foraneo",
+    envPassword: "BOARD_PASSWORD_EJECUTIVO_FORANEO",
+    hash: "9492474c63934158f70d7a109824f96b:1ff0cc2fed6b223737a7085ce21a6adb82fcf183b00d4f5d69ccec1601ccb8c0",
   },
   gerente: {
     label: "Gerentes",
