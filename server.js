@@ -412,6 +412,15 @@ const BOARD_ROLES = {
     zoneNames: ["David Jimenez"],
     hash: "ea2e20730e025b914d6c86c6a3627ae8:020de4e5bf5ac0c50811ff12ea1de4e999868dd8fa22e9238128d2d0b54d393c",
   },
+  "trade-monica": {
+    label: "Trade Marketing · Mónica · Foráneo",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "foraneo",
+    envPassword: "BOARD_PASSWORD_TRADE_MONICA",
+    hash: "2131378437c8d7281f022df95e1fdff5:83bd26bc16bc24020d877f5f8f00d42aeec51ec70d5f07e3b1a9fc9b2864d53c",
+  },
 };
 const PRODUCCION_ESTADOS = ["En diseño", "En proceso", "En revisión", "Terminado"];
 const ROTULACION_ESTADOS = [
