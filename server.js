@@ -265,14 +265,28 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zonaFilter: "centro",
+    authorizeLevel: "regional",
     zoneNames: ["Rodolfo Reynoso Castelan"],
     hash: "772ea1eeec4d3bb0101eb0819b482327:f2f35e4070a6cef10e05dfa320cc3c123c4d738c7f8d3d91ffc94471a654b248",
+  },
+  "gerente-castaneda": {
+    label: "Gerente regional · Jesus Castaneda Totocintle",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "centro",
+    authorizeLevel: "regional",
+    zoneNames: ["Jesus Castaneda Totocintle"],
+    hash: "e3f88425cdf3cfb75f5e3669069b2c57:354e6a487550beeb90294679d04de782004d0d274af6828f071f2ee14a84fa69",
   },
   "gerente-ugalde": {
     label: "Gerente territorial · Luis Daniel Ugalde Welsh",
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zonaFilter: "centro",
+    authorizeLevel: "territorial",
     zoneNames: ["Luis Daniel Ugalde Welsh"],
     hash: "a215eb57491539bff4fd8b0c9b89e1f2:6fff153936bce2a2869ec0dbce522205c9304d51ecd656b5e19b6a60f67c957c",
   },
@@ -281,6 +295,8 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zonaFilter: "centro",
+    authorizeLevel: "territorial",
     zoneNames: ["Jesus Redonda Perez"],
     hash: "f0d418c49964f70b169988c982c00ccd:66719346f6efd979e3d06fce834776d82b60fb112af083740a8d9df9dbc990e0",
   },
@@ -289,6 +305,8 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zonaFilter: "centro",
+    authorizeLevel: "territorial",
     zoneNames: ["Luis Eduardo Vazquez Hernandez"],
     hash: "52233cde6b7d4a91c67a9c9a7fe84071:06d6a0d3de1b4ad38310ce9370453fd8c050ebc48acdcb6bff9d0222540c4e99",
   },
@@ -297,6 +315,8 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zonaFilter: "centro",
+    authorizeLevel: "territorial",
     zoneNames: ["Erick Perez Galindo"],
     hash: "5d93edc806b125c993ad8f37ff6d9c61:1bf92444b86890b812f2fdfa02533702d604e54ad241ca0c15318df695198dc5",
   },
@@ -305,6 +325,8 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zonaFilter: "centro",
+    authorizeLevel: "territorial",
     zoneNames: ["Juan Fernando Garcia Aguilar"],
     hash: "afb06eeb0c1a315a28711e4d0129cd3c:f6a7b77ee753bb0f72aa4c5b7be1955adc4d67512f949ab086d39edb8898a8be",
   },
@@ -313,6 +335,8 @@ const BOARD_ROLES = {
     seesAll: true,
     canManage: false,
     canDelete: false,
+    zonaFilter: "centro",
+    authorizeLevel: "territorial",
     zoneNames: ["Manuel Vazquez Aguila"],
     hash: "171f4d1fb54ae09b980ce70f500efcf3:be7343347b69c18b51f5718250b3751466c8603f8e21c97638bb4be46a940740",
   },
@@ -419,7 +443,7 @@ const BOARD_ROLES = {
     canManage: false,
     canDelete: false,
     zonaFilter: "centro",
-    zoneNames: ["David Jimenez"],
+    // Solo visualización: en Centro autorizan Territorial + Regional (sin Subdirección).
     hash: "ea2e20730e025b914d6c86c6a3627ae8:020de4e5bf5ac0c50811ff12ea1de4e999868dd8fa22e9238128d2d0b54d393c",
   },
   "trade-monica": {
@@ -631,7 +655,7 @@ function isForaneoItem(item) {
   return resolvedZonaComercial(item) === "foraneo";
 }
 
-function parseForaneoAuthChain(raw) {
+function parseAuthChain(raw, { requireSubdireccion = true } = {}) {
   const text = String(raw || "").trim();
   if (!text) {
     return { territorial: "", regional: "", subdireccion: "", legacy: false, complete: false };
@@ -652,32 +676,52 @@ function parseForaneoAuthChain(raw) {
     text.match(/(?:^|\|\s*)S:\s*([^|]+)/i)?.[1]?.trim() ||
     text.match(/Subdirecci[oó]n\s*·\s*([^|]+)/i)?.[1]?.trim() ||
     "";
+  const complete = requireSubdireccion
+    ? Boolean(territorial && regional && subdireccion)
+    : Boolean(territorial && regional);
   return {
     territorial,
     regional,
     subdireccion,
     legacy: false,
-    complete: Boolean(territorial && regional && subdireccion),
+    complete,
   };
 }
 
-function formatForaneoAuthChain(steps) {
+function parseForaneoAuthChain(raw) {
+  return parseAuthChain(raw, { requireSubdireccion: true });
+}
+
+function parseCentroAuthChain(raw) {
+  return parseAuthChain(raw, { requireSubdireccion: false });
+}
+
+function formatAuthChain(steps, { requireSubdireccion = true } = {}) {
   const parts = [];
   if (steps.territorial) parts.push(`T:${steps.territorial}`);
   if (steps.regional) parts.push(`R:${steps.regional}`);
-  if (steps.subdireccion) parts.push(`S:${steps.subdireccion}`);
+  if (requireSubdireccion && steps.subdireccion) parts.push(`S:${steps.subdireccion}`);
   if (!parts.length) return "";
-  if (steps.territorial && steps.regional && steps.subdireccion) {
-    return `Autorizada · ${parts.join(" | ")}`;
-  }
+  const complete = requireSubdireccion
+    ? Boolean(steps.territorial && steps.regional && steps.subdireccion)
+    : Boolean(steps.territorial && steps.regional);
+  if (complete) return `Autorizada · ${parts.join(" | ")}`;
   return parts.join(" | ");
+}
+
+function formatForaneoAuthChain(steps) {
+  return formatAuthChain(steps, { requireSubdireccion: true });
+}
+
+function formatCentroAuthChain(steps) {
+  return formatAuthChain(steps, { requireSubdireccion: false });
 }
 
 function isItemAuthorized(item) {
   if (isForaneoItem(item)) {
     return parseForaneoAuthChain(item?.autorizada).complete;
   }
-  return /^autorizada\b/i.test(String(item?.autorizada || "").trim());
+  return parseCentroAuthChain(item?.autorizada).complete;
 }
 
 function authorName(role) {
@@ -718,8 +762,13 @@ function itemInAuthorizeZone(role, item) {
   if (level === "territorial" && zona === "foraneo") {
     return names.some((name) => name === territorial);
   }
+  if (level === "territorial" && zona === "centro") {
+    return names.some((name) => name === territorial);
+  }
+  if (level === "regional" && zona === "centro") {
+    return names.some((name) => name === regional || name === territorial);
+  }
   if (names.includes(personName("Alejandro Henonin")) && zona === "foraneo") return true;
-  if (names.includes(personName("David Jimenez")) && zona === "centro") return true;
   return names.some((name) => name === territorial || name === regional);
 }
 
@@ -2558,22 +2607,33 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
 
   const who = authorName(req.boardRole);
   const level = String(req.boardRole.authorizeLevel || "").toLowerCase();
+  const foraneo = isForaneoItem(zoneItem);
+  const answersTerritorial = personName(zoneItem.gerenteTerritorial);
+  const answersRegional = personName(zoneItem.territorioGerente);
+  const whoNorm = personName(who);
+  const samePersonBothRoles = Boolean(whoNorm && whoNorm === answersTerritorial && whoNorm === answersRegional);
   let autorizada = "";
-  if (isForaneoItem(zoneItem) && (level === "territorial" || level === "regional" || level === "subdireccion")) {
-    const chain = parseForaneoAuthChain(zoneItem.autorizada);
+  if (
+    (foraneo && (level === "territorial" || level === "regional" || level === "subdireccion")) ||
+    (!foraneo && (level === "territorial" || level === "regional"))
+  ) {
+    const chain = foraneo
+      ? parseForaneoAuthChain(zoneItem.autorizada)
+      : parseCentroAuthChain(zoneItem.autorizada);
     if (aceptar) {
       if (level === "territorial") {
         chain.territorial = who;
-        chain.regional = "";
+        chain.regional = !foraneo && samePersonBothRoles ? who : "";
         chain.subdireccion = "";
       } else if (level === "regional") {
-        if (!chain.territorial && !chain.legacy) {
+        if (!chain.territorial && !chain.legacy && !samePersonBothRoles) {
           return res.status(403).json({
             ok: false,
             error: "Primero debe autorizar el gerente territorial",
           });
         }
         if (!chain.territorial && chain.legacy) chain.territorial = "Previa";
+        if (!chain.territorial && samePersonBothRoles) chain.territorial = who;
         chain.regional = who;
         chain.subdireccion = "";
       } else if (level === "subdireccion") {
@@ -2592,10 +2652,11 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
     } else if (level === "regional") {
       chain.regional = "";
       chain.subdireccion = "";
+      if (samePersonBothRoles) chain.territorial = "";
     } else if (level === "subdireccion") {
       chain.subdireccion = "";
     }
-    autorizada = formatForaneoAuthChain(chain);
+    autorizada = foraneo ? formatForaneoAuthChain(chain) : formatCentroAuthChain(chain);
   } else {
     autorizada = aceptar ? `Autorizada · ${who}` : "";
   }
@@ -2637,7 +2698,11 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
     id,
     folio,
     autorizada,
-    authChain: isForaneoItem(zoneItem) ? parseForaneoAuthChain(autorizada) : null,
+    authChain: foraneo
+      ? parseForaneoAuthChain(autorizada)
+      : level === "territorial" || level === "regional"
+        ? parseCentroAuthChain(autorizada)
+        : null,
   });
 });
 

@@ -361,7 +361,23 @@
     });
   }
 
-  function parseForaneoAuthChain(raw) {
+  function personKey(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function sessionAuthorName() {
+    return String(session?.label || "")
+      .split("·")
+      .pop()
+      .trim();
+  }
+
+  function parseAuthChain(raw, { requireSubdireccion = true } = {}) {
     const text = String(raw || "").trim();
     if (!text) {
       return { territorial: "", regional: "", subdireccion: "", legacy: false, complete: false };
@@ -387,39 +403,67 @@
       regional,
       subdireccion,
       legacy: false,
-      complete: Boolean(territorial && regional && subdireccion),
+      complete: requireSubdireccion
+        ? Boolean(territorial && regional && subdireccion)
+        : Boolean(territorial && regional),
     };
   }
 
-  function isAuthorized(item) {
-    if (isForaneoItem(item)) return parseForaneoAuthChain(item?.autorizada).complete;
-    return /^autorizada\b/i.test(String(item?.autorizada || "").trim());
+  function usesAuthChain(item) {
+    if (isForaneoItem(item)) return true;
+    const level = String(session?.authorizeLevel || "").toLowerCase();
+    // Centro también usa cadena T → R (sin Subdirección).
+    return level === "territorial" || level === "regional" || Boolean(String(item?.autorizada || "").match(/\bT:/));
   }
 
-  function foraneoAuthAction(item) {
-    if (!session?.canAuthorize || !item?.enMiZona || !isForaneoItem(item)) return null;
+  function isAuthorized(item) {
+    if (isForaneoItem(item)) return parseAuthChain(item?.autorizada, { requireSubdireccion: true }).complete;
+    return parseAuthChain(item?.autorizada, { requireSubdireccion: false }).complete;
+  }
+
+  function chainAuthAction(item) {
+    if (!session?.canAuthorize || !item?.enMiZona) return null;
     const level = String(session?.authorizeLevel || "").toLowerCase();
     if (!level) return null;
-    const chain = parseForaneoAuthChain(item?.autorizada);
+    const foraneo = isForaneoItem(item);
+    if (!foraneo && level === "subdireccion") return null;
+    if (foraneo && !(level === "territorial" || level === "regional" || level === "subdireccion")) {
+      return null;
+    }
+    if (!foraneo && !(level === "territorial" || level === "regional")) return null;
+
+    const chain = parseAuthChain(item?.autorizada, { requireSubdireccion: foraneo });
+    const who = personKey(sessionAuthorName());
+    const samePersonBothRoles =
+      Boolean(who) &&
+      who === personKey(item?.gerenteTerritorial) &&
+      who === personKey(item?.territorioGerente);
+
     if (level === "territorial") {
       if (chain.territorial && !chain.regional && !chain.subdireccion) {
         return { aceptar: false, label: "Quitar autorización territorial" };
       }
       if (!chain.territorial && !chain.complete) {
-        return { aceptar: true, label: "Autorizar (territorial)" };
+        return {
+          aceptar: true,
+          label: !foraneo && samePersonBothRoles ? "Autorizar (territorial + regional)" : "Autorizar (territorial)",
+        };
       }
       return null;
     }
     if (level === "regional") {
-      if (!chain.territorial && !chain.legacy) return null;
-      if (chain.regional && !chain.subdireccion) {
+      if (!chain.territorial && !chain.legacy && !samePersonBothRoles) return null;
+      if (chain.regional && (!foraneo || !chain.subdireccion)) {
         return { aceptar: false, label: "Quitar autorización regional" };
       }
-      if (chain.territorial && !chain.regional) {
-        return { aceptar: true, label: "Autorizar (regional)" };
-      }
-      if (chain.legacy && !chain.regional) {
-        return { aceptar: true, label: "Autorizar (regional)" };
+      if ((chain.territorial || samePersonBothRoles || chain.legacy) && !chain.regional) {
+        return {
+          aceptar: true,
+          label:
+            !chain.territorial && samePersonBothRoles
+              ? "Autorizar (territorial + regional)"
+              : "Autorizar (regional)",
+        };
       }
       return null;
     }
@@ -434,25 +478,27 @@
   }
 
   function authStatusLabel(item) {
-    if (!isForaneoItem(item)) {
-      return isAuthorized(item) ? "Autorizada" : "Pendiente de autorización";
+    const foraneo = isForaneoItem(item);
+    const chain = parseAuthChain(item?.autorizada, { requireSubdireccion: foraneo });
+    if (chain.complete || chain.legacy) {
+      return foraneo ? "Autorizada (cadena completa)" : "Autorizada (territorial + regional)";
     }
-    const chain = parseForaneoAuthChain(item?.autorizada);
-    if (chain.complete || chain.legacy) return "Autorizada (cadena completa)";
     if (!chain.territorial) return "Pendiente: gerente territorial";
     if (!chain.regional) return "Pendiente: gerente regional";
-    if (!chain.subdireccion) return "Pendiente: subdirección";
+    if (foraneo && !chain.subdireccion) return "Pendiente: subdirección";
     return "Pendiente de autorización";
   }
 
-  function foraneoAuthStepsHtml(item) {
-    if (!isForaneoItem(item)) return "";
-    const chain = parseForaneoAuthChain(item?.autorizada);
+  function authStepsHtml(item) {
+    const foraneo = isForaneoItem(item);
+    const chain = parseAuthChain(item?.autorizada, { requireSubdireccion: foraneo });
     const steps = [
       { key: "territorial", label: "1. Territorial", value: chain.territorial },
       { key: "regional", label: "2. Regional", value: chain.regional },
-      { key: "subdireccion", label: "3. Subdirección", value: chain.subdireccion },
     ];
+    if (foraneo) {
+      steps.push({ key: "subdireccion", label: "3. Subdirección", value: chain.subdireccion });
+    }
     return `
       <div class="auth-chain">
         ${steps
@@ -1703,20 +1749,12 @@
   function autorizacionCardHtml(item) {
     const ok = isAuthorized(item);
     const id = escapeAttr(item.id || item.folio || "");
-    const foraneoAction = foraneoAuthAction(item);
-    if (foraneoAction) {
+    const chainAction = chainAuthAction(item);
+    if (chainAction) {
       return `
         <div class="autorizacion-card">
-          <button type="button" class="autorizacion-btn${foraneoAction.aceptar ? "" : " is-on"}" data-id="${id}" data-aceptar="${foraneoAction.aceptar ? "1" : "0"}">
-            ${escapeHtml(foraneoAction.label)}
-          </button>
-        </div>`;
-    }
-    if (session?.canAuthorize && item?.enMiZona && !isForaneoItem(item)) {
-      return `
-        <div class="autorizacion-card">
-          <button type="button" class="autorizacion-btn${ok ? " is-on" : ""}" data-id="${id}" data-aceptar="${ok ? "0" : "1"}">
-            ${ok ? "Autorizada · quitar" : "Aceptar solicitud"}
+          <button type="button" class="autorizacion-btn${chainAction.aceptar ? "" : " is-on"}" data-id="${id}" data-aceptar="${chainAction.aceptar ? "1" : "0"}">
+            ${escapeHtml(chainAction.label)}
           </button>
         </div>`;
     }
@@ -1758,39 +1796,30 @@
 
   function autorizacionDetailHtml(item) {
     const ok = isAuthorized(item);
-    const quien = String(item?.autorizada || "")
-      .split("·")
-      .slice(1)
-      .join("·")
-      .trim();
     const id = escapeAttr(item.id || item.folio || "");
     const foraneo = isForaneoItem(item);
-    const foraneoAction = foraneoAuthAction(item);
-    const mine = session?.canAuthorize && item?.enMiZona && !foraneo;
+    const chainAction = chainAuthAction(item);
+    const showChain = foraneo || usesAuthChain(item) || Boolean(String(session?.authorizeLevel || ""));
     let action = "";
-    if (foraneoAction) {
-      action = `<button type="button" class="autorizacion-btn${foraneoAction.aceptar ? "" : " is-on"}" data-id="${id}" data-aceptar="${foraneoAction.aceptar ? "1" : "0"}">${escapeHtml(foraneoAction.label)}</button>`;
-    } else if (mine) {
-      action = `<button type="button" class="autorizacion-btn${ok ? " is-on" : ""}" data-id="${id}" data-aceptar="${ok ? "0" : "1"}">${ok ? "Quitar autorización" : "Aceptar para Marketing"}</button>`;
+    if (chainAction) {
+      action = `<button type="button" class="autorizacion-btn${chainAction.aceptar ? "" : " is-on"}" data-id="${id}" data-aceptar="${chainAction.aceptar ? "1" : "0"}">${escapeHtml(chainAction.label)}</button>`;
     }
     const fuera =
       session?.canAuthorize && item?.enMiZona === false
         ? " La autoriza el gerente de esta zona."
-        : foraneo && session?.canAuthorize && item?.enMiZona && !foraneoAction
+        : session?.canAuthorize && item?.enMiZona && !chainAction && showChain
           ? " Espera el paso anterior de la cadena."
           : "";
     return `
       <section class="autorizacion-panel${ok ? " is-on" : ""}">
         <div>
-          <p class="autorizacion-kicker">${foraneo ? "Autorización Foráneo (cadena)" : "Autorización del gerente"}</p>
-          <p class="autorizacion-state">${
+          <p class="autorizacion-kicker">${
             foraneo
-              ? `${escapeHtml(authStatusLabel(item))}${fuera}`
-              : ok
-                ? `Autorizada${quien ? ` · ${escapeHtml(quien)}` : ""}`
-                : `Pendiente de autorización${fuera}`
+              ? "Autorización Foráneo (cadena)"
+              : "Autorización Centro (territorial + regional)"
           }</p>
-          ${foraneo ? foraneoAuthStepsHtml(item) : ""}
+          <p class="autorizacion-state">${escapeHtml(authStatusLabel(item))}${fuera}</p>
+          ${authStepsHtml(item)}
         </div>
         ${action}
       </section>`;
@@ -1812,7 +1841,7 @@
   async function setAutorizacion(id, aceptar) {
     const item = items.find((it) => it.id === id || it.folio === id);
     if (!item || !session?.canAuthorize || !item.enMiZona) return;
-    if (isForaneoItem(item) && !foraneoAuthAction(item)) return;
+    if (!chainAuthAction(item)) return;
     const previous = item.autorizada || "";
     item.autorizada = aceptar ? "Autorizada" : "";
     renderList();

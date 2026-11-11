@@ -46,33 +46,33 @@
     ["Octavio Arturo Flores Nieto", "Luis Daniel Ugalde Welsh", "Rodolfo Reynoso Castelan"],
     ["Carlos Ignacio Salazar Leyva", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
     ["Edgar David Reyes Plata", "Rodolfo Reynoso Castelan", "Rodolfo Reynoso Castelan"],
-    ["Fernando Noria Hernandez", "Luis Eduardo Vazquez Hernandez", "Vacante Territorial Centro"],
-    ["Jose Carlos Martinez Miranda", "Luis Eduardo Vazquez Hernandez", "Vacante Territorial Centro"],
-    ["Fernando Jimenez Vazquez", "Luis Eduardo Vazquez Hernandez", "Vacante Territorial Centro"],
-    ["Juan Carlos Utrera Hernandez", "Luis Eduardo Vazquez Hernandez", "Vacante Territorial Centro"],
+    ["Fernando Noria Hernandez", "Luis Eduardo Vazquez Hernandez", "Jesus Castaneda Totocintle"],
+    ["Jose Carlos Martinez Miranda", "Luis Eduardo Vazquez Hernandez", "Jesus Castaneda Totocintle"],
+    ["Fernando Jimenez Vazquez", "Luis Eduardo Vazquez Hernandez", "Jesus Castaneda Totocintle"],
+    ["Juan Carlos Utrera Hernandez", "Luis Eduardo Vazquez Hernandez", "Jesus Castaneda Totocintle"],
     ["Yeimi Lizama Mendoza", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
     ["Cesar Alberto Banderilla Gonzalez", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
     ["Jesus Sanchez Enriquez", "Erick Perez Galindo", "Rodolfo Reynoso Castelan"],
     ["Enrique Robledo Montero", "Rodolfo Reynoso Castelan", "Rodolfo Reynoso Castelan"],
     ["Marco Antonio Salgado Perez", "Luis Daniel Ugalde Welsh", "Rodolfo Reynoso Castelan"],
-    ["Omar David Sanchez Jaramillo", "Juan Fernando Garcia Aguilar", "Vacante Territorial Centro"],
-    ["Christian Alan Ramirez Meza", "Juan Fernando Garcia Aguilar", "Vacante Territorial Centro"],
+    ["Omar David Sanchez Jaramillo", "Juan Fernando Garcia Aguilar", "Jesus Castaneda Totocintle"],
+    ["Christian Alan Ramirez Meza", "Juan Fernando Garcia Aguilar", "Jesus Castaneda Totocintle"],
     ["Carlos Alberto Silva Razo", "Rodolfo Reynoso Castelan", "Rodolfo Reynoso Castelan"],
-    ["Jose Alejandro Reyes Santos", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
+    ["Jose Alejandro Reyes Santos", "Manuel Vazquez Aguila", "Jesus Castaneda Totocintle"],
     ["Abel Rosas Diaz", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
-    ["Lizett Karina Mendez Corona", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
-    ["Daniel Perez De Jesus", "Juan Fernando Garcia Aguilar", "Vacante Territorial Centro"],
+    ["Lizett Karina Mendez Corona", "Manuel Vazquez Aguila", "Jesus Castaneda Totocintle"],
+    ["Daniel Perez De Jesus", "Juan Fernando Garcia Aguilar", "Jesus Castaneda Totocintle"],
     ["Emerson Mauricio Cordova Lopez", "Luis Daniel Ugalde Welsh", "Rodolfo Reynoso Castelan"],
-    ["Esteban Gomez Luis", "Juan Fernando Garcia Aguilar", "Vacante Territorial Centro"],
-    ["Norma Cristina Miravete Montoya", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
+    ["Esteban Gomez Luis", "Juan Fernando Garcia Aguilar", "Jesus Castaneda Totocintle"],
+    ["Norma Cristina Miravete Montoya", "Manuel Vazquez Aguila", "Jesus Castaneda Totocintle"],
     ["Juan Carlos Suarez Hernandez", "Luis Daniel Ugalde Welsh", "Rodolfo Reynoso Castelan"],
-    ["Jose Alva Mireles", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
-    ["Jazmin Valenzuela Santana", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
-    ["Jose Daniel Rodriguez Flores", "Juan Fernando Garcia Aguilar", "Vacante Territorial Centro"],
-    ["Ivan Martin Gamero Hernandez", "Juan Fernando Garcia Aguilar", "Vacante Territorial Centro"],
+    ["Jose Alva Mireles", "Manuel Vazquez Aguila", "Jesus Castaneda Totocintle"],
+    ["Jazmin Valenzuela Santana", "Manuel Vazquez Aguila", "Jesus Castaneda Totocintle"],
+    ["Jose Daniel Rodriguez Flores", "Juan Fernando Garcia Aguilar", "Jesus Castaneda Totocintle"],
+    ["Ivan Martin Gamero Hernandez", "Juan Fernando Garcia Aguilar", "Jesus Castaneda Totocintle"],
     ["Jose Luis Ramirez Araujo", "Luis Daniel Ugalde Welsh", "Rodolfo Reynoso Castelan"],
-    ["Luis Enrique Najera Hernandez", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
-    ["Jorge Mandujano Martinez", "Manuel Vazquez Aguila", "Vacante Territorial Centro"],
+    ["Luis Enrique Najera Hernandez", "Manuel Vazquez Aguila", "Jesus Castaneda Totocintle"],
+    ["Jorge Mandujano Martinez", "Manuel Vazquez Aguila", "Jesus Castaneda Totocintle"],
     ["Diego Fernando Solorio Anaya", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
     ["Celso Hernandez Hernandez", "Rodolfo Reynoso Castelan", "Rodolfo Reynoso Castelan"],
     ["Jean Eduardo Romero Romero", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
@@ -452,8 +452,8 @@
   function isStepApplicable(section) {
     if (!section) return false;
     if (section.id === "secObjetivo" && isRotulacion()) return false;
-    if (section.id === "secXrayForaneoLona") return isForaneo() && isLona();
-    if (section.id === "secXrayForaneoRotul") return isForaneo() && isRotulacion();
+    if (section.id === "secXrayForaneoLona") return isLona();
+    if (section.id === "secXrayForaneoRotul") return isRotulacion();
     if (section.closest("#flowLona") && (!flowLona || flowLona.hidden)) return false;
     if (section.closest("#flowToldo") && (!flowToldo || flowToldo.hidden)) return false;
     if (section.closest("#flowCaballete") && (!flowCaballete || flowCaballete.hidden)) return false;
@@ -1418,7 +1418,7 @@
       return errors;
     }
 
-    if (isForaneo() && (isLona() || isRotulacion())) {
+    if (isLona() || isRotulacion()) {
       const xray = [...form.querySelectorAll('input[name="xray_cliente"]')].find(
         (input) => !input.disabled && !input.closest("[hidden]"),
       );
