@@ -95,6 +95,11 @@
   }
 
   function activeEstados() {
+    if (session?.canManageRotulacion && !session?.canManage) {
+      if (materialFilter === "rotulacion") return ESTADOS_ROTULACION;
+      if (materialFilter === "lona" || materialFilter === "caballete") return ESTADOS;
+      return [...ESTADOS, ...ESTADOS_ROTULACION];
+    }
     if (!session?.seesAll) return ESTADOS_ROTULACION;
     if (materialFilter === "rotulacion") return ESTADOS_ROTULACION;
     if (materialFilter === "lona" || materialFilter === "toldo" || materialFilter === "caballete") {
@@ -137,8 +142,8 @@
   function itemsForSession(list) {
     const rows = Array.isArray(list) ? list : [];
     // El servidor ya filtra por zona/material; aquí solo reforzamos el alcance del perfil.
-    if (session?.seesAll) return rows;
     if (session?.canManageRotulacion) return rows.filter((it) => supportsEvidencia(it));
+    if (session?.seesAll) return rows;
     return rows.filter((it) => materialKind(it) === "rotulacion");
   }
 
@@ -236,8 +241,8 @@
   }
 
   function searchCandidateItems() {
-    if (session?.seesAll) return items;
     if (session?.canManageRotulacion) return items.filter((it) => supportsEvidencia(it));
+    if (session?.seesAll) return items;
     return items.filter((it) => materialKind(it) === "rotulacion");
   }
 
@@ -923,15 +928,23 @@
     return MATERIAL_FILTERS.find((f) => f.key === materialFilter)?.label || "Todos";
   }
 
+  function materialFiltersForSession() {
+    if (session?.canManageRotulacion && !session?.canManage) {
+      return MATERIAL_FILTERS.filter((f) => f.key !== "toldo");
+    }
+    return MATERIAL_FILTERS;
+  }
+
   function renderMaterialFilters() {
     const select = document.getElementById("materialSelect");
     const field = document.getElementById("materialFilterField");
     if (!select) return;
     if (field) field.hidden = Boolean(session && !session.seesAll);
     if (session && !session.seesAll) return;
+    const filters = materialFiltersForSession();
     const counts = materialCounts();
-    if (!MATERIAL_FILTERS.some((f) => f.key === materialFilter)) materialFilter = "all";
-    select.innerHTML = MATERIAL_FILTERS.map((f) => {
+    if (!filters.some((f) => f.key === materialFilter)) materialFilter = "all";
+    select.innerHTML = filters.map((f) => {
       const count = counts[f.key] ?? 0;
       const label = f.key === "all" ? `Todos (${count})` : `${f.label} (${count})`;
       return `<option value="${escapeAttr(f.key)}"${f.key === materialFilter ? " selected" : ""}>${escapeHtml(label)}</option>`;
@@ -3127,6 +3140,9 @@
     const lockedZona = String(session.zonaFilter || "").toLowerCase();
     if (lockedZona === "centro" || lockedZona === "foraneo") {
       zoneDashboard = lockedZona;
+    } else if (session.canManageRotulacion && !session.canManage) {
+      // Mantenimiento: ver activas y terminadas de Centro y Foráneo.
+      zoneDashboard = readStoredZoneDashboard() || "all";
     } else if (session.seesAll) {
       zoneDashboard = readStoredZoneDashboard() || "centro";
     }

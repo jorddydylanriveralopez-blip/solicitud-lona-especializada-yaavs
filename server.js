@@ -342,7 +342,7 @@ const BOARD_ROLES = {
   },
   mantenimiento: {
     label: "Gerente de mantenimiento · Ricardo Fernandez",
-    seesAll: false,
+    seesAll: true,
     canManage: false,
     canManageRotulacion: true,
     canDelete: false,
@@ -774,14 +774,15 @@ function itemInAuthorizeZone(role, item) {
 
 function scopeItems(items, role) {
   let list;
-  if (role?.seesAll) {
-    list = items || [];
-  } else if (role?.canManageRotulacion) {
+  if (role?.canManageRotulacion) {
+    // Mantenimiento: lona, caballete y rotulación (activas y terminadas), Centro y Foráneo.
     list = (items || []).filter(canUploadEvidenciaItem).map((item) => ({
       ...item,
       faltanteCliente: isRotulacionItem(item) ? item.faltanteCliente || "" : "",
       faltanteHistorial: isRotulacionItem(item) ? item.faltanteHistorial || "" : "",
     }));
+  } else if (role?.seesAll) {
+    list = items || [];
   } else {
     list = (items || []).filter(isRotulacionItem).map((item) => ({
       ...item,
