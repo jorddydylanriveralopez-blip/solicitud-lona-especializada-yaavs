@@ -1269,7 +1269,7 @@ body.login-page .login-atmosphere::after {
 body.login-page .scene-photo {
   inset: 0;
   opacity: 1;
-  background: url("./assets/bg-yaavs-telecom.jpg") center / cover no-repeat;
+  background: url("./assets/bg-login-telecom.jpg") center / cover no-repeat;
   transform: scale(1.02);
   animation: loginDrift 28s linear infinite alternate;
 }
