@@ -81,16 +81,17 @@
     ["Daniel De Jesus Chapa Mendoza", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
     ["Victor Manuel Martinez Osorio", "Erick Perez Galindo", "Rodolfo Reynoso Castelan"],
   ];
-  const FORANEO_REGIONAL = "Alejandro Henonin";
+  // Foráneo (oct 2026): regionales = Cesar / Rigoberto; subdirección = Henonin.
+  const FORANEO_REGIONAL_CESAR = "Cesar Gutierrez Escarcega";
+  const FORANEO_REGIONAL_RIGOBERTO = "Rigoberto Rios Mercado";
   // Misma forma que Centro: [ejecutivo, territorial, regional]
   const MATRIZ_FORANEO = [
-    "Alan Alarcon Morales",
-    "Cesar Gutierrez Escarcega",
-    "Erendira Trujillo Aleman",
-    "Leon Perez Zamudio",
-    "Marco Antonio Calderon Martinez",
-    "Olyver Alain Guerrero Lozano",
-  ].map((nombre) => [nombre, nombre, FORANEO_REGIONAL]);
+    ["Alan Alarcon Morales", "Alan Alarcon Morales", FORANEO_REGIONAL_CESAR],
+    ["Marco Antonio Calderon Martinez", "Marco Antonio Calderon Martinez", FORANEO_REGIONAL_CESAR],
+    ["Erendira Trujillo Aleman", "Erendira Trujillo Aleman", FORANEO_REGIONAL_RIGOBERTO],
+    ["Leon Perez Zamudio", "Leon Perez Zamudio", FORANEO_REGIONAL_RIGOBERTO],
+    ["Olyver Alain Guerrero Lozano", "Olyver Alain Guerrero Lozano", FORANEO_REGIONAL_RIGOBERTO],
+  ];
 
   const ejecutivoSelect = document.getElementById("ejecutivoNombre");
   const gerenteTerritorialInput = document.getElementById("gerenteTerritorial");

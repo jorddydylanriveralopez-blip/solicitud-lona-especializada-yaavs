@@ -358,13 +358,13 @@ const BOARD_ROLES = {
     hash: "0d03dc47a7591745c36836d2445662e0:d940b947ab779ff917a7c9bfa75b079ce2c92d3722b424e2a75c204c8b7e2bca",
   },
   "gerente-henonin": {
-    label: "Gerente regional · Alejandro Henonin",
+    label: "Subdirección · Alejandro David Gonzalez Henonin",
     seesAll: true,
     canManage: false,
     canDelete: false,
     zonaFilter: "foraneo",
-    authorizeLevel: "regional",
-    zoneNames: ["Alejandro Henonin"],
+    authorizeLevel: "subdireccion",
+    zoneNames: ["Alejandro David Gonzalez Henonin", "Alejandro Henonin", "Subdirección Foráneo"],
     hash: "4e30eee4fc75fa906ec7b2e6206e45a8:af082f811e6b0cbb60ed00196003958360dd7e6110ab0e74a8d08508ac6406b1",
   },
   "foraneo-alan": {
@@ -378,14 +378,24 @@ const BOARD_ROLES = {
     hash: "5cb05942976b76d1e3a37e8537c8f875:3e24c8d2e2eb31462d636ad0cc1f1d59b4bed22f0c784bcbd7fa6b065d2d98e0",
   },
   "foraneo-cesar": {
-    label: "Gerente territorial · Cesar Gutierrez Escarcega",
+    label: "Gerente regional · Cesar Gutierrez Escarcega",
     seesAll: true,
     canManage: false,
     canDelete: false,
     zonaFilter: "foraneo",
-    authorizeLevel: "territorial",
+    authorizeLevel: "regional",
     zoneNames: ["Cesar Gutierrez Escarcega"],
     hash: "da0794eba391d2df943443014cec31a0:25c44b606e68ae8a30e9fdf942e72131763559c11152ad88cc851cd6ca66391e",
+  },
+  "foraneo-rigoberto": {
+    label: "Gerente regional · Rigoberto Rios Mercado",
+    seesAll: true,
+    canManage: false,
+    canDelete: false,
+    zonaFilter: "foraneo",
+    authorizeLevel: "regional",
+    zoneNames: ["Rigoberto Rios Mercado"],
+    hash: "187458f55417f8ea97b215acbff4eb8e:71b45619b68786de1be5eed5a1295fdbca848b97a8416fa78314481420905ef6",
   },
   "foraneo-erendira": {
     label: "Gerente territorial · Erendira Trujillo Aleman",
@@ -428,13 +438,13 @@ const BOARD_ROLES = {
     hash: "cb85d7a5b4630706057b7b57d4b1b4d4:c52e9c5291e75715c026da1c40e5eb17fecefa879007cc3c75ad19291eefb8f7",
   },
   "foraneo-subdireccion": {
-    label: "Subdirección · Foráneo",
+    label: "Subdirección · Alejandro David Gonzalez Henonin",
     seesAll: true,
     canManage: false,
     canDelete: false,
     zonaFilter: "foraneo",
     authorizeLevel: "subdireccion",
-    zoneNames: ["Subdirección Foráneo"],
+    zoneNames: ["Alejandro David Gonzalez Henonin", "Alejandro Henonin", "Subdirección Foráneo"],
     hash: "dd3bfdb1090489ef82b9f8302ae2c73a:8e6f61336aff1c43579a9299daf36a3f9f7344c75789ed5824c329f06eb904fb",
   },
   "gerente-jimenez": {
@@ -620,15 +630,19 @@ function isForaneoZona(value) {
 }
 
 const FORANEO_ZONE_NAMES = [
+  "Alejandro David Gonzalez Henonin",
   "Alejandro Henonin",
   "Alan Alarcon Morales",
   "Cesar Gutierrez Escarcega",
+  "Rigoberto Rios Mercado",
   "Erendira Trujillo Aleman",
   "Leon Perez Zamudio",
   "Marco Antonio Calderon Martinez",
   "Olyver Alain Guerrero Lozano",
   "Subdirección Foráneo",
 ].map(personName);
+
+const FORANEO_REGIONAL_NAMES = ["Cesar Gutierrez Escarcega", "Rigoberto Rios Mercado"].map(personName);
 
 function itemLooksForaneoByPeople(item) {
   const answers = item?.answers && typeof item.answers === "object" ? item.answers : {};
@@ -756,8 +770,9 @@ function itemInAuthorizeZone(role, item) {
   const zona = itemZonaComercial(item);
   const level = String(role?.authorizeLevel || "").toLowerCase();
   if (level === "subdireccion" && zona === "foraneo") return true;
-  if (level === "regional" && names.includes(personName("Alejandro Henonin")) && zona === "foraneo") {
-    return true;
+  if (level === "regional" && zona === "foraneo") {
+    // Regionales Foráneo autorizan toda la zona (Cesar / Rigoberto).
+    return names.some((name) => FORANEO_REGIONAL_NAMES.includes(name));
   }
   if (level === "territorial" && zona === "foraneo") {
     return names.some((name) => name === territorial);
@@ -768,7 +783,7 @@ function itemInAuthorizeZone(role, item) {
   if (level === "regional" && zona === "centro") {
     return names.some((name) => name === regional || name === territorial);
   }
-  if (names.includes(personName("Alejandro Henonin")) && zona === "foraneo") return true;
+  if (names.some((name) => name.includes("henonin")) && zona === "foraneo") return true;
   return names.some((name) => name === territorial || name === regional);
 }
 
