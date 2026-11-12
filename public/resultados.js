@@ -387,20 +387,25 @@
     if (!text) {
       return { territorial: "", regional: "", subdireccion: "", legacy: false, complete: false };
     }
-    const hasMarkers = /\bT:/.test(text) || /Territorial\s*·/i.test(text);
+    const hasMarkers =
+      /\bT:/.test(text) || /\bR:/.test(text) || /\bS:/.test(text) || /Territorial\s*·/i.test(text);
     if (/^autorizada\b/i.test(text) && !hasMarkers) {
       return { territorial: "", regional: "", subdireccion: "", legacy: true, complete: true };
     }
+    // Acepta "T:..." al inicio, tras "|" o tras "·" (cuando ya está "Autorizada · T:... | R:... | S:...").
     const territorial =
-      text.match(/(?:^|\|\s*)T:\s*([^|]+)/i)?.[1]?.trim() ||
+      text.match(/(?:^|[|·])\s*T:\s*([^|]+)/i)?.[1]?.trim() ||
+      text.match(/\bT:\s*([^|]+)/i)?.[1]?.trim() ||
       text.match(/Territorial\s*·\s*([^|]+)/i)?.[1]?.trim() ||
       "";
     const regional =
-      text.match(/(?:^|\|\s*)R:\s*([^|]+)/i)?.[1]?.trim() ||
+      text.match(/(?:^|[|·])\s*R:\s*([^|]+)/i)?.[1]?.trim() ||
+      text.match(/\bR:\s*([^|]+)/i)?.[1]?.trim() ||
       text.match(/Regional\s*·\s*([^|]+)/i)?.[1]?.trim() ||
       "";
     const subdireccion =
-      text.match(/(?:^|\|\s*)S:\s*([^|]+)/i)?.[1]?.trim() ||
+      text.match(/(?:^|[|·])\s*S:\s*([^|]+)/i)?.[1]?.trim() ||
+      text.match(/\bS:\s*([^|]+)/i)?.[1]?.trim() ||
       text.match(/Subdirecci[oó]n\s*·\s*([^|]+)/i)?.[1]?.trim() ||
       "";
     return {
