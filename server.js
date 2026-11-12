@@ -271,13 +271,13 @@ const BOARD_ROLES = {
     hash: "772ea1eeec4d3bb0101eb0819b482327:f2f35e4070a6cef10e05dfa320cc3c123c4d738c7f8d3d91ffc94471a654b248",
   },
   "gerente-castaneda": {
-    label: "Gerente regional · Jesus Castaneda Totocintle",
+    label: "Gerente regional · Jesus Castaneda Totozintle",
     seesAll: true,
     canManage: false,
     canDelete: false,
     zonaFilter: "centro",
     authorizeLevel: "regional",
-    zoneNames: ["Jesus Castaneda Totocintle"],
+    zoneNames: ["Jesus Castaneda Totozintle"],
     hash: "e3f88425cdf3cfb75f5e3669069b2c57:354e6a487550beeb90294679d04de782004d0d274af6828f071f2ee14a84fa69",
   },
   "gerente-ugalde": {
