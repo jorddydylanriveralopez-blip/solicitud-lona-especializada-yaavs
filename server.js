@@ -3262,9 +3262,12 @@ function missingSubmissionError(answers, files) {
     if (!okForaneo) {
       return "En Foráneo solo se puede solicitar Lona especializada o Rotulación.";
     }
-    if (!has("xray_cliente")) {
-      return "Falta la captura de X-ray por cliente. No se envió la solicitud.";
-    }
+  }
+  if (
+    (material.includes("lona") || material.includes("rotul")) &&
+    !has("xray_cliente")
+  ) {
+    return "Falta la captura de X-ray por cliente. No se envió la solicitud.";
   }
   const requiredText = [
     ["ejecutivoNombre", "Falta el nombre del ejecutivo."],
@@ -3398,11 +3401,8 @@ app.post("/api/submit", (req, res) => {
           };
         }
       }
-      const zonaRaw = String(entry.answers.zonaComercial || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
-      if (zonaRaw === "foraneo") {
+      const materialRaw = String(entry.answers.material || "").toLowerCase();
+      if (materialRaw.includes("lona") || materialRaw.includes("rotul")) {
         const xrayFiles = saveNamedFiles(entry.id, "xray_cliente", files).map((f) => ({
           ...f,
           kind: "xray",

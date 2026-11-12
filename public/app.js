@@ -1069,12 +1069,21 @@
         drop?.classList.remove("has-file");
       };
 
+      // En móvil el input transparente a veces no abre el picker; forzar click.
+      input.style.pointerEvents = "none";
+      drop?.addEventListener("click", (event) => {
+        if (input.disabled) return;
+        event.preventDefault();
+        event.stopPropagation();
+        input.click();
+      });
+
       input.addEventListener("change", async () => {
         clearPreview();
         const files = [...(input.files || [])];
         const file = files[0];
         if (!file || !preview || !media || !nameEl || !sizeEl) return;
-        nameEl.textContent = files.length > 1 ? `${files.length} imágenes` : file.name;
+        nameEl.textContent = files.length > 1 ? `${files.length} archivos` : file.name;
         sizeEl.textContent =
           files.length > 1
             ? files.map((item) => item.name).join(", ")
@@ -1082,7 +1091,8 @@
         if (file.size > WARN_FILE_MB * 1024 * 1024) {
           showToast(`La foto pesa ${formatBytes(file.size)}. Si puedes, súbela más liviana para evitar traba en el celular.`);
         }
-        const isImage = /^image\//.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+        const isImage =
+          /^image\//.test(file.type) || /\.(jpe?g|png|heic|heif|webp)$/i.test(file.name);
         const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
         if (isImage) {
           try {
@@ -1099,6 +1109,7 @@
         preview.hidden = false;
         if (copy) copy.hidden = true;
         drop?.classList.add("has-file");
+        scheduleSyncFormSteps(true);
       });
     });
   }
@@ -1666,7 +1677,9 @@
 
   function appendSelectedFiles(fd) {
     form.querySelectorAll('input[type="file"]').forEach((input) => {
-      if (!input.name || input.closest("[hidden]")) return;
+      if (!input.name || input.disabled) return;
+      const step = input.closest("[data-form-step]");
+      if (step?.hidden || input.closest("[hidden]")) return;
       for (const file of input.files || []) fd.append(input.name, file);
     });
   }
@@ -1784,6 +1797,8 @@
   renderLonas();
   renderToldos();
   renderCaballetes();
+  // Incluye X-ray (Centro/Foráneo) y el resto de inputs estáticos del formulario.
+  bindFilePreviews(form);
   if (toldoPuntoVentaExtra) bindFilePreviews(toldoPuntoVentaExtra);
   if (flowRotulacion) bindFilePreviews(flowRotulacion);
   initUbicacionPicker();
