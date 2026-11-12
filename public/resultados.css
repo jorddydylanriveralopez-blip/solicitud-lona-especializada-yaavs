@@ -1258,107 +1258,39 @@ body.login-page {
 }
 
 body.login-page .login-atmosphere {
-  background:
-    radial-gradient(ellipse 70% 55% at 18% 12%, rgba(0, 151, 178, 0.38), transparent 58%),
-    radial-gradient(ellipse 55% 45% at 88% 18%, rgba(37, 99, 181, 0.42), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 70% 88%, rgba(111, 212, 232, 0.16), transparent 55%),
-    linear-gradient(160deg, #102a4a 0%, #0b1c33 42%, #07111f 100%);
+  background: #07111f;
 }
 
 body.login-page .login-atmosphere::before,
 body.login-page .login-atmosphere::after {
-  opacity: 0.7;
-  filter: blur(70px);
-  animation: loginGlow 10s var(--ease) infinite alternate;
-}
-
-body.login-page .login-atmosphere::before {
-  top: -12%;
-  right: -8%;
-  background: rgba(0, 151, 178, 0.55);
-}
-
-body.login-page .login-atmosphere::after {
-  bottom: -16%;
-  left: -10%;
-  background: rgba(37, 99, 181, 0.5);
+  display: none;
 }
 
 body.login-page .scene-photo {
   inset: 0;
-  opacity: 0.9;
-  background:
-    url("./assets/bg-telecom-signals.svg") center / cover no-repeat,
-    radial-gradient(circle at 20% 20%, rgba(111, 212, 232, 0.12) 0 1px, transparent 1px);
-  background-size: cover, 26px 26px;
-  transform: scale(1.04);
-  animation: loginDrift 22s linear infinite alternate;
+  opacity: 1;
+  background: url("./assets/bg-yaavs-telecom.jpg") center / cover no-repeat;
+  transform: scale(1.02);
+  animation: loginDrift 28s linear infinite alternate;
 }
 
 body.login-page .scene-overlay {
   background:
-    linear-gradient(180deg, rgba(7, 17, 31, 0.18) 0%, rgba(7, 17, 31, 0.45) 58%, rgba(7, 17, 31, 0.72) 100%),
-    radial-gradient(ellipse 70% 50% at 50% 110%, rgba(0, 151, 178, 0.22), transparent 60%);
-}
-
-.login-signal {
-  position: absolute;
-  border-radius: 50%;
-  border: 1px solid rgba(143, 220, 255, 0.28);
-  box-shadow: 0 0 40px rgba(0, 151, 178, 0.12);
-  animation: loginPulse 7s var(--ease) infinite;
-}
-
-.login-signal-a {
-  width: min(420px, 68vw);
-  height: min(420px, 68vw);
-  left: -8%;
-  bottom: -12%;
-}
-
-.login-signal-b {
-  width: min(320px, 52vw);
-  height: min(320px, 52vw);
-  right: -4%;
-  top: 12%;
-  animation-delay: 1.4s;
-}
-
-@keyframes loginGlow {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  to {
-    transform: translate3d(18px, -14px, 0) scale(1.08);
-  }
+    linear-gradient(180deg, rgba(7, 17, 31, 0.28) 0%, rgba(7, 17, 31, 0.42) 48%, rgba(7, 17, 31, 0.72) 100%),
+    radial-gradient(ellipse 55% 42% at 50% 48%, rgba(7, 17, 31, 0.35), transparent 70%);
 }
 
 @keyframes loginDrift {
   from {
-    transform: scale(1.04) translate3d(0, 0, 0);
+    transform: scale(1.02) translate3d(0, 0, 0);
   }
   to {
-    transform: scale(1.08) translate3d(-1.5%, 1%, 0);
-  }
-}
-
-@keyframes loginPulse {
-  0%,
-  100% {
-    opacity: 0.28;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.55;
-    transform: scale(1.06);
+    transform: scale(1.06) translate3d(-1.2%, 0.8%, 0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body.login-page .login-atmosphere::before,
-  body.login-page .login-atmosphere::after,
-  body.login-page .scene-photo,
-  .login-signal {
+  body.login-page .scene-photo {
     animation: none;
   }
 }
