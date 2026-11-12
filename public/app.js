@@ -585,13 +585,22 @@
       }
     });
 
-    // Solo un input xray activo: el del paso Foráneo visible.
+    // Solo un input xray activo: el del paso visible (Lona o Rotulación).
     form.querySelectorAll('input[name="xray_cliente"]').forEach((input) => {
       const section = input.closest("[data-form-step]");
       const on = Boolean(section && isStepApplicable(section) && !section.hidden);
-      input.disabled = !on;
+      // Preferir readonly/required sobre disabled: disabled bloquea el picker en algunos móviles.
+      input.disabled = false;
       input.required = on;
-      if (!on) input.value = "";
+      if (on) {
+        input.removeAttribute("tabindex");
+        input.style.pointerEvents = "";
+      } else {
+        input.required = false;
+        input.value = "";
+        input.style.pointerEvents = "none";
+        input.setAttribute("tabindex", "-1");
+      }
     });
 
     if (actions) {
@@ -1095,14 +1104,10 @@
         drop?.classList.remove("has-file");
       };
 
-      // En móvil el input transparente a veces no abre el picker; forzar click.
-      input.style.pointerEvents = "none";
-      drop?.addEventListener("click", (event) => {
-        if (input.disabled) return;
-        event.preventDefault();
-        event.stopPropagation();
-        input.click();
-      });
+      // El input cubre todo el .file-drop (CSS). No bloquear pointer-events:
+      // el click sintético falla en Safari/Android y deja sin poder subir.
+      input.style.pointerEvents = "";
+      input.style.cursor = "pointer";
 
       input.addEventListener("change", async () => {
         clearPreview();
@@ -1457,9 +1462,10 @@
     }
 
     if (isLona() || isRotulacion()) {
-      const xray = [...form.querySelectorAll('input[name="xray_cliente"]')].find(
-        (input) => !input.disabled && !input.closest("[hidden]"),
-      );
+      const xray = [...form.querySelectorAll('input[name="xray_cliente"]')].find((input) => {
+        const step = input.closest("[data-form-step]");
+        return Boolean(step && !step.hidden && isStepApplicable(step));
+      });
       if (!xray?.files?.length) {
         errors.push("Sube la captura de X-ray por cliente.");
         markInvalid(xray);
@@ -1531,7 +1537,8 @@
     }
 
     form.querySelectorAll('input[type="file"]').forEach((input) => {
-      if (input.disabled || input.closest("[hidden]")) return;
+      if (input.closest("[hidden]")) return;
+      if (input.style.pointerEvents === "none") return;
       if (input.files?.length) return;
       const label = String(input.closest("label")?.querySelector("span")?.textContent || "la foto")
         .replace(/\*/g, "")
@@ -1703,9 +1710,10 @@
 
   function appendSelectedFiles(fd) {
     form.querySelectorAll('input[type="file"]').forEach((input) => {
-      if (!input.name || input.disabled) return;
+      if (!input.name) return;
       const step = input.closest("[data-form-step]");
       if (step?.hidden || input.closest("[hidden]")) return;
+      if (input.style.pointerEvents === "none" && !input.files?.length) return;
       for (const file of input.files || []) fd.append(input.name, file);
     });
   }
