@@ -669,9 +669,39 @@ function isForaneoItem(item) {
   return resolvedZonaComercial(item) === "foraneo";
 }
 
+function parseRechazo(raw) {
+  const text = String(raw || "").trim();
+  if (!/^rechazada\b/i.test(text)) return null;
+  const parts = text.split("·").map((part) => part.trim()).filter(Boolean);
+  // Rechazada · Nivel · Quien · Motivo?
+  return {
+    nivel: parts[1] || "",
+    quien: parts[2] || "",
+    motivo: parts.slice(3).join(" · ").trim(),
+  };
+}
+
+function formatRechazo({ nivel, quien, motivo }) {
+  const parts = ["Rechazada", String(nivel || "").trim(), String(quien || "").trim()].filter(Boolean);
+  const why = String(motivo || "").trim().slice(0, 280);
+  if (why) parts.push(why);
+  return parts.join(" · ");
+}
+
+function authorizeLevelLabel(level) {
+  const value = String(level || "").toLowerCase();
+  if (value === "territorial") return "Territorial";
+  if (value === "regional") return "Regional";
+  if (value === "subdireccion") return "Subdirección";
+  return "Gerencia";
+}
+
 function parseAuthChain(raw, { requireSubdireccion = true } = {}) {
   const text = String(raw || "").trim();
   if (!text) {
+    return { territorial: "", regional: "", subdireccion: "", legacy: false, complete: false };
+  }
+  if (/^rechazada\b/i.test(text)) {
     return { territorial: "", regional: "", subdireccion: "", legacy: false, complete: false };
   }
   const hasMarkers = /\bT:/.test(text) || /\bR:/.test(text) || /\bS:/.test(text) || /Territorial\s*·/i.test(text);
@@ -2606,6 +2636,9 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
     return res.status(403).json({ ok: false, error: "Solo un gerente puede autorizar la solicitud" });
   }
   const aceptar = req.body?.aceptar === true || req.body?.aceptar === "1" || req.body?.aceptar === 1;
+  const rechazar =
+    req.body?.rechazar === true || req.body?.rechazar === "1" || req.body?.rechazar === 1;
+  const motivo = String(req.body?.motivo || "").trim().slice(0, 280);
   const id = String(req.params.id || "").trim();
   if (!id) return res.status(400).json({ ok: false, error: "Falta el id de la solicitud" });
 
@@ -2632,10 +2665,21 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
   const answersRegional = personName(zoneItem.territorioGerente);
   const whoNorm = personName(who);
   const samePersonBothRoles = Boolean(whoNorm && whoNorm === answersTerritorial && whoNorm === answersRegional);
-  let autorizada = "";
-  if (
+  const canChain =
     (foraneo && (level === "territorial" || level === "regional" || level === "subdireccion")) ||
-    (!foraneo && (level === "territorial" || level === "regional"))
+    (!foraneo && (level === "territorial" || level === "regional"));
+  let autorizada = "";
+  if (rechazar) {
+    if (!canChain && !level) {
+      return res.status(403).json({ ok: false, error: "No puedes rechazar esta solicitud" });
+    }
+    autorizada = formatRechazo({
+      nivel: authorizeLevelLabel(level || "gerencia"),
+      quien: who,
+      motivo,
+    });
+  } else if (
+    canChain
   ) {
     const chain = foraneo
       ? parseForaneoAuthChain(zoneItem.autorizada)

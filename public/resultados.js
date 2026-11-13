@@ -22,7 +22,7 @@
   let evidenciaUploadBusy = false;
   let statusFilter = "all";
   let boardBucket = "activas"; // activas | terminadas
-  let quickFilter = "all"; // all | autorizadas | sin-autorizar | faltantes
+  let quickFilter = "all"; // all | autorizadas | sin-autorizar | rechazadas | faltantes
   let zoneDashboard = "centro"; // centro | foraneo | all
   const ZONE_DASHBOARD_KEY = "yaavs_zone_dashboard";
   let dateFromFilter = "";
@@ -382,9 +382,49 @@
       .trim();
   }
 
+  function parseRechazo(raw) {
+    const text = String(raw || "").trim();
+    if (!/^rechazada\b/i.test(text)) return null;
+    const parts = text
+      .split("·")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    return {
+      nivel: parts[1] || "",
+      quien: parts[2] || "",
+      motivo: parts.slice(3).join(" · ").trim(),
+    };
+  }
+
+  function isRejected(item) {
+    return Boolean(parseRechazo(item?.autorizada));
+  }
+
+  function canRejectRole(item) {
+    if (!session?.canAuthorize || !item?.enMiZona) return false;
+    const level = String(session?.authorizeLevel || "").toLowerCase();
+    if (!level) return false;
+    const foraneo = isForaneoItem(item);
+    if (!foraneo && level === "subdireccion") return false;
+    if (foraneo && !(level === "territorial" || level === "regional" || level === "subdireccion")) {
+      return false;
+    }
+    if (!foraneo && !(level === "territorial" || level === "regional")) return false;
+    return true;
+  }
+
+  function rejectAuthAction(item) {
+    if (!canRejectRole(item)) return null;
+    if (isRejected(item)) return { rechazar: false, label: "Quitar rechazo" };
+    return { rechazar: true, label: "Rechazar solicitud" };
+  }
+
   function parseAuthChain(raw, { requireSubdireccion = true } = {}) {
     const text = String(raw || "").trim();
     if (!text) {
+      return { territorial: "", regional: "", subdireccion: "", legacy: false, complete: false };
+    }
+    if (/^rechazada\b/i.test(text)) {
       return { territorial: "", regional: "", subdireccion: "", legacy: false, complete: false };
     }
     const hasMarkers =
@@ -433,6 +473,7 @@
 
   function chainAuthAction(item) {
     if (!session?.canAuthorize || !item?.enMiZona) return null;
+    if (isRejected(item)) return null;
     const level = String(session?.authorizeLevel || "").toLowerCase();
     if (!level) return null;
     const foraneo = isForaneoItem(item);
@@ -488,6 +529,12 @@
   }
 
   function authStatusLabel(item) {
+    const rechazo = parseRechazo(item?.autorizada);
+    if (rechazo) {
+      const bits = ["Rechazada", rechazo.nivel, rechazo.quien].filter(Boolean);
+      if (rechazo.motivo) bits.push(rechazo.motivo);
+      return bits.join(" · ");
+    }
     const foraneo = isForaneoItem(item);
     const chain = parseAuthChain(item?.autorizada, { requireSubdireccion: foraneo });
     if (chain.complete || chain.legacy) {
@@ -540,7 +587,8 @@
 
   function itemMatchesQuickFilter(item) {
     if (quickFilter === "autorizadas") return isAuthorized(item);
-    if (quickFilter === "sin-autorizar") return !isAuthorized(item);
+    if (quickFilter === "sin-autorizar") return !isAuthorized(item) && !isRejected(item);
+    if (quickFilter === "rechazadas") return isRejected(item);
     if (quickFilter === "faltantes") return hasFaltante(item);
     return true;
   }
@@ -596,7 +644,8 @@
     return {
       all: base.length,
       autorizadas: base.filter((it) => isAuthorized(it)).length,
-      "sin-autorizar": base.filter((it) => !isAuthorized(it)).length,
+      "sin-autorizar": base.filter((it) => !isAuthorized(it) && !isRejected(it)).length,
+      rechazadas: base.filter((it) => isRejected(it)).length,
       faltantes: base.filter((it) => hasFaltante(it)).length,
     };
   }
@@ -645,6 +694,7 @@
       { key: "all", label: "Todas" },
       { key: "autorizadas", label: "Autorizadas" },
       { key: "sin-autorizar", label: "Sin autorizar" },
+      { key: "rechazadas", label: "Rechazadas" },
       { key: "faltantes", label: "Faltantes" },
     ];
     if (!options.some((opt) => opt.key === quickFilter)) quickFilter = "all";
@@ -1674,6 +1724,7 @@
       if (boardBucket === "terminadas") hints.push("terminadas");
       if (quickFilter === "autorizadas") hints.push("autorizadas");
       if (quickFilter === "sin-autorizar") hints.push("sin autorizar");
+      if (quickFilter === "rechazadas") hints.push("rechazadas");
       if (quickFilter === "faltantes") hints.push("con faltantes");
       if (dateFromFilter || dateToFilter) hints.push("en ese rango de fechas");
       const hintText = hints.length ? ` (${hints.join(", ")})` : "";
@@ -1714,7 +1765,7 @@
                 ${
                   isAuthorized(item)
                     ? `<p class="card-auth">${escapeHtml(authStatusLabel(item))}</p>`
-                    : `<p class="card-auth is-pending">${escapeHtml(authStatusLabel(item))}</p>`
+                    : `<p class="card-auth${isRejected(item) ? " is-rejected" : " is-pending"}">${escapeHtml(authStatusLabel(item))}</p>`
                 }
                 ${
                   item.faltanteCliente && (session?.seesAll || materialKind(item) === "rotulacion")
@@ -1766,17 +1817,26 @@
 
   function autorizacionCardHtml(item) {
     const ok = isAuthorized(item);
+    const rejected = isRejected(item);
     const id = escapeAttr(item.id || item.folio || "");
     const chainAction = chainAuthAction(item);
-    if (chainAction) {
+    const rejectAction = rejectAuthAction(item);
+    if (chainAction || rejectAction) {
       return `
         <div class="autorizacion-card">
-          <button type="button" class="autorizacion-btn${chainAction.aceptar ? "" : " is-on"}" data-id="${id}" data-aceptar="${chainAction.aceptar ? "1" : "0"}">
-            ${escapeHtml(chainAction.label)}
-          </button>
+          ${
+            chainAction
+              ? `<button type="button" class="autorizacion-btn${chainAction.aceptar ? "" : " is-on"}" data-id="${id}" data-aceptar="${chainAction.aceptar ? "1" : "0"}">${escapeHtml(chainAction.label)}</button>`
+              : ""
+          }
+          ${
+            rejectAction
+              ? `<button type="button" class="autorizacion-btn is-reject${rejectAction.rechazar ? "" : " is-on"}" data-id="${id}" data-rechazar="${rejectAction.rechazar ? "1" : "0"}">${escapeHtml(rejectAction.label)}</button>`
+              : ""
+          }
         </div>`;
     }
-    return `<p class="autorizacion-flag${ok ? " is-on" : ""}">${escapeHtml(authStatusLabel(item))}</p>`;
+    return `<p class="autorizacion-flag${ok ? " is-on" : rejected ? " is-rejected" : ""}">${escapeHtml(authStatusLabel(item))}</p>`;
   }
 
   function productoCardHtml(item) {
@@ -1814,22 +1874,31 @@
 
   function autorizacionDetailHtml(item) {
     const ok = isAuthorized(item);
+    const rejected = isRejected(item);
     const id = escapeAttr(item.id || item.folio || "");
     const foraneo = isForaneoItem(item);
     const chainAction = chainAuthAction(item);
+    const rejectAction = rejectAuthAction(item);
     const showChain = foraneo || usesAuthChain(item) || Boolean(String(session?.authorizeLevel || ""));
-    let action = "";
+    const actions = [];
     if (chainAction) {
-      action = `<button type="button" class="autorizacion-btn${chainAction.aceptar ? "" : " is-on"}" data-id="${id}" data-aceptar="${chainAction.aceptar ? "1" : "0"}">${escapeHtml(chainAction.label)}</button>`;
+      actions.push(
+        `<button type="button" class="autorizacion-btn${chainAction.aceptar ? "" : " is-on"}" data-id="${id}" data-aceptar="${chainAction.aceptar ? "1" : "0"}">${escapeHtml(chainAction.label)}</button>`,
+      );
+    }
+    if (rejectAction) {
+      actions.push(
+        `<button type="button" class="autorizacion-btn is-reject${rejectAction.rechazar ? "" : " is-on"}" data-id="${id}" data-rechazar="${rejectAction.rechazar ? "1" : "0"}">${escapeHtml(rejectAction.label)}</button>`,
+      );
     }
     const fuera =
       session?.canAuthorize && item?.enMiZona === false
         ? " La autoriza el gerente de esta zona."
-        : session?.canAuthorize && item?.enMiZona && !chainAction && showChain
+        : session?.canAuthorize && item?.enMiZona && !chainAction && !rejected && showChain
           ? " Espera el paso anterior de la cadena."
           : "";
     return `
-      <section class="autorizacion-panel${ok ? " is-on" : ""}">
+      <section class="autorizacion-panel${ok ? " is-on" : rejected ? " is-rejected" : ""}">
         <div>
           <p class="autorizacion-kicker">${
             foraneo
@@ -1837,9 +1906,9 @@
               : "Autorización Centro (territorial + regional)"
           }</p>
           <p class="autorizacion-state">${escapeHtml(authStatusLabel(item))}${fuera}</p>
-          ${authStepsHtml(item)}
+          ${rejected ? "" : authStepsHtml(item)}
         </div>
-        ${action}
+        ${actions.length ? `<div class="autorizacion-actions">${actions.join("")}</div>` : ""}
       </section>`;
   }
 
@@ -1851,6 +1920,10 @@
         event.stopPropagation();
         const id = btn.dataset.id || "";
         if (!id) return;
+        if (btn.hasAttribute("data-rechazar")) {
+          setRechazo(id, btn.dataset.rechazar !== "0");
+          return;
+        }
         setAutorizacion(id, btn.dataset.aceptar !== "0");
       };
     });
@@ -1881,6 +1954,46 @@
       renderList();
       renderDetail();
       window.alert(err.message || "No se pudo guardar la autorización");
+    }
+  }
+
+  async function setRechazo(id, rechazar) {
+    const item = items.find((it) => it.id === id || it.folio === id);
+    if (!item || !session?.canAuthorize || !item.enMiZona) return;
+    if (!rejectAuthAction(item)) return;
+    let motivo = "";
+    if (rechazar) {
+      const answer = window.prompt("Motivo del rechazo (opcional):", "");
+      if (answer === null) return;
+      motivo = String(answer || "").trim().slice(0, 280);
+      const ok = window.confirm(
+        motivo
+          ? `¿Rechazar esta solicitud?\n\nMotivo: ${motivo}`
+          : "¿Rechazar esta solicitud?",
+      );
+      if (!ok) return;
+    }
+    const previous = item.autorizada || "";
+    item.autorizada = rechazar ? `Rechazada · ${motivo || "Sin motivo"}` : "";
+    renderList();
+    renderDetail();
+    try {
+      const res = await fetch(`/api/responses/${encodeURIComponent(id)}/autorizacion`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rechazar, motivo, aceptar: false }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) throw new Error(data.error || "No se pudo guardar");
+      item.autorizada = data.autorizada || "";
+      lastFingerprint = boardFingerprint(items);
+      renderList();
+      renderDetail();
+    } catch (err) {
+      item.autorizada = previous;
+      renderList();
+      renderDetail();
+      window.alert(err.message || "No se pudo guardar el rechazo");
     }
   }
 

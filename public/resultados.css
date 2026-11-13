@@ -1785,6 +1785,10 @@ body.dashboard-foraneo .primary-link {
   color: #7c3aed;
 }
 
+.card-auth.is-rejected {
+  color: #b42318;
+}
+
 .card-note {
   margin: 6px 0 0;
   padding: 6px 8px;
@@ -2256,6 +2260,8 @@ body.dashboard-foraneo .primary-link {
 }
 
 .autorizacion-card {
+  display: grid;
+  gap: 8px;
   padding: 0 8px 10px;
 }
 
@@ -2278,6 +2284,15 @@ body.dashboard-foraneo .primary-link {
   color: #146c43;
 }
 
+.autorizacion-btn.is-reject {
+  background: #b42318;
+}
+
+.autorizacion-btn.is-reject.is-on {
+  background: #fef3f2;
+  color: #b42318;
+}
+
 .autorizacion-flag {
   margin: 0 10px 10px;
   font-size: 0.78rem;
@@ -2287,6 +2302,10 @@ body.dashboard-foraneo .primary-link {
 
 .autorizacion-flag.is-on {
   color: #146c43;
+}
+
+.autorizacion-flag.is-rejected {
+  color: #b42318;
 }
 
 .autorizacion-panel {
@@ -2304,6 +2323,17 @@ body.dashboard-foraneo .primary-link {
 .autorizacion-panel.is-on {
   background: #eefaf3;
   border-color: #b7e4c7;
+}
+
+.autorizacion-panel.is-rejected {
+  background: #fef3f2;
+  border-color: #fecdca;
+}
+
+.autorizacion-actions {
+  display: grid;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .autorizacion-kicker {
@@ -2354,6 +2384,7 @@ body.dashboard-foraneo .primary-link {
 
 .autorizacion-panel .autorizacion-btn {
   width: auto;
+  min-width: 11rem;
   flex: 0 0 auto;
 }
 
