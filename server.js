@@ -236,7 +236,8 @@ const BOARD_ROLES = {
   },
   ejecutivo: {
     label: "Ejecutivo de ventas · Centro",
-    seesAll: false,
+    // Ve materiales de Centro (lonas, toldos, caballetes y rotulación).
+    seesAll: true,
     canManage: false,
     canDelete: false,
     zonaFilter: "centro",

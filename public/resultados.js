@@ -124,10 +124,10 @@
 
   const MATERIAL_FILTERS = [
     { key: "all", label: "Todos" },
-    { key: "lona", label: "Lona" },
-    { key: "toldo", label: "Toldo" },
-    { key: "caballete", label: "Caballete" },
-    { key: "rotulacion", label: "Rotulación" },
+    { key: "lona", label: "Lonas" },
+    { key: "toldo", label: "Toldos" },
+    { key: "caballete", label: "Caballetes" },
+    { key: "rotulacion", label: "Rotulaciones" },
   ];
 
   function supportsEvidencia(item) {
@@ -984,15 +984,17 @@
   }
 
   function materialFiltersForSession() {
-    if (session?.canManageRotulacion && !session?.canManage) {
-      return MATERIAL_FILTERS.filter((f) => f.key !== "toldo");
-    }
-    // Ejecutivo Foráneo: en su zona solo aplica Lona y Rotulación.
-    if (String(session?.zonaFilter || "").toLowerCase() === "foraneo") {
+    const zona = String(session?.zonaFilter || "").toLowerCase();
+    // Foráneo: solo Lonas y Rotulaciones.
+    if (zona === "foraneo") {
       return MATERIAL_FILTERS.filter(
         (f) => f.key === "all" || f.key === "lona" || f.key === "rotulacion",
       );
     }
+    if (session?.canManageRotulacion && !session?.canManage) {
+      return MATERIAL_FILTERS.filter((f) => f.key !== "toldo");
+    }
+    // Todos los demás perfiles: filtros separados por material.
     return MATERIAL_FILTERS;
   }
 
@@ -1000,16 +1002,17 @@
     const select = document.getElementById("materialSelect");
     const field = document.getElementById("materialFilterField");
     if (!select) return;
-    if (field) field.hidden = Boolean(session && !session.seesAll);
-    if (session && !session.seesAll) return;
+    if (field) field.hidden = false;
     const filters = materialFiltersForSession();
     const counts = materialCounts();
     if (!filters.some((f) => f.key === materialFilter)) materialFilter = "all";
-    select.innerHTML = filters.map((f) => {
-      const count = counts[f.key] ?? 0;
-      const label = f.key === "all" ? `Todos (${count})` : `${f.label} (${count})`;
-      return `<option value="${escapeAttr(f.key)}"${f.key === materialFilter ? " selected" : ""}>${escapeHtml(label)}</option>`;
-    }).join("");
+    select.innerHTML = filters
+      .map((f) => {
+        const count = counts[f.key] ?? 0;
+        const label = f.key === "all" ? `Todos (${count})` : `${f.label} (${count})`;
+        return `<option value="${escapeAttr(f.key)}"${f.key === materialFilter ? " selected" : ""}>${escapeHtml(label)}</option>`;
+      })
+      .join("");
   }
 
   const SECTIONS = [
@@ -1704,13 +1707,12 @@
         <strong>${withMedia}</strong>
       </div>
       <div class="stat">
-        ${
-          session?.seesAll
-            ? `<span>Por material</span>
-               <strong class="stat-sm">L ${counts.lona} · T ${counts.toldo} · C ${counts.caballete} · R ${counts.rotulacion}</strong>`
-            : `<span>Notas de Marketing</span>
-               <strong>${visible.filter((it) => String(it.faltanteCliente || "").trim()).length}</strong>`
-        }
+        <span>Por material</span>
+        <strong class="stat-sm">${
+          String(session?.zonaFilter || "").toLowerCase() === "foraneo"
+            ? `Lonas ${counts.lona} · Rotulaciones ${counts.rotulacion}`
+            : `Lonas ${counts.lona} · Toldos ${counts.toldo} · Caballetes ${counts.caballete} · Rotulaciones ${counts.rotulacion}`
+        }</strong>
       </div>
     `;
   }
@@ -3269,10 +3271,6 @@
       zoneDashboard = readStoredZoneDashboard() || "all";
     } else if (session.seesAll) {
       zoneDashboard = readStoredZoneDashboard() || "centro";
-    }
-    if (!session.seesAll) {
-      const field = document.getElementById("materialFilterField");
-      if (field) field.hidden = true;
     }
     renderBoardControls();
     bindDateFilters();
