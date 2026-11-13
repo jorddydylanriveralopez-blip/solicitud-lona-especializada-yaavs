@@ -987,6 +987,12 @@
     if (session?.canManageRotulacion && !session?.canManage) {
       return MATERIAL_FILTERS.filter((f) => f.key !== "toldo");
     }
+    // Ejecutivo Foráneo: en su zona solo aplica Lona y Rotulación.
+    if (String(session?.zonaFilter || "").toLowerCase() === "foraneo") {
+      return MATERIAL_FILTERS.filter(
+        (f) => f.key === "all" || f.key === "lona" || f.key === "rotulacion",
+      );
+    }
     return MATERIAL_FILTERS;
   }
 

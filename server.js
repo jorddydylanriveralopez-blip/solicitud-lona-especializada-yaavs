@@ -245,7 +245,8 @@ const BOARD_ROLES = {
   },
   "ejecutivo-foraneo": {
     label: "Ejecutivo de ventas · Foráneo",
-    seesAll: false,
+    // Ve lonas y rotulación de Foráneo (zonaFilter); no solo rotulación.
+    seesAll: true,
     canManage: false,
     canDelete: false,
     zonaFilter: "foraneo",
