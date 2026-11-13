@@ -653,12 +653,18 @@
   }
 
   function pastedMapsUrl(text) {
-    const match = String(text || "").match(/https?:\/\/\S+/i);
-    return match ? match[0].replace(/[)\].,;]+$/g, "") : "";
+    const value = String(text || "");
+    // Prefer Google / Apple Maps links inside WhatsApp messages or shared text.
+    const preferred = value.match(
+      /https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|share\.google|maps\.google\.[^\s/]+|www\.google\.[^\s/]+\/maps|maps\.apple\.com)[^\s]*/i,
+    );
+    if (preferred) return preferred[0].replace(/[)\].,;>"']+$/g, "");
+    const any = value.match(/https?:\/\/\S+/i);
+    return any ? any[0].replace(/[)\].,;>"']+$/g, "") : "";
   }
 
   function isMapsUrl(value) {
-    return /google\.[a-z.]{2,}\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|share\.google\//i.test(
+    return /google\.[a-z.]{2,}\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|share\.google\/|maps\.apple\.com/i.test(
       String(value || ""),
     );
   }
@@ -669,6 +675,11 @@
 
   function coordsFromText(text) {
     const value = decodeMapsText(text);
+    const geo = value.match(/geo:(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/i);
+    if (geo) {
+      const pin = validCoord(geo[1], geo[2]);
+      if (pin) return pin;
+    }
     const pins = [...value.matchAll(/!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/g)];
     if (pins.length) {
       const last = pins[pins.length - 1];
@@ -676,7 +687,8 @@
       if (pin) return pin;
     }
     const patterns = [
-      /[?&](?:q|query|ll|center|destination)=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/,
+      /[?&](?:q|query|ll|center|destination)=(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/,
+      /[?&]ll=(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/,
       /\/(?:place|search)\/(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
       /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
       /(?:^|[^\d.-])(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)(?:[^\d.]|$)/,
@@ -718,13 +730,18 @@
       lastPreviewKey = "";
       ubicacionPreview.hidden = true;
       ubicacionPreview.innerHTML = "";
+      ubicacionPreview.classList.remove("is-ready", "is-miss");
       return;
     }
     if (key === lastPreviewKey) return;
     lastPreviewKey = key;
     const nice = label && !/^https?:/i.test(label) ? label : "Ubicación del punto de venta";
+    const ready = Boolean(lat && lng);
     ubicacionPreview.hidden = false;
+    ubicacionPreview.classList.toggle("is-ready", ready);
+    ubicacionPreview.classList.toggle("is-miss", !ready);
     ubicacionPreview.innerHTML = `
+      <p class="ubicacion-ready-title">${ready ? "Listo: ya quedó marcada la ubicación" : "Revisando ubicación…"}</p>
       <p>${escapeHtml(nice)}</p>
       ${
         openUrl
@@ -734,7 +751,7 @@
       ${
         src
           ? `<iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${escapeHtml(src)}" title="Mapa del punto de venta"></iframe>`
-          : `<p class="help">No se pudo marcar el punto exacto. Prueba con el enlace de compartir de Google Maps.</p>`
+          : `<p class="help">Aún no se ve el punto exacto. Pega el enlace de <strong>Compartir</strong> de Google Maps (el que empieza con maps.app.goo.gl).</p>`
       }
     `;
   }
@@ -761,14 +778,23 @@
     if (!ubicacionPreview) return;
     lastPreviewKey = "";
     ubicacionPreview.hidden = false;
-    ubicacionPreview.innerHTML = `<p>Buscando el punto exacto…</p>`;
+    ubicacionPreview.classList.remove("is-ready");
+    ubicacionPreview.classList.add("is-miss");
+    ubicacionPreview.innerHTML = `<p class="ubicacion-ready-title">Buscando el punto en el mapa…</p><p>Espera un momento.</p>`;
   }
 
   function showUbicacionMiss() {
     if (!ubicacionPreview) return;
     lastPreviewKey = "";
     ubicacionPreview.hidden = false;
-    ubicacionPreview.innerHTML = `<p class="help">No se pudo marcar el punto exacto. Pega el enlace de compartir de Google Maps.</p>`;
+    ubicacionPreview.classList.remove("is-ready");
+    ubicacionPreview.classList.add("is-miss");
+    ubicacionPreview.innerHTML = `
+      <p class="ubicacion-ready-title">No se pudo marcar el punto</p>
+      <p class="help">
+        Copia el enlace con <strong>Compartir → Copiar enlace</strong> en Google Maps
+        (o la ubicación de WhatsApp) y pégalo con el botón <strong>Pegar enlace</strong>.
+      </p>`;
   }
 
   async function readJson(res) {
@@ -845,7 +871,8 @@
         applyPin(coords, placeQueryFromUrl(foundUrl) || raw);
         return;
       }
-      applyUbicacion({ mapsUrl: "", label: raw });
+      // Conserva el enlace compartido aunque aún no se vea el pin.
+      applyUbicacion({ mapsUrl: foundUrl, label: placeQueryFromUrl(foundUrl) || raw });
       showUbicacionMiss();
       return;
     }
@@ -863,7 +890,8 @@
       } catch (_) {
         if (reqId !== ubicacionRequest) return;
       }
-      applyUbicacion({ mapsUrl: "", label: raw });
+      const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(raw)}`;
+      applyUbicacion({ mapsUrl: searchUrl, label: raw });
       showUbicacionMiss();
     }
   }
@@ -877,7 +905,11 @@
   }
 
   function hasUbicacionPuntoVenta() {
-    return Boolean(String(ubicacionMaps?.value || "").trim() || String(ubicacionInput?.value || "").trim());
+    const maps = String(ubicacionMaps?.value || "").trim();
+    const lat = String(ubicacionLat?.value || "").trim();
+    const lng = String(ubicacionLng?.value || "").trim();
+    // Para que sea claro: debe quedar marcada (mapa o coordenadas), no solo texto suelto.
+    return Boolean((lat && lng) || maps);
   }
 
   function loadMapsPlaces(apiKey) {
@@ -927,41 +959,73 @@
     }
   }
 
+  const btnPegarUbicacion = document.getElementById("btnPegarUbicacion");
+
   btnDetectarUbicacion?.addEventListener("click", () => {
     if (!navigator.geolocation) {
       showToast("Tu navegador no permite detectar ubicación.");
       return;
     }
     btnDetectarUbicacion.disabled = true;
-    btnDetectarUbicacion.textContent = "Detectando…";
+    const labelEl = btnDetectarUbicacion.querySelector("strong");
+    const prev = labelEl?.textContent || "";
+    if (labelEl) labelEl.textContent = "Detectando ubicación…";
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = pos.coords.latitude.toFixed(6);
         const lng = pos.coords.longitude.toFixed(6);
         setUbicacion({
-          label: `Ubicación detectada (${lat}, ${lng})`,
+          label: `Estoy aquí (${lat}, ${lng})`,
           mapsUrl: mapsUrlFromCoords(lat, lng),
           lat,
           lng,
         });
+        showToast("Listo: ya quedó tu ubicación.");
         btnDetectarUbicacion.disabled = false;
-        btnDetectarUbicacion.textContent = "Usar mi ubicación actual";
+        if (labelEl) labelEl.textContent = prev || "Opción 1 · Usar mi ubicación ahora";
       },
       () => {
-        showToast("No se pudo obtener tu ubicación. Busca tu tienda o pega el enlace de Google Maps.");
+        showToast("No se pudo obtener tu ubicación. Usa Pegar enlace con Google Maps.");
         btnDetectarUbicacion.disabled = false;
-        btnDetectarUbicacion.textContent = "Usar mi ubicación actual";
+        if (labelEl) labelEl.textContent = prev || "Opción 1 · Usar mi ubicación ahora";
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
     );
   });
 
+  btnPegarUbicacion?.addEventListener("click", async () => {
+    if (!ubicacionInput) return;
+    try {
+      const text = String((await navigator.clipboard.readText()) || "").trim();
+      if (!text) {
+        showToast("El portapapeles está vacío. Copia el enlace de Maps y vuelve a intentar.");
+        return;
+      }
+      ubicacionInput.value = text;
+      ubicacionInput.focus();
+      showToast("Enlace pegado. Buscando el punto…");
+      await syncUbicacionFromInput();
+    } catch (_) {
+      showToast("No se pudo pegar solo. Mantén presionado el cuadro y elige Pegar.");
+      ubicacionInput.focus();
+    }
+  });
+
   ubicacionInput?.addEventListener("input", () => {
     const raw = String(ubicacionInput.value || "");
-    queueUbicacionSync(pastedMapsUrl(raw) || coordsFromText(raw) ? 200 : 700);
+    queueUbicacionSync(pastedMapsUrl(raw) || coordsFromText(raw) ? 150 : 700);
   });
-  ubicacionInput?.addEventListener("paste", () => {
-    setTimeout(() => queueUbicacionSync(80), 0);
+  ubicacionInput?.addEventListener("paste", (event) => {
+    const clip = event.clipboardData?.getData("text") || "";
+    if (clip && ubicacionInput) {
+      // Si pegan un mensaje largo de WhatsApp, dejamos el texto completo y resolvemos el link.
+      setTimeout(() => {
+        if (!String(ubicacionInput.value || "").trim() && clip) ubicacionInput.value = clip;
+        queueUbicacionSync(60);
+      }, 0);
+      return;
+    }
+    setTimeout(() => queueUbicacionSync(60), 0);
   });
   ubicacionInput?.addEventListener("blur", () => syncUbicacionFromInput());
   ubicacionInput?.addEventListener("change", () => syncUbicacionFromInput());
@@ -1524,8 +1588,11 @@
 
     if (isToldo() || isRotulacion()) {
       if (!hasUbicacionPuntoVenta()) {
-        errors.push("Indica la ubicación del punto de venta en Google Maps.");
+        errors.push(
+          "Falta la ubicación del punto de venta. Usa “Usar mi ubicación ahora” o pega el enlace de Google Maps hasta que diga Listo.",
+        );
         markInvalid(ubicacionInput);
+        document.getElementById("toldoPuntoVentaExtra")?.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     }
     if (isToldo()) {

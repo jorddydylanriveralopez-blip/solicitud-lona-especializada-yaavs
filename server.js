@@ -2201,6 +2201,7 @@ function isAllowedMapsUrl(urlString) {
   const host = parsed.hostname.toLowerCase();
   const pathName = parsed.pathname.toLowerCase();
   if (host === "maps.app.goo.gl" || host === "maps.google.com" || host === "share.google") return true;
+  if (host === "maps.apple.com") return true;
   if (host === "goo.gl") return pathName.startsWith("/maps");
   return host.includes("google.") && pathName.startsWith("/maps");
 }

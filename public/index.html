@@ -17,7 +17,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles-base.css?v=20261005a" />
-    <link rel="stylesheet" href="./lona.css?v=20261112e" />
+    <link rel="stylesheet" href="./lona.css?v=20261113d" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -221,27 +221,52 @@
               <label class="choice"><input type="checkbox" name="tipoEstablecimiento" value="Local dentro de plaza comercial" /><span>Local dentro de plaza comercial</span></label>
             </fieldset>
 
-            <div id="toldoPuntoVentaExtra" class="grid-2" hidden>
-              <label class="field grid-span-2">
-                <span>Ubicación del punto de venta <span class="req">*</span></span>
-                <input
-                  type="text"
-                  id="puntoVentaUbicacionInput"
-                  name="puntoVentaUbicacion"
-                  autocomplete="off"
-                  placeholder="Busca tu tienda, dirección o pega el enlace de Google Maps"
-                />
-                <input type="hidden" name="puntoVentaUbicacionMaps" id="puntoVentaUbicacionMaps" />
-                <input type="hidden" name="puntoVentaLat" id="puntoVentaLat" />
-                <input type="hidden" name="puntoVentaLng" id="puntoVentaLng" />
+            <div id="toldoPuntoVentaExtra" class="ubicacion-box" hidden>
+              <header class="ubicacion-box-head">
+                <h3>¿Dónde está el punto de venta? <span class="req">*</span></h3>
+                <p>
+                  Elige <strong>una</strong> forma. Si ya te compartieron la ubicación por WhatsApp o Maps,
+                  pégala aquí y debe aparecer el mapa.
+                </p>
+              </header>
+
+              <button type="button" class="ubicacion-way ubicacion-way-primary" id="btnDetectarUbicacion">
+                <strong>Opción 1 · Usar mi ubicación ahora</strong>
+                <span>Si estás parado frente a la tienda, toca aquí y acepta el permiso.</span>
+              </button>
+
+              <div class="ubicacion-way">
+                <strong>Opción 2 · Pegar el enlace de Google Maps</strong>
+                <ol class="ubicacion-steps">
+                  <li>Abre <strong>Google Maps</strong> en el celular.</li>
+                  <li>Busca la tienda o mantén presionado el punto en el mapa.</li>
+                  <li>Toca <strong>Compartir</strong> y luego <strong>Copiar enlace</strong>.</li>
+                  <li>Regresa aquí y toca <strong>Pegar enlace</strong>.</li>
+                </ol>
+                <div class="ubicacion-paste-row">
+                  <label class="field ubicacion-field">
+                    <span>Pega aquí el enlace o la ubicación compartida</span>
+                    <input
+                      type="text"
+                      id="puntoVentaUbicacionInput"
+                      name="puntoVentaUbicacion"
+                      autocomplete="off"
+                      inputmode="url"
+                      placeholder="Ejemplo: https://maps.app.goo.gl/… o dirección de la tienda"
+                    />
+                  </label>
+                  <button type="button" class="btn btn-primary" id="btnPegarUbicacion">
+                    Pegar enlace
+                  </button>
+                </div>
                 <small class="help" id="ubicacionHelp">
-                  Pega el enlace de compartir de Google Maps, o escribe la dirección. Abajo se marca el punto exacto.
+                  También sirve si te enviaron la ubicación por WhatsApp: copia ese mensaje o enlace y pégalo.
                 </small>
-              </label>
-              <div class="ubicacion-actions grid-span-2">
-                <button type="button" class="btn btn-ghost" id="btnDetectarUbicacion">
-                  Usar mi ubicación actual
-                </button>
+              </div>
+
+              <div class="ubicacion-way ubicacion-way-soft">
+                <strong>Opción 3 · Abrir Maps para copiar el enlace</strong>
+                <p>Si no tienes el enlace, ábrelo, busca la tienda, cópialo y pégalo arriba.</p>
                 <a
                   class="btn btn-ghost"
                   id="btnAbrirGoogleMaps"
@@ -252,8 +277,13 @@
                   Abrir Google Maps
                 </a>
               </div>
-              <div id="ubicacionPreview" class="ubicacion-preview grid-span-2" hidden></div>
-              <div id="toldoFotoPvField" class="grid-span-2" hidden>
+
+              <input type="hidden" name="puntoVentaUbicacionMaps" id="puntoVentaUbicacionMaps" />
+              <input type="hidden" name="puntoVentaLat" id="puntoVentaLat" />
+              <input type="hidden" name="puntoVentaLng" id="puntoVentaLng" />
+              <div id="ubicacionPreview" class="ubicacion-preview" hidden></div>
+
+              <div id="toldoFotoPvField" hidden>
                 <label class="field file-field">
                   <span>Sube la foto del punto de venta <span class="req">*</span></span>
                   <div class="file-drop">
@@ -694,6 +724,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20261112e" defer></script>
+    <script src="./app.js?v=20261113d" defer></script>
   </body>
 </html>
