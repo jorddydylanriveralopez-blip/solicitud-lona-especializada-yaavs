@@ -35,6 +35,7 @@ const dataDir = process.env.DATA_DIR
   ? path.resolve(String(process.env.DATA_DIR))
   : path.join(__dirname, "data");
 const dataFile = path.join(dataDir, "responses.json");
+const deletedFile = path.join(dataDir, "deleted.json");
 const uploadsRoot = path.join(dataDir, "uploads");
 const yaavsersFile = path.join(
   fs.existsSync(path.join(dataDir, "yaavsers.json"))
@@ -920,6 +921,7 @@ function ensureStore() {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   if (!fs.existsSync(uploadsRoot)) fs.mkdirSync(uploadsRoot, { recursive: true });
   if (!fs.existsSync(dataFile)) fs.writeFileSync(dataFile, "[]", "utf8");
+  if (!fs.existsSync(deletedFile)) fs.writeFileSync(deletedFile, "[]", "utf8");
 }
 
 function readResponses() {
@@ -1752,12 +1754,99 @@ function forgetMediaOnSheetCache(id, folio, target) {
 const removedMediaTombstones = new Map();
 const REMOVED_MEDIA_TTL_MS = 30 * 60 * 1000;
 
+/** Evita que una solicitud borrada reaparezca desde Sheets / otra instancia. */
+const REMOVED_RESPONSE_TTL_MS = 365 * 24 * 60 * 60 * 1000;
+let removedResponseTombstones = null;
+
 function tombstoneScopeKey(id, folio) {
   const wantedId = String(id || "").trim();
   const wantedFolio = String(folio || "").trim();
   if (wantedId) return `id:${wantedId}`;
   if (wantedFolio) return `folio:${wantedFolio}`;
   return "";
+}
+
+function loadDeletedTombstones() {
+  if (removedResponseTombstones) return removedResponseTombstones;
+  ensureStore();
+  removedResponseTombstones = new Map();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(deletedFile, "utf8"));
+    const now = Date.now();
+    for (const row of Array.isArray(parsed) ? parsed : []) {
+      const until = Number(row?.until || 0);
+      if (until && until <= now) continue;
+      const id = String(row?.id || "").trim();
+      const folio = String(row?.folio || "").trim();
+      const expiry = until || now + REMOVED_RESPONSE_TTL_MS;
+      if (id) removedResponseTombstones.set(`id:${id}`, expiry);
+      if (folio) removedResponseTombstones.set(`folio:${folio}`, expiry);
+    }
+  } catch (_) {}
+  // Folios que el tablero ya borró y no deben volver a listarse.
+  rememberDeletedResponse("", "ROTUL-26-0060");
+  return removedResponseTombstones;
+}
+
+function persistDeletedTombstones() {
+  if (!removedResponseTombstones) return;
+  ensureStore();
+  const now = Date.now();
+  const byKey = new Map();
+  for (const [key, until] of removedResponseTombstones) {
+    if (!until || until <= now) continue;
+    const [kind, value] = key.split(":");
+    if (!value) continue;
+    const prev = byKey.get(value) || { id: "", folio: "", until };
+    if (kind === "id") prev.id = value;
+    if (kind === "folio") prev.folio = value;
+    prev.until = Math.max(Number(prev.until || 0), until);
+    byKey.set(value, prev);
+  }
+  fs.writeFileSync(deletedFile, JSON.stringify([...byKey.values()], null, 2), "utf8");
+}
+
+function rememberDeletedResponse(id, folio) {
+  const map = loadDeletedTombstones();
+  const until = Date.now() + REMOVED_RESPONSE_TTL_MS;
+  const wantedId = String(id || "").trim();
+  const wantedFolio = String(folio || "").trim();
+  if (wantedId) map.set(`id:${wantedId}`, until);
+  if (wantedFolio) map.set(`folio:${wantedFolio}`, until);
+  persistDeletedTombstones();
+}
+
+function pruneDeletedTombstones() {
+  const map = loadDeletedTombstones();
+  const now = Date.now();
+  let changed = false;
+  for (const [key, until] of map) {
+    if (until <= now) {
+      map.delete(key);
+      changed = true;
+    }
+  }
+  if (changed) persistDeletedTombstones();
+}
+
+function isDeletedResponse(itemOrId, folio) {
+  pruneDeletedTombstones();
+  const map = loadDeletedTombstones();
+  const wantedId = String(
+    typeof itemOrId === "object" && itemOrId ? itemOrId.id || "" : itemOrId || "",
+  ).trim();
+  const wantedFolio = String(
+    typeof itemOrId === "object" && itemOrId
+      ? itemOrId.folio || ""
+      : folio || "",
+  ).trim();
+  if (wantedId && map.has(`id:${wantedId}`)) return true;
+  if (wantedFolio && map.has(`folio:${wantedFolio}`)) return true;
+  return false;
+}
+
+function withoutDeletedResponses(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => !isDeletedResponse(item));
 }
 
 function rememberRemovedMedia(id, folio, file) {
@@ -2070,7 +2159,7 @@ function mergeBoardItems(localItems, sheetsItems) {
       rotulacionDetail: item.rotulacionDetail || prev.rotulacionDetail || null,
     });
   }
-  return [...map.values()].sort((a, b) => {
+  return withoutDeletedResponses([...map.values()]).sort((a, b) => {
     const ta = new Date(a.receivedAt || a.timestamp || 0).getTime();
     const tb = new Date(b.receivedAt || b.timestamp || 0).getTime();
     return tb - ta;
@@ -2078,7 +2167,7 @@ function mergeBoardItems(localItems, sheetsItems) {
 }
 
 async function boardItems() {
-  const local = sortedItems();
+  const local = withoutDeletedResponses(sortedItems());
   const sheets = await fetchSheetsItems();
   if (!sheets) {
     return {
@@ -2088,7 +2177,7 @@ async function boardItems() {
     };
   }
   return {
-    items: mergeBoardItems(local, sheets),
+    items: mergeBoardItems(local, withoutDeletedResponses(sheets)),
     source: "sheets+local",
     sheetsError: sheetsListCache.error || null,
   };
@@ -3234,15 +3323,16 @@ app.delete("/api/responses/:id", requireBoard, async (req, res) => {
       }
     }
 
-    const sheetsResult = await deleteFromSheets(id, match?.folio || id);
-    invalidateSheetsCache();
+    const folio = String(match?.folio || id).trim();
+    const entryId = String(match?.id || (id.startsWith("lona_") ? id : "")).trim();
+    rememberDeletedResponse(entryId || id, folio);
+
+    const sheetsResult = await deleteFromSheets(entryId || id, folio);
+    invalidateSheetsCache({ hard: true });
     if (Array.isArray(sheetsListCache.items)) {
-      const byId = sheetsListCache.items.filter((it) => String(it.id || "") !== id);
-      const folio = match?.folio || id;
-      sheetsListCache.items =
-        byId.length !== sheetsListCache.items.length
-          ? byId
-          : sheetsListCache.items.filter((it) => String(it.folio || "") !== folio);
+      sheetsListCache.items = sheetsListCache.items.filter(
+        (it) => String(it.id || "") !== id && String(it.id || "") !== entryId && String(it.folio || "") !== folio,
+      );
     }
 
     res.json({
