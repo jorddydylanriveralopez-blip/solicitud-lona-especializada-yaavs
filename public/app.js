@@ -621,9 +621,12 @@
   const ubicacionMaps = document.getElementById("puntoVentaUbicacionMaps");
   const ubicacionLat = document.getElementById("puntoVentaLat");
   const ubicacionLng = document.getElementById("puntoVentaLng");
+  const ubicacionLatVisible = document.getElementById("puntoVentaLatVisible");
+  const ubicacionLngVisible = document.getElementById("puntoVentaLngVisible");
   const ubicacionPreview = document.getElementById("ubicacionPreview");
   const btnDetectarUbicacion = document.getElementById("btnDetectarUbicacion");
   const btnAbrirGoogleMaps = document.getElementById("btnAbrirGoogleMaps");
+  const btnUsarCoordenadas = document.getElementById("btnUsarCoordenadas");
 
   let ubicacionTimer = 0;
   let ubicacionRequest = 0;
@@ -756,22 +759,55 @@
     `;
   }
 
+  function syncVisibleCoords(lat = "", lng = "") {
+    if (ubicacionLatVisible) ubicacionLatVisible.value = lat ? String(lat) : "";
+    if (ubicacionLngVisible) ubicacionLngVisible.value = lng ? String(lng) : "";
+  }
+
   function applyUbicacion({ mapsUrl, lat = "", lng = "", label = "" }) {
     const pinUrl = lat && lng ? mapsUrlFromCoords(lat, lng) : mapsUrl || "";
     appliedUbicacionInput = String(ubicacionInput?.value || "").trim();
     if (ubicacionMaps) ubicacionMaps.value = pinUrl;
     if (ubicacionLat) ubicacionLat.value = lat ? String(lat) : "";
     if (ubicacionLng) ubicacionLng.value = lng ? String(lng) : "";
+    syncVisibleCoords(lat, lng);
+    if (lat && lng && ubicacionInput) {
+      const pair = `${lat}, ${lng}`;
+      if (!String(ubicacionInput.value || "").trim() || /^https?:/i.test(ubicacionInput.value) || /^estoy aquí/i.test(ubicacionInput.value) || /^ubicación/i.test(ubicacionInput.value)) {
+        ubicacionInput.value = pair;
+        appliedUbicacionInput = pair;
+      }
+    }
     if (btnAbrirGoogleMaps) {
       btnAbrirGoogleMaps.href = pinUrl || "https://www.google.com/maps";
     }
-    renderUbicacionPreview(pinUrl, label, { lat, lng });
+    renderUbicacionPreview(pinUrl, label || (lat && lng ? `${lat}, ${lng}` : ""), { lat, lng });
     scheduleSyncFormSteps(true);
   }
 
   function setUbicacion({ label, mapsUrl, lat = "", lng = "" }) {
     if (ubicacionInput && label != null) ubicacionInput.value = label;
     applyUbicacion({ mapsUrl, lat, lng, label });
+  }
+
+  function applyCoordsFromFields(rawText = "") {
+    const fromPair = coordsFromText(rawText);
+    const lat = String(ubicacionLatVisible?.value || fromPair?.lat || "").trim().replace(",", ".");
+    const lng = String(ubicacionLngVisible?.value || fromPair?.lng || "").trim().replace(",", ".");
+    const pin = validCoord(lat, lng);
+    if (!pin) {
+      showToast("Escribe latitud y longitud válidas. Ejemplo: 19.432608 y -99.133209");
+      showUbicacionMiss();
+      return false;
+    }
+    setUbicacion({
+      label: `${pin.lat}, ${pin.lng}`,
+      mapsUrl: mapsUrlFromCoords(pin.lat, pin.lng),
+      lat: pin.lat,
+      lng: pin.lng,
+    });
+    showToast("Listo: coordenadas guardadas.");
+    return true;
   }
 
   function showUbicacionLoading() {
@@ -827,7 +863,9 @@
 
   async function syncUbicacionFromInput() {
     const raw = String(ubicacionInput?.value || "").trim();
-    if (!raw) {
+    const visibleLat = String(ubicacionLatVisible?.value || "").trim();
+    const visibleLng = String(ubicacionLngVisible?.value || "").trim();
+    if (!raw && !(visibleLat && visibleLng)) {
       applyUbicacion({ mapsUrl: "" });
       return;
     }
@@ -839,13 +877,17 @@
       return;
     }
 
-    const foundUrl = pastedMapsUrl(raw);
-    let coords = coordsFromText(foundUrl || raw) || coordsFromText(raw);
+    // Prioridad: coordenadas pegadas o escritas (lat, lng).
+    let coords =
+      validCoord(visibleLat.replace(",", "."), visibleLng.replace(",", ".")) ||
+      coordsFromText(raw) ||
+      coordsFromText(`${visibleLat}, ${visibleLng}`);
     if (coords) {
-      applyPin(coords, raw);
+      applyPin(coords, `${coords.lat}, ${coords.lng}`);
       return;
     }
 
+    const foundUrl = pastedMapsUrl(raw);
     if (foundUrl && isMapsUrl(foundUrl)) {
       const reqId = ++ubicacionRequest;
       showUbicacionLoading();
@@ -868,32 +910,16 @@
       } catch (_) {}
       if (reqId !== ubicacionRequest) return;
       if (coords) {
-        applyPin(coords, placeQueryFromUrl(foundUrl) || raw);
+        applyPin(coords, `${coords.lat}, ${coords.lng}`);
         return;
       }
-      // Conserva el enlace compartido aunque aún no se vea el pin.
-      applyUbicacion({ mapsUrl: foundUrl, label: placeQueryFromUrl(foundUrl) || raw });
       showUbicacionMiss();
+      showToast("Ese texto no trae coordenadas. Pega latitud y longitud.");
       return;
     }
 
-    if (!foundUrl && raw.length >= 8) {
-      const reqId = ++ubicacionRequest;
-      showUbicacionLoading();
-      try {
-        const geo = await geocodeQuery(raw);
-        if (reqId !== ubicacionRequest) return;
-        if (geo?.ok && geo.lat && geo.lng) {
-          applyPin({ lat: String(geo.lat), lng: String(geo.lng) }, raw);
-          return;
-        }
-      } catch (_) {
-        if (reqId !== ubicacionRequest) return;
-      }
-      const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(raw)}`;
-      applyUbicacion({ mapsUrl: searchUrl, label: raw });
-      showUbicacionMiss();
-    }
+    showUbicacionMiss();
+    showToast("Pega coordenadas como 19.432608, -99.133209");
   }
 
   function queueUbicacionSync(delay = 350) {
@@ -905,11 +931,9 @@
   }
 
   function hasUbicacionPuntoVenta() {
-    const maps = String(ubicacionMaps?.value || "").trim();
     const lat = String(ubicacionLat?.value || "").trim();
     const lng = String(ubicacionLng?.value || "").trim();
-    // Para que sea claro: debe quedar marcada (mapa o coordenadas), no solo texto suelto.
-    return Boolean((lat && lng) || maps);
+    return Boolean(lat && lng && validCoord(lat, lng));
   }
 
   function loadMapsPlaces(apiKey) {
@@ -975,17 +999,17 @@
         const lat = pos.coords.latitude.toFixed(6);
         const lng = pos.coords.longitude.toFixed(6);
         setUbicacion({
-          label: `Estoy aquí (${lat}, ${lng})`,
+          label: `${lat}, ${lng}`,
           mapsUrl: mapsUrlFromCoords(lat, lng),
           lat,
           lng,
         });
-        showToast("Listo: ya quedó tu ubicación.");
+        showToast("Listo: coordenadas detectadas.");
         btnDetectarUbicacion.disabled = false;
         if (labelEl) labelEl.textContent = prev || "Opción 1 · Usar mi ubicación ahora";
       },
       () => {
-        showToast("No se pudo obtener tu ubicación. Usa Pegar enlace con Google Maps.");
+        showToast("No se pudo obtener tu ubicación. Escribe latitud y longitud.");
         btnDetectarUbicacion.disabled = false;
         if (labelEl) labelEl.textContent = prev || "Opción 1 · Usar mi ubicación ahora";
       },
@@ -993,17 +1017,28 @@
     );
   });
 
+  btnUsarCoordenadas?.addEventListener("click", () => {
+    applyCoordsFromFields(String(ubicacionInput?.value || ""));
+  });
+
   btnPegarUbicacion?.addEventListener("click", async () => {
     if (!ubicacionInput) return;
     try {
       const text = String((await navigator.clipboard.readText()) || "").trim();
       if (!text) {
-        showToast("El portapapeles está vacío. Copia el enlace de Maps y vuelve a intentar.");
+        showToast("El portapapeles está vacío. Copia las coordenadas y vuelve a intentar.");
         return;
       }
       ubicacionInput.value = text;
+      const pin = coordsFromText(text);
+      if (pin) {
+        syncVisibleCoords(pin.lat, pin.lng);
+        applyPin(pin, `${pin.lat}, ${pin.lng}`);
+        showToast("Coordenadas pegadas.");
+        return;
+      }
       ubicacionInput.focus();
-      showToast("Enlace pegado. Buscando el punto…");
+      showToast("Pega un par como 19.432608, -99.133209");
       await syncUbicacionFromInput();
     } catch (_) {
       showToast("No se pudo pegar solo. Mantén presionado el cuadro y elige Pegar.");
@@ -1011,21 +1046,36 @@
     }
   });
 
+  function onVisibleCoordInput() {
+    const lat = String(ubicacionLatVisible?.value || "").trim();
+    const lng = String(ubicacionLngVisible?.value || "").trim();
+    if (lat && lng) queueUbicacionSync(250);
+  }
+  ubicacionLatVisible?.addEventListener("input", onVisibleCoordInput);
+  ubicacionLngVisible?.addEventListener("input", onVisibleCoordInput);
+  ubicacionLatVisible?.addEventListener("blur", () => applyCoordsFromFields());
+  ubicacionLngVisible?.addEventListener("blur", () => {
+    if (String(ubicacionLatVisible?.value || "").trim() && String(ubicacionLngVisible?.value || "").trim()) {
+      applyCoordsFromFields();
+    }
+  });
+
   ubicacionInput?.addEventListener("input", () => {
     const raw = String(ubicacionInput.value || "");
-    queueUbicacionSync(pastedMapsUrl(raw) || coordsFromText(raw) ? 150 : 700);
+    const pin = coordsFromText(raw);
+    if (pin) syncVisibleCoords(pin.lat, pin.lng);
+    queueUbicacionSync(pin || pastedMapsUrl(raw) ? 120 : 700);
   });
   ubicacionInput?.addEventListener("paste", (event) => {
     const clip = event.clipboardData?.getData("text") || "";
-    if (clip && ubicacionInput) {
-      // Si pegan un mensaje largo de WhatsApp, dejamos el texto completo y resolvemos el link.
-      setTimeout(() => {
-        if (!String(ubicacionInput.value || "").trim() && clip) ubicacionInput.value = clip;
-        queueUbicacionSync(60);
-      }, 0);
-      return;
-    }
-    setTimeout(() => queueUbicacionSync(60), 0);
+    setTimeout(() => {
+      if (clip && ubicacionInput && !String(ubicacionInput.value || "").trim()) {
+        ubicacionInput.value = clip;
+      }
+      const pin = coordsFromText(String(ubicacionInput?.value || clip || ""));
+      if (pin) syncVisibleCoords(pin.lat, pin.lng);
+      queueUbicacionSync(60);
+    }, 0);
   });
   ubicacionInput?.addEventListener("blur", () => syncUbicacionFromInput());
   ubicacionInput?.addEventListener("change", () => syncUbicacionFromInput());
@@ -1589,7 +1639,7 @@
     if (isToldo() || isRotulacion()) {
       if (!hasUbicacionPuntoVenta()) {
         errors.push(
-          "Falta la ubicación del punto de venta. Usa “Usar mi ubicación ahora” o pega el enlace de Google Maps hasta que diga Listo.",
+          "Falta la ubicación. Usa “Usar mi ubicación ahora” o escribe latitud y longitud hasta que diga Listo.",
         );
         markInvalid(ubicacionInput);
         document.getElementById("toldoPuntoVentaExtra")?.scrollIntoView({ behavior: "smooth", block: "center" });

@@ -17,7 +17,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles-base.css?v=20261005a" />
-    <link rel="stylesheet" href="./lona.css?v=20261113d" />
+    <link rel="stylesheet" href="./lona.css?v=20261113e" />
   </head>
   <body class="report-body">
     <div class="atmosphere" aria-hidden="true">
@@ -225,48 +225,73 @@
               <header class="ubicacion-box-head">
                 <h3>¿Dónde está el punto de venta? <span class="req">*</span></h3>
                 <p>
-                  Elige <strong>una</strong> forma. Si ya te compartieron la ubicación por WhatsApp o Maps,
-                  pégala aquí y debe aparecer el mapa.
+                  Elige <strong>una</strong> forma. Lo más fácil: usa tu ubicación automática
+                  o escribe las <strong>coordenadas</strong> (latitud y longitud).
                 </p>
               </header>
 
               <button type="button" class="ubicacion-way ubicacion-way-primary" id="btnDetectarUbicacion">
                 <strong>Opción 1 · Usar mi ubicación ahora</strong>
-                <span>Si estás parado frente a la tienda, toca aquí y acepta el permiso.</span>
+                <span>Si estás parado frente a la tienda, toca aquí. Se llenan solas las coordenadas.</span>
               </button>
 
               <div class="ubicacion-way">
-                <strong>Opción 2 · Pegar el enlace de Google Maps</strong>
+                <strong>Opción 2 · Subir las coordenadas</strong>
                 <ol class="ubicacion-steps">
-                  <li>Abre <strong>Google Maps</strong> en el celular.</li>
-                  <li>Busca la tienda o mantén presionado el punto en el mapa.</li>
-                  <li>Toca <strong>Compartir</strong> y luego <strong>Copiar enlace</strong>.</li>
-                  <li>Regresa aquí y toca <strong>Pegar enlace</strong>.</li>
+                  <li>Abre <strong>Google Maps</strong>.</li>
+                  <li>Mantén presionado el punto de la tienda.</li>
+                  <li>Arriba aparecen dos números: primero latitud, luego longitud.</li>
+                  <li>Cópialos y pégalos abajo (ejemplo: <code>19.432608, -99.133209</code>).</li>
                 </ol>
+                <div class="ubicacion-coords-grid">
+                  <label class="field">
+                    <span>Latitud <span class="req">*</span></span>
+                    <input
+                      type="text"
+                      id="puntoVentaLatVisible"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      placeholder="Ej. 19.432608"
+                    />
+                  </label>
+                  <label class="field">
+                    <span>Longitud <span class="req">*</span></span>
+                    <input
+                      type="text"
+                      id="puntoVentaLngVisible"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      placeholder="Ej. -99.133209"
+                    />
+                  </label>
+                </div>
                 <div class="ubicacion-paste-row">
                   <label class="field ubicacion-field">
-                    <span>Pega aquí el enlace o la ubicación compartida</span>
+                    <span>O pega aquí las dos coordenadas juntas</span>
                     <input
                       type="text"
                       id="puntoVentaUbicacionInput"
                       name="puntoVentaUbicacion"
                       autocomplete="off"
-                      inputmode="url"
-                      placeholder="Ejemplo: https://maps.app.goo.gl/… o dirección de la tienda"
+                      inputmode="decimal"
+                      placeholder="Ejemplo: 19.432608, -99.133209"
                     />
                   </label>
                   <button type="button" class="btn btn-primary" id="btnPegarUbicacion">
-                    Pegar enlace
+                    Pegar coordenadas
                   </button>
                 </div>
+                <button type="button" class="btn btn-ghost" id="btnUsarCoordenadas">
+                  Usar estas coordenadas
+                </button>
                 <small class="help" id="ubicacionHelp">
-                  También sirve si te enviaron la ubicación por WhatsApp: copia ese mensaje o enlace y pégalo.
+                  No uses el botón de “Compartir”. Usa los números de latitud y longitud.
                 </small>
               </div>
 
               <div class="ubicacion-way ubicacion-way-soft">
-                <strong>Opción 3 · Abrir Maps para copiar el enlace</strong>
-                <p>Si no tienes el enlace, ábrelo, busca la tienda, cópialo y pégalo arriba.</p>
+                <strong>¿No sabes dónde ver las coordenadas?</strong>
+                <p>Abre Maps, busca la tienda, mantén presionado el pin y copia los dos números de arriba.</p>
                 <a
                   class="btn btn-ghost"
                   id="btnAbrirGoogleMaps"
@@ -724,6 +749,6 @@
     </main>
 
     <div id="toast" class="toast" hidden></div>
-    <script src="./app.js?v=20261113d" defer></script>
+    <script src="./app.js?v=20261113e" defer></script>
   </body>
 </html>
