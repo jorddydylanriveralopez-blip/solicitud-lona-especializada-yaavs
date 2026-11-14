@@ -29,6 +29,27 @@
     submitLabel: submitBtn?.textContent?.trim() || "Enviar solicitud",
     materialHints: {},
   };
+  let directoryUpdatedAt = "";
+  let directoryConfigUrl = "";
+  let directoryPollTimer = 0;
+
+  function flashRemoteUpdate(note) {
+    let el = document.getElementById("remoteConfigToast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "remoteConfigToast";
+      el.setAttribute("role", "status");
+      el.style.cssText =
+        "position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);z-index:80;max-width:min(92vw,420px);padding:0.75rem 1rem;border-radius:12px;background:#002b44;color:#fff;font:600 0.92rem/1.35 Manrope,system-ui,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,.25);opacity:0;transition:opacity .2s ease";
+      document.body.appendChild(el);
+    }
+    el.textContent = note || "Textos actualizados desde el centro de control";
+    el.style.opacity = "1";
+    clearTimeout(flashRemoteUpdate._t);
+    flashRemoteUpdate._t = setTimeout(() => {
+      el.style.opacity = "0";
+    }, 3200);
+  }
 
   function applyDirectoryCopy() {
     if (!selectedMaterial()) {
@@ -45,24 +66,33 @@
     }
   }
 
-  async function loadDirectoryConfig() {
+  async function resolveDirectoryConfigUrl() {
+    if (directoryConfigUrl) return directoryConfigUrl;
     try {
-      let url = "";
-      try {
-        const settings = await fetch("/api/app-settings", { cache: "no-store" }).then((r) =>
-          r.ok ? r.json() : null,
-        );
-        url = String(settings?.directoryConfigUrl || "").trim();
-      } catch (_) {}
-      if (!url) {
-        url =
-          "https://directorio-paneles-yaavs.hostingersite.com/api/panels/solicitud-lonas-toldos/config";
-      }
+      const settings = await fetch("/api/app-settings", { cache: "no-store" }).then((r) =>
+        r.ok ? r.json() : null,
+      );
+      directoryConfigUrl = String(settings?.directoryConfigUrl || "").trim();
+    } catch (_) {}
+    if (!directoryConfigUrl) {
+      directoryConfigUrl =
+        "https://directorio-paneles-yaavs.hostingersite.com/api/panels/solicitud-lonas-toldos/config";
+    }
+    return directoryConfigUrl;
+  }
+
+  async function loadDirectoryConfig({ silent = false } = {}) {
+    try {
+      const url = await resolveDirectoryConfigUrl();
       const sep = url.includes("?") ? "&" : "?";
       const data = await fetch(`${url}${sep}ts=${Date.now()}`, { cache: "no-store" }).then((r) =>
         r.ok ? r.json() : null,
       );
-      const cfg = data?.formConfig || {};
+      if (!data?.ok) return;
+      const nextUpdated = String(data.updatedAt || "");
+      const changed = Boolean(directoryUpdatedAt && nextUpdated && nextUpdated !== directoryUpdatedAt);
+      directoryUpdatedAt = nextUpdated || directoryUpdatedAt;
+      const cfg = data.formConfig || {};
       if (cfg.heroTitle) directoryCopy.heroTitle = String(cfg.heroTitle).trim();
       if (cfg.heroLede) directoryCopy.heroLede = String(cfg.heroLede).trim();
       if (cfg.submitLabel) directoryCopy.submitLabel = String(cfg.submitLabel).trim();
@@ -70,7 +100,20 @@
         directoryCopy.materialHints = cfg.materialHints;
       }
       applyDirectoryCopy();
+      if (changed && !silent) {
+        const note = data.latestChange?.note
+          ? `Actualizado: ${data.latestChange.note}`
+          : "Textos actualizados desde el centro de control";
+        flashRemoteUpdate(note);
+      }
     } catch (_) {}
+  }
+
+  function startDirectoryConfigPolling() {
+    if (directoryPollTimer) clearInterval(directoryPollTimer);
+    directoryPollTimer = setInterval(() => {
+      loadDirectoryConfig({ silent: false });
+    }, 4000);
   }
 
   function scheduleSyncFormSteps(immediate = false) {
@@ -2009,5 +2052,5 @@
   syncContacto();
   syncReferencia();
   syncFormSteps();
-  loadDirectoryConfig();
+  loadDirectoryConfig({ silent: true }).finally(() => startDirectoryConfigPolling());
 })();
