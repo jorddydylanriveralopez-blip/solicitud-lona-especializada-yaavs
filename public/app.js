@@ -23,6 +23,55 @@
   const WARN_FILE_MB = 8;
   let syncStepsTimer = 0;
   let lastScrolledStep = null;
+  const directoryCopy = {
+    heroTitle: heroTitle?.textContent?.trim() || "",
+    heroLede: heroLede?.textContent?.trim() || "",
+    submitLabel: submitBtn?.textContent?.trim() || "Enviar solicitud",
+    materialHints: {},
+  };
+
+  function applyDirectoryCopy() {
+    if (!selectedMaterial()) {
+      if (heroTitle && directoryCopy.heroTitle) heroTitle.textContent = directoryCopy.heroTitle;
+      if (heroLede && directoryCopy.heroLede) heroLede.textContent = directoryCopy.heroLede;
+    }
+    if (
+      submitBtn &&
+      directoryCopy.submitLabel &&
+      submitBtn.textContent !== "Enviando…" &&
+      submitBtn.textContent !== "Enviado"
+    ) {
+      submitBtn.textContent = directoryCopy.submitLabel;
+    }
+  }
+
+  async function loadDirectoryConfig() {
+    try {
+      let url = "";
+      try {
+        const settings = await fetch("/api/app-settings", { cache: "no-store" }).then((r) =>
+          r.ok ? r.json() : null,
+        );
+        url = String(settings?.directoryConfigUrl || "").trim();
+      } catch (_) {}
+      if (!url) {
+        url =
+          "https://directorio-paneles-yaavs.hostingersite.com/api/panels/solicitud-lonas-toldos/config";
+      }
+      const sep = url.includes("?") ? "&" : "?";
+      const data = await fetch(`${url}${sep}ts=${Date.now()}`, { cache: "no-store" }).then((r) =>
+        r.ok ? r.json() : null,
+      );
+      const cfg = data?.formConfig || {};
+      if (cfg.heroTitle) directoryCopy.heroTitle = String(cfg.heroTitle).trim();
+      if (cfg.heroLede) directoryCopy.heroLede = String(cfg.heroLede).trim();
+      if (cfg.submitLabel) directoryCopy.submitLabel = String(cfg.submitLabel).trim();
+      if (cfg.materialHints && typeof cfg.materialHints === "object") {
+        directoryCopy.materialHints = cfg.materialHints;
+      }
+      applyDirectoryCopy();
+    } catch (_) {}
+  }
 
   function scheduleSyncFormSteps(immediate = false) {
     if (immediate) {
@@ -442,7 +491,9 @@
     const copy = materialCopy();
     if (heroTitle) heroTitle.textContent = copy.title;
     if (heroLede) {
+      const hint = directoryCopy.materialHints?.[mat];
       heroLede.textContent =
+        (hint && String(hint).trim()) ||
         copy.lede ||
         "Completa este formulario el ejecutivo de ventas YAAVSTAR junto con el YAAVSER. Verifica medidas exactas e información vigente.";
     }
@@ -1939,7 +1990,7 @@
         sending = false;
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = "Enviar solicitud";
+          submitBtn.textContent = directoryCopy.submitLabel || "Enviar solicitud";
         }
       }
     }
@@ -1958,4 +2009,5 @@
   syncContacto();
   syncReferencia();
   syncFormSteps();
+  loadDirectoryConfig();
 })();

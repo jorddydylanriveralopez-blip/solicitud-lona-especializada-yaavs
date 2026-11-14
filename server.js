@@ -44,6 +44,10 @@ const yaavsersFile = path.join(
   "yaavsers.json",
 );
 const SHEETS_WEBHOOK_URL = String(process.env.SHEETS_WEBHOOK_URL || "").trim();
+const DIRECTORY_CONFIG_URL = String(
+  process.env.DIRECTORY_CONFIG_URL ||
+    "https://directorio-paneles-yaavs.hostingersite.com/api/panels/solicitud-lonas-toldos/config",
+).trim();
 const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
 const MAX_FILES = 20;
 
@@ -2394,6 +2398,14 @@ app.get("/api/maps-geocode", async (req, res) => {
   const payload = { ok: true, lat: coords.lat, lng: coords.lng };
   geocodeCache.set(key, payload);
   res.json(payload);
+});
+
+app.get("/api/app-settings", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json({
+    ok: true,
+    directoryConfigUrl: DIRECTORY_CONFIG_URL || "",
+  });
 });
 
 app.get("/api/health", async (_req, res) => {
