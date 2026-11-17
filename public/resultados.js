@@ -629,6 +629,11 @@
     return Boolean(session?.canManage || session?.canManageRotulacion);
   }
 
+  /** Marketing (canManage) o Trade Marketing (canNotes): solo escritura de notas. */
+  function canEditNotes() {
+    return Boolean(session?.canManage || session?.canNotes);
+  }
+
   function bucketCounts() {
     const base = baseFilteredItems().filter((it) => itemMatchesQuickFilter(it));
     return {
@@ -2294,7 +2299,7 @@
     const texto = String(item?.faltanteCliente || "");
     const historial = String(item?.faltanteHistorial || "");
     const notes = noteHistoryHtml(historial);
-    if (!session?.canManage) {
+    if (!canEditNotes()) {
       if (!texto && !historial) return "";
       if (!session?.seesAll && materialKind(item) !== "rotulacion") return "";
       const title = session?.seesAll ? "Nota" : "Nota de Marketing";
@@ -2320,7 +2325,7 @@
   function bindFaltante(item) {
     const box = document.getElementById("faltanteTexto");
     const saveBtn = document.getElementById("faltanteGuardar");
-    if (!box || !saveBtn || !session?.canManage) return;
+    if (!box || !saveBtn || !canEditNotes()) return;
     saveBtn.onclick = async () => {
       const texto = box.value.trim();
       if (!texto) {

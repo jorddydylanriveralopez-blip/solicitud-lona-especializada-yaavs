@@ -467,6 +467,7 @@ const BOARD_ROLES = {
     label: "Trade Marketing · Mónica · Foráneo",
     seesAll: true,
     canManage: false,
+    canNotes: true, // Solo notas (como Marketing, sin administrar el resto)
     canDelete: false,
     zonaFilter: "foraneo",
     envPassword: "BOARD_PASSWORD_TRADE_MONICA",
@@ -476,6 +477,7 @@ const BOARD_ROLES = {
     label: "Trade Marketing · Noemí · Centro",
     seesAll: true,
     canManage: false,
+    canNotes: true, // Solo notas (como Marketing, sin administrar el resto)
     canDelete: false,
     zonaFilter: "centro",
     envPassword: "BOARD_PASSWORD_TRADE_NOEMI",
@@ -913,6 +915,7 @@ app.get("/api/session", (req, res) => {
     label: role.label,
     seesAll: role.seesAll,
     canManage: role.canManage,
+    canNotes: Boolean(role.canManage || role.canNotes),
     canManageRotulacion: Boolean(role.canManageRotulacion),
     canAuthorize: canAuthorizeRole(role),
     canDelete: role.canDelete,
@@ -2875,8 +2878,8 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
 });
 
 app.post("/api/responses/:id/faltante", requireBoard, async (req, res) => {
-  if (!req.boardRole.canManage) {
-    return res.status(403).json({ ok: false, error: "Solo Marketing puede guardar la nota" });
+  if (!(req.boardRole.canManage || req.boardRole.canNotes)) {
+    return res.status(403).json({ ok: false, error: "No tienes permiso para guardar notas" });
   }
   const texto = String(req.body?.texto || "").trim().slice(0, 800);
   if (!texto) {
