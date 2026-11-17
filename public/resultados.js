@@ -419,6 +419,18 @@
     return { rechazar: true, label: "Rechazar solicitud" };
   }
 
+  function legacyAuthorFromAutorizada(raw) {
+    const text = String(raw || "").trim();
+    if (!/^autorizada\b/i.test(text)) return "";
+    const after = text
+      .replace(/^autorizada\b/i, "")
+      .replace(/^[·\-\s]+/, "")
+      .trim();
+    if (!after) return "Previa";
+    if (/\bT:|\bR:|\bS:|Territorial\s*·/i.test(after)) return "";
+    return after.split("|")[0].trim() || "Previa";
+  }
+
   function parseAuthChain(raw, { requireSubdireccion = true } = {}) {
     const text = String(raw || "").trim();
     if (!text) {
@@ -430,7 +442,15 @@
     const hasMarkers =
       /\bT:/.test(text) || /\bR:/.test(text) || /\bS:/.test(text) || /Territorial\s*·/i.test(text);
     if (/^autorizada\b/i.test(text) && !hasMarkers) {
-      return { territorial: "", regional: "", subdireccion: "", legacy: true, complete: true };
+      // Formato viejo ("Autorizada" / "Autorizada · Nombre"): cuenta como cadena completa.
+      const who = legacyAuthorFromAutorizada(text) || "Previa";
+      return {
+        territorial: who,
+        regional: who,
+        subdireccion: requireSubdireccion ? who : "",
+        legacy: true,
+        complete: true,
+      };
     }
     // Acepta "T:..." al inicio, tras "|" o tras "·" (cuando ya está "Autorizada · T:... | R:... | S:...").
     const territorial =
@@ -1967,7 +1987,7 @@
     const fuera =
       session?.canAuthorize && item?.enMiZona === false
         ? " La autoriza el gerente de esta zona."
-        : session?.canAuthorize && item?.enMiZona && !chainAction && !rejected && showChain
+        : session?.canAuthorize && item?.enMiZona && !chainAction && !rejected && !ok && showChain
           ? " Espera el paso anterior de la cadena."
           : "";
     return `
