@@ -1785,6 +1785,10 @@ body.dashboard-foraneo .primary-link {
   color: #7c3aed;
 }
 
+.card-auth.is-partial {
+  color: #0f766e;
+}
+
 .card-auth.is-rejected {
   color: #b42318;
 }

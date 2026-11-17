@@ -537,13 +537,69 @@
     }
     const foraneo = isForaneoItem(item);
     const chain = parseAuthChain(item?.autorizada, { requireSubdireccion: foraneo });
-    if (chain.complete || chain.legacy) {
-      return foraneo ? "Autorizada (cadena completa)" : "Autorizada (territorial + regional)";
+    if (chain.complete || chain.legacy) return "Autorizada";
+    const done = [];
+    if (chain.territorial) done.push("territorial");
+    if (chain.regional) done.push("regional");
+    if (chain.subdireccion) done.push("subdirección");
+    if (!done.length) return "Pendiente de autorización";
+    // Ya hay al menos un visto bueno: no digas solo "Pendiente".
+    const missing = [];
+    if (!chain.territorial) missing.push("territorial");
+    if (!chain.regional) missing.push("regional");
+    if (foraneo && !chain.subdireccion) missing.push("subdirección");
+    return `Autorizada (${done.join(" + ")})${missing.length ? ` · falta ${missing.join(" y ")}` : ""}`;
+  }
+
+  function formatLocalAuthChain(steps, { requireSubdireccion = true } = {}) {
+    const parts = [];
+    if (steps.territorial) parts.push(`T:${steps.territorial}`);
+    if (steps.regional) parts.push(`R:${steps.regional}`);
+    if (requireSubdireccion && steps.subdireccion) parts.push(`S:${steps.subdireccion}`);
+    if (!parts.length) return "";
+    const complete = requireSubdireccion
+      ? Boolean(steps.territorial && steps.regional && steps.subdireccion)
+      : Boolean(steps.territorial && steps.regional);
+    return complete ? `Autorizada · ${parts.join(" | ")}` : parts.join(" | ");
+  }
+
+  /** Misma lógica que el servidor, para no parpadear "Autorizada" → "Pendiente". */
+  function optimisticAutorizada(item, aceptar) {
+    const foraneo = isForaneoItem(item);
+    const level = String(session?.authorizeLevel || "").toLowerCase();
+    const who = sessionAuthorName() || "Gerente";
+    const chain = parseAuthChain(item?.autorizada, { requireSubdireccion: foraneo });
+    const whoNorm = personKey(who);
+    const samePersonBothRoles =
+      Boolean(whoNorm) &&
+      whoNorm === personKey(item?.gerenteTerritorial) &&
+      whoNorm === personKey(item?.territorioGerente);
+
+    if (aceptar) {
+      if (level === "territorial") {
+        chain.territorial = who;
+        chain.regional = !foraneo && samePersonBothRoles ? who : "";
+        chain.subdireccion = "";
+      } else if (level === "regional") {
+        if (!chain.territorial && chain.legacy) chain.territorial = "Previa";
+        if (!chain.territorial && samePersonBothRoles) chain.territorial = who;
+        chain.regional = who;
+        chain.subdireccion = "";
+      } else if (level === "subdireccion") {
+        chain.subdireccion = who;
+      }
+    } else if (level === "territorial") {
+      chain.territorial = "";
+      chain.regional = "";
+      chain.subdireccion = "";
+    } else if (level === "regional") {
+      chain.regional = "";
+      chain.subdireccion = "";
+      if (samePersonBothRoles) chain.territorial = "";
+    } else if (level === "subdireccion") {
+      chain.subdireccion = "";
     }
-    if (!chain.territorial) return "Pendiente: gerente territorial";
-    if (!chain.regional) return "Pendiente: gerente regional";
-    if (foraneo && !chain.subdireccion) return "Pendiente: subdirección";
-    return "Pendiente de autorización";
+    return formatLocalAuthChain(chain, { requireSubdireccion: foraneo });
   }
 
   function authStepsHtml(item) {
@@ -563,7 +619,7 @@
             (step) => `
           <p class="auth-chain-step${step.value ? " is-on" : ""}">
             <strong>${escapeHtml(step.label)}</strong>
-            <span>${step.value ? escapeHtml(step.value) : "Pendiente"}</span>
+            <span>${step.value ? `Autorizado · ${escapeHtml(step.value)}` : "Sin autorizar"}</span>
           </p>`,
           )
           .join("")}
@@ -1778,7 +1834,11 @@
                 ${
                   isAuthorized(item)
                     ? `<p class="card-auth">${escapeHtml(authStatusLabel(item))}</p>`
-                    : `<p class="card-auth${isRejected(item) ? " is-rejected" : " is-pending"}">${escapeHtml(authStatusLabel(item))}</p>`
+                    : isRejected(item)
+                      ? `<p class="card-auth is-rejected">${escapeHtml(authStatusLabel(item))}</p>`
+                      : String(item?.autorizada || "").trim()
+                        ? `<p class="card-auth is-partial">${escapeHtml(authStatusLabel(item))}</p>`
+                        : `<p class="card-auth is-pending">${escapeHtml(authStatusLabel(item))}</p>`
                 }
                 ${
                   item.faltanteCliente && (session?.seesAll || materialKind(item) === "rotulacion")
@@ -1947,7 +2007,7 @@
     if (!item || !session?.canAuthorize || !item.enMiZona) return;
     if (!chainAuthAction(item)) return;
     const previous = item.autorizada || "";
-    item.autorizada = aceptar ? "Autorizada" : "";
+    item.autorizada = optimisticAutorizada(item, aceptar);
     renderList();
     renderDetail();
     try {
