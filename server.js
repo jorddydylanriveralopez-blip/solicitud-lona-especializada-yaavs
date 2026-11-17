@@ -794,6 +794,70 @@ function formatCentroAuthChain(steps) {
   return formatAuthChain(steps, { requireSubdireccion: false });
 }
 
+/** Formato viejo sin T:/R:/S: — hay que migrarlo para que el tablero no muestre "Sin autorizar". */
+function needsAutorizadaNormalize(raw) {
+  const text = String(raw || "").trim();
+  if (!text || /^rechazada\b/i.test(text)) return false;
+  if (/\bT:/.test(text) || /\bR:/.test(text) || /\bS:/.test(text) || /Territorial\s*·/i.test(text)) {
+    return false;
+  }
+  return /^autorizada\b/i.test(text);
+}
+
+/** Siempre guardar cadena T/R(/S). Nunca volver a persistir solo "Autorizada" / "Autorizada · Nombre". */
+function normalizeAutorizadaValue(raw, { foraneo = false } = {}) {
+  const text = String(raw || "").trim();
+  if (!needsAutorizadaNormalize(text)) return text;
+  const who = legacyAuthorFromAutorizada(text) || "Previa";
+  const steps = {
+    territorial: who,
+    regional: who,
+    subdireccion: foraneo ? who : "",
+  };
+  return foraneo ? formatForaneoAuthChain(steps) : formatCentroAuthChain(steps);
+}
+
+const migratedAutorizadaKeys = new Set();
+
+function persistNormalizedAutorizada(item, next) {
+  const id = String(item?.id || "").trim();
+  const folio = String(item?.folio || "").trim();
+  const key = id || folio;
+  if (!key || !next || migratedAutorizadaKeys.has(key)) return;
+  migratedAutorizadaKeys.add(key);
+
+  const list = readResponses();
+  let changedLocal = false;
+  for (const entry of list) {
+    if ((id && entry.id === id) || (folio && entry.folio === folio) || entry.folio === id) {
+      entry.answers = entry.answers && typeof entry.answers === "object" ? entry.answers : {};
+      entry.answers.autorizada = next;
+      changedLocal = true;
+    }
+  }
+  if (changedLocal) writeResponses(list);
+  patchSheetAutorizada(id, folio, next);
+  if (SHEETS_WEBHOOK_URL) {
+    postToSheetsRaw(JSON.stringify({ action: "setAutorizada", id, folio, autorizada: next })).catch(
+      () => {},
+    );
+  }
+}
+
+function queueAutorizadaMigrations(items) {
+  for (const item of items || []) {
+    const raw = String(item?.autorizada || "").trim();
+    if (!needsAutorizadaNormalize(raw)) continue;
+    const next = normalizeAutorizadaValue(raw, { foraneo: isForaneoItem(item) });
+    if (!next || next === raw) continue;
+    item.autorizada = next;
+    try {
+      persistNormalizedAutorizada(item, next);
+    } catch (_) {}
+  }
+  return items;
+}
+
 function isItemAuthorized(item) {
   if (isForaneoItem(item)) {
     return parseForaneoAuthChain(item?.autorizada).complete;
@@ -2197,14 +2261,18 @@ async function boardItems() {
   const local = withoutDeletedResponses(sortedItems());
   const sheets = await fetchSheetsItems();
   if (!sheets) {
+    queueAutorizadaMigrations(local);
     return {
       items: local,
       source: "local",
       sheetsError: sheetsListCache.error || null,
     };
   }
+  const items = mergeBoardItems(local, withoutDeletedResponses(sheets));
+  // Convierte "Autorizada" legado → T:/R: en memoria y lo persiste una vez (local + Sheets).
+  queueAutorizadaMigrations(items);
   return {
-    items: mergeBoardItems(local, withoutDeletedResponses(sheets)),
+    items,
     source: "sheets+local",
     sheetsError: sheetsListCache.error || null,
   };
@@ -2849,7 +2917,14 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
     }
     autorizada = foraneo ? formatForaneoAuthChain(chain) : formatCentroAuthChain(chain);
   } else {
-    autorizada = aceptar ? `Autorizada · ${who}` : "";
+    // Nunca guardar "Autorizada · Nombre" sin T:/R: — rompe los pasos del tablero.
+    autorizada = aceptar
+      ? formatCentroAuthChain({ territorial: who, regional: who, subdireccion: "" })
+      : "";
+  }
+  // Si venía legado u otro valor raro, forzar formato de cadena.
+  if (autorizada) {
+    autorizada = normalizeAutorizadaValue(autorizada, { foraneo }) || autorizada;
   }
 
   let folio = "";
