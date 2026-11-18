@@ -292,8 +292,11 @@ const BOARD_ROLES = {
     zonaFilter: "centro",
     authorizeLevel: "regional",
     // Territoriales a su cargo: Vazquez Hernandez, Garcia Aguilar y Vazquez Aguila.
+    // Alias: Totocintle (typo) y "Vacante Territorial Centro" (dato legado en Sheets/PDV).
     zoneNames: [
       "Jesus Castaneda Totozintle",
+      "Jesus Castaneda Totocintle",
+      "Vacante Territorial Centro",
       "Luis Eduardo Vazquez Hernandez",
       "Juan Fernando Garcia Aguilar",
       "Manuel Vazquez Aguila",
@@ -720,6 +723,36 @@ function isVacantTerritorialName(value) {
   return personName(value).includes("vacante");
 }
 
+const CASTANEDA_TEAM = [
+  "Luis Eduardo Vazquez Hernandez",
+  "Juan Fernando Garcia Aguilar",
+  "Manuel Vazquez Aguila",
+].map(personName);
+
+/** Identidad del regional del rol (incl. alias legado Vacante/Totocintle para Castañeda). */
+function isRoleRegionalIdentity(role, value) {
+  const v = personName(value);
+  if (!v) return false;
+  const who = personName(authorName(role));
+  if (who && v === who) return true;
+  if (who.includes("castaneda")) {
+    if (v.includes("totocintle")) return true;
+    if (v.includes("vacante") && v.includes("centro")) return true;
+  }
+  return false;
+}
+
+/** Corrige regional legado "Vacante Territorial Centro" → Castañeda cuando el territorial es de su equipo. */
+function normalizeCastanedaRegional(item) {
+  if (!item || typeof item !== "object") return item;
+  const territorial = personName(item.gerenteTerritorial);
+  const regional = personName(item.territorioGerente);
+  if (!CASTANEDA_TEAM.includes(territorial)) return item;
+  if (!(regional.includes("vacante") || regional.includes("totocintle") || !regional)) return item;
+  if (personName(item.territorioGerente) === personName("Jesus Castaneda Totozintle")) return item;
+  return { ...item, territorioGerente: "Jesus Castaneda Totozintle" };
+}
+
 function isForaneoZona(value) {
   return String(value || "")
     .normalize("NFD")
@@ -998,6 +1031,7 @@ function itemInAuthorizeZone(role, item) {
     return names.some((name) => name === territorial);
   }
   if (level === "regional" && zona === "centro") {
+    if (isRoleRegionalIdentity(role, item.territorioGerente || answers.territorioGerente)) return true;
     return names.some((name) => name === regional || name === territorial);
   }
   if (names.some((name) => name.includes("henonin")) && zona === "foraneo") return true;
@@ -1026,11 +1060,12 @@ function scopeItems(items, role) {
     list = list.filter((item) => itemMatchesZonaFilter(role, item));
   }
   return list.map((item) => {
-    const zona = resolvedZonaComercial(item);
+    const normalized = normalizeCastanedaRegional(item);
+    const zona = resolvedZonaComercial(normalized);
     return {
-      ...item,
-      zonaComercial: item.zonaComercial || (zona === "foraneo" ? "Foráneo" : "Centro"),
-      enMiZona: itemInAuthorizeZone(role, item),
+      ...normalized,
+      zonaComercial: normalized.zonaComercial || (zona === "foraneo" ? "Foráneo" : "Centro"),
+      enMiZona: itemInAuthorizeZone(role, normalized),
     };
   });
 }
@@ -2953,12 +2988,12 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
   const answersRegional = personName(zoneItem.territorioGerente);
   const whoNorm = personName(who);
   const samePersonBothRoles = Boolean(whoNorm && whoNorm === answersTerritorial && whoNorm === answersRegional);
-  // Territorial vacante: el regional de esa zona cubre T + R.
+  // Territorial vacante (o regional legado vacante de Castañeda): el regional cubre T + R.
   const coversVacantTerritorial =
     !foraneo &&
     level === "regional" &&
     isVacantTerritorialName(zoneItem.gerenteTerritorial) &&
-    Boolean(whoNorm && whoNorm === answersRegional);
+    isRoleRegionalIdentity(req.boardRole, zoneItem.territorioGerente);
   const canCoverBothRoles = samePersonBothRoles || coversVacantTerritorial;
   const canChain =
     (foraneo && (level === "territorial" || level === "regional" || level === "subdireccion")) ||

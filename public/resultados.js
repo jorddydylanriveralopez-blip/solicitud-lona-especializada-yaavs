@@ -514,12 +514,17 @@
       Boolean(who) &&
       who === personKey(item?.gerenteTerritorial) &&
       who === personKey(item?.territorioGerente);
+    const regionalKey = personKey(item?.territorioGerente);
+    const isCastanedaRegional =
+      Boolean(who) && who.includes("castaneda") &&
+      (regionalKey === who ||
+        regionalKey.includes("totocintle") ||
+        (regionalKey.includes("vacante") && regionalKey.includes("centro")));
     const coversVacantTerritorial =
       !foraneo &&
       level === "regional" &&
       personKey(item?.gerenteTerritorial).includes("vacante") &&
-      Boolean(who) &&
-      who === personKey(item?.territorioGerente);
+      (who === regionalKey || isCastanedaRegional);
     const canCoverBothRoles = samePersonBothRoles || coversVacantTerritorial;
 
     if (level === "territorial") {
@@ -608,12 +613,18 @@
       Boolean(whoNorm) &&
       whoNorm === personKey(item?.gerenteTerritorial) &&
       whoNorm === personKey(item?.territorioGerente);
+    const regionalKey = personKey(item?.territorioGerente);
+    const isCastanedaRegional =
+      Boolean(whoNorm) &&
+      whoNorm.includes("castaneda") &&
+      (regionalKey === whoNorm ||
+        regionalKey.includes("totocintle") ||
+        (regionalKey.includes("vacante") && regionalKey.includes("centro")));
     const coversVacantTerritorial =
       !foraneo &&
       level === "regional" &&
       personKey(item?.gerenteTerritorial).includes("vacante") &&
-      Boolean(whoNorm) &&
-      whoNorm === personKey(item?.territorioGerente);
+      (whoNorm === regionalKey || isCastanedaRegional);
     const canCoverBothRoles = samePersonBothRoles || coversVacantTerritorial;
 
     if (aceptar) {
