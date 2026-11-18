@@ -133,22 +133,24 @@
   }
 
 
-  // Matriz ventas (ACTUALIZADO OCT 2026 - NACIONAL / BBDD): [ejecutivo, gerente territorial, gerente regional]
+  // Matriz ventas Centro: [ejecutivo, gerente territorial, gerente regional]
+  // Reynoso (regional) → Ugalde, Redonda, Erick Perez y Vacante Territorial.
+  const VACANTE_TERRITORIAL = "Vacante Territorial";
   const MATRIZ_VENTAS = [
     ["Abel Rosas Diaz", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
     ["Angel Odiseo Salvatierra Fragoso", "Juan Fernando Garcia Aguilar", "Jesus Castaneda Totozintle"],
-    ["Carlos Alberto Silva Razo", "Rodolfo Reynoso Castelan", "Rodolfo Reynoso Castelan"],
+    ["Carlos Alberto Silva Razo", VACANTE_TERRITORIAL, "Rodolfo Reynoso Castelan"],
     ["Carlos Ignacio Salazar Leyva", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
-    ["Celso Hernandez Hernandez", "Rodolfo Reynoso Castelan", "Rodolfo Reynoso Castelan"],
+    ["Celso Hernandez Hernandez", VACANTE_TERRITORIAL, "Rodolfo Reynoso Castelan"],
     ["Cesar Alberto Banderilla Gonzalez", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
     ["Christian Alan Ramirez Meza", "Juan Fernando Garcia Aguilar", "Jesus Castaneda Totozintle"],
     ["Daniel De Jesus Chapa Mendoza", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
     ["Daniel Perez De Jesus", "Juan Fernando Garcia Aguilar", "Jesus Castaneda Totozintle"],
     ["David Santiago Enciso Velazquez", "Luis Daniel Ugalde Welsh", "Rodolfo Reynoso Castelan"],
     ["Diego Fernando Solorio Anaya", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],
-    ["Edgar David Reyes Plata", "Rodolfo Reynoso Castelan", "Rodolfo Reynoso Castelan"],
+    ["Edgar David Reyes Plata", VACANTE_TERRITORIAL, "Rodolfo Reynoso Castelan"],
     ["Emerson Mauricio Cordova Lopez", "Luis Daniel Ugalde Welsh", "Rodolfo Reynoso Castelan"],
-    ["Enrique Robledo Montero", "Rodolfo Reynoso Castelan", "Rodolfo Reynoso Castelan"],
+    ["Enrique Robledo Montero", VACANTE_TERRITORIAL, "Rodolfo Reynoso Castelan"],
     ["Esteban Gomez Luis", "Juan Fernando Garcia Aguilar", "Jesus Castaneda Totozintle"],
     ["Fernando Jimenez Vazquez", "Luis Eduardo Vazquez Hernandez", "Jesus Castaneda Totozintle"],
     ["Fernando Noria Hernandez", "Luis Eduardo Vazquez Hernandez", "Jesus Castaneda Totozintle"],

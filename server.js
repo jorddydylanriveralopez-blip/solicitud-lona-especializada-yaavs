@@ -274,7 +274,14 @@ const BOARD_ROLES = {
     canDelete: false,
     zonaFilter: "centro",
     authorizeLevel: "regional",
-    zoneNames: ["Rodolfo Reynoso Castelan"],
+    // Territoriales a su cargo: Ugalde, Redonda, Erick Perez y 1 vacante.
+    zoneNames: [
+      "Rodolfo Reynoso Castelan",
+      "Luis Daniel Ugalde Welsh",
+      "Jesus Redonda Perez",
+      "Erick Perez Galindo",
+      "Vacante Territorial",
+    ],
     hash: "772ea1eeec4d3bb0101eb0819b482327:f2f35e4070a6cef10e05dfa320cc3c123c4d738c7f8d3d91ffc94471a654b248",
   },
   "gerente-castaneda": {
@@ -701,6 +708,10 @@ function personName(value) {
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function isVacantTerritorialName(value) {
+  return personName(value).includes("vacante");
 }
 
 function isForaneoZona(value) {
@@ -2936,6 +2947,13 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
   const answersRegional = personName(zoneItem.territorioGerente);
   const whoNorm = personName(who);
   const samePersonBothRoles = Boolean(whoNorm && whoNorm === answersTerritorial && whoNorm === answersRegional);
+  // Territorial vacante: el regional de esa zona cubre T + R.
+  const coversVacantTerritorial =
+    !foraneo &&
+    level === "regional" &&
+    isVacantTerritorialName(zoneItem.gerenteTerritorial) &&
+    Boolean(whoNorm && whoNorm === answersRegional);
+  const canCoverBothRoles = samePersonBothRoles || coversVacantTerritorial;
   const canChain =
     (foraneo && (level === "territorial" || level === "regional" || level === "subdireccion")) ||
     (!foraneo && (level === "territorial" || level === "regional"));
@@ -2961,14 +2979,14 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
         chain.regional = !foraneo && samePersonBothRoles ? who : "";
         chain.subdireccion = "";
       } else if (level === "regional") {
-        if (!chain.territorial && !chain.legacy && !samePersonBothRoles) {
+        if (!chain.territorial && !chain.legacy && !canCoverBothRoles) {
           return res.status(403).json({
             ok: false,
             error: "Primero debe autorizar el gerente territorial",
           });
         }
         if (!chain.territorial && chain.legacy) chain.territorial = "Previa";
-        if (!chain.territorial && samePersonBothRoles) chain.territorial = who;
+        if (!chain.territorial && canCoverBothRoles) chain.territorial = who;
         chain.regional = who;
         chain.subdireccion = "";
       } else if (level === "subdireccion") {
@@ -2987,7 +3005,7 @@ app.post("/api/responses/:id/autorizacion", requireBoard, async (req, res) => {
     } else if (level === "regional") {
       chain.regional = "";
       chain.subdireccion = "";
-      if (samePersonBothRoles) chain.territorial = "";
+      if (canCoverBothRoles) chain.territorial = "";
     } else if (level === "subdireccion") {
       chain.subdireccion = "";
     }

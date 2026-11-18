@@ -514,6 +514,13 @@
       Boolean(who) &&
       who === personKey(item?.gerenteTerritorial) &&
       who === personKey(item?.territorioGerente);
+    const coversVacantTerritorial =
+      !foraneo &&
+      level === "regional" &&
+      personKey(item?.gerenteTerritorial).includes("vacante") &&
+      Boolean(who) &&
+      who === personKey(item?.territorioGerente);
+    const canCoverBothRoles = samePersonBothRoles || coversVacantTerritorial;
 
     if (level === "territorial") {
       if (chain.territorial && !chain.regional && !chain.subdireccion) {
@@ -528,16 +535,18 @@
       return null;
     }
     if (level === "regional") {
-      if (!chain.territorial && !chain.legacy && !samePersonBothRoles) return null;
+      if (!chain.territorial && !chain.legacy && !canCoverBothRoles) return null;
       if (chain.regional && (!foraneo || !chain.subdireccion)) {
         return { aceptar: false, label: "Quitar autorización regional" };
       }
-      if ((chain.territorial || samePersonBothRoles || chain.legacy) && !chain.regional) {
+      if ((chain.territorial || canCoverBothRoles || chain.legacy) && !chain.regional) {
         return {
           aceptar: true,
           label:
-            !chain.territorial && samePersonBothRoles
-              ? "Autorizar (territorial + regional)"
+            !chain.territorial && canCoverBothRoles
+              ? coversVacantTerritorial
+                ? "Autorizar (vacante + regional)"
+                : "Autorizar (territorial + regional)"
               : "Autorizar (regional)",
         };
       }
@@ -599,6 +608,13 @@
       Boolean(whoNorm) &&
       whoNorm === personKey(item?.gerenteTerritorial) &&
       whoNorm === personKey(item?.territorioGerente);
+    const coversVacantTerritorial =
+      !foraneo &&
+      level === "regional" &&
+      personKey(item?.gerenteTerritorial).includes("vacante") &&
+      Boolean(whoNorm) &&
+      whoNorm === personKey(item?.territorioGerente);
+    const canCoverBothRoles = samePersonBothRoles || coversVacantTerritorial;
 
     if (aceptar) {
       if (level === "territorial") {
@@ -607,7 +623,7 @@
         chain.subdireccion = "";
       } else if (level === "regional") {
         if (!chain.territorial && chain.legacy) chain.territorial = "Previa";
-        if (!chain.territorial && samePersonBothRoles) chain.territorial = who;
+        if (!chain.territorial && canCoverBothRoles) chain.territorial = who;
         chain.regional = who;
         chain.subdireccion = "";
       } else if (level === "subdireccion") {
@@ -620,7 +636,7 @@
     } else if (level === "regional") {
       chain.regional = "";
       chain.subdireccion = "";
-      if (samePersonBothRoles) chain.territorial = "";
+      if (canCoverBothRoles) chain.territorial = "";
     } else if (level === "subdireccion") {
       chain.subdireccion = "";
     }
