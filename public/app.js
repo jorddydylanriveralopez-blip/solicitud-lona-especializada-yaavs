@@ -135,6 +135,7 @@
 
   // Matriz ventas Centro: [ejecutivo, gerente territorial, gerente regional]
   // Reynoso (regional) → Ugalde, Redonda, Erick Perez y Vacante Territorial.
+  // Castaneda (regional) → Luis Eduardo Vazquez, Juan Fernando Garcia y Manuel Vazquez.
   const VACANTE_TERRITORIAL = "Vacante Territorial";
   const MATRIZ_VENTAS = [
     ["Abel Rosas Diaz", "Jesus Redonda Perez", "Rodolfo Reynoso Castelan"],

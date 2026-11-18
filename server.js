@@ -291,7 +291,13 @@ const BOARD_ROLES = {
     canDelete: false,
     zonaFilter: "centro",
     authorizeLevel: "regional",
-    zoneNames: ["Jesus Castaneda Totozintle"],
+    // Territoriales a su cargo: Vazquez Hernandez, Garcia Aguilar y Vazquez Aguila.
+    zoneNames: [
+      "Jesus Castaneda Totozintle",
+      "Luis Eduardo Vazquez Hernandez",
+      "Juan Fernando Garcia Aguilar",
+      "Manuel Vazquez Aguila",
+    ],
     hash: "e3f88425cdf3cfb75f5e3669069b2c57:354e6a487550beeb90294679d04de782004d0d274af6828f071f2ee14a84fa69",
   },
   "gerente-ugalde": {
