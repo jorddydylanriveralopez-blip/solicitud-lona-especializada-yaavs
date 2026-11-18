@@ -102,7 +102,9 @@
   function activeEstados() {
     if (session?.canManageRotulacion && !session?.canManage) {
       if (materialFilter === "rotulacion") return ESTADOS_ROTULACION;
-      if (materialFilter === "lona" || materialFilter === "caballete") return ESTADOS;
+      if (materialFilter === "lona" || materialFilter === "toldo" || materialFilter === "caballete") {
+        return ESTADOS;
+      }
       return [...ESTADOS, ...ESTADOS_ROTULACION];
     }
     if (!session?.seesAll) return ESTADOS_ROTULACION;
@@ -137,7 +139,7 @@
 
   function supportsEvidencia(item) {
     const kind = materialKind(item);
-    return kind === "lona" || kind === "caballete" || kind === "rotulacion";
+    return kind === "lona" || kind === "toldo" || kind === "caballete" || kind === "rotulacion";
   }
 
   function evidenciaLabel(item) {
@@ -1104,10 +1106,7 @@
         (f) => f.key === "all" || f.key === "lona" || f.key === "rotulacion",
       );
     }
-    if (session?.canManageRotulacion && !session?.canManage) {
-      return MATERIAL_FILTERS.filter((f) => f.key !== "toldo");
-    }
-    // Todos los demás perfiles: filtros separados por material.
+    // Todos los demás perfiles (incl. mantenimiento): filtros separados por material.
     return MATERIAL_FILTERS;
   }
 

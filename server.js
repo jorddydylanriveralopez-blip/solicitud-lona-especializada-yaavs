@@ -699,7 +699,7 @@ function itemMaterialKind(item) {
 
 function canUploadEvidenciaItem(item) {
   const kind = itemMaterialKind(item);
-  return kind === "lona" || kind === "caballete" || kind === "rotulacion";
+  return kind === "lona" || kind === "toldo" || kind === "caballete" || kind === "rotulacion";
 }
 
 function evidenciaLabelForItem(item) {
@@ -1041,7 +1041,7 @@ function itemInAuthorizeZone(role, item) {
 function scopeItems(items, role) {
   let list;
   if (role?.canManageRotulacion) {
-    // Mantenimiento: lona, caballete y rotulación (activas y terminadas), Centro y Foráneo.
+    // Mantenimiento: lona, toldo, caballete y rotulación (activas y terminadas), Centro y Foráneo.
     list = (items || []).filter(canUploadEvidenciaItem).map((item) => ({
       ...item,
       faltanteCliente: isRotulacionItem(item) ? item.faltanteCliente || "" : "",
@@ -3337,7 +3337,7 @@ app.post("/api/responses/:id/evidencia-rotulacion", requireBoard, (req, res) => 
       if (!item || !canUploadEvidenciaItem(item)) {
         return res.status(404).json({
           ok: false,
-          error: "La evidencia se sube en lona, caballete o rotulación",
+          error: "La evidencia se sube en lona, toldo, caballete o rotulación",
         });
       }
 
@@ -3477,7 +3477,7 @@ app.delete("/api/responses/:id/evidencia-rotulacion", requireBoard, async (req, 
     if (!item || !canUploadEvidenciaItem(item)) {
       return res.status(404).json({
         ok: false,
-        error: "La evidencia se quita en lona, caballete o rotulación",
+        error: "La evidencia se quita en lona, toldo, caballete o rotulación",
       });
     }
 
