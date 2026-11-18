@@ -484,7 +484,7 @@ const BOARD_ROLES = {
     hash: "aadbf23f717aa5bbbab0bbadf9225cf5:7b48fc28f6b8b81b0a626686a2bd2d5f3c5f908134edc33b752f0b715870b937",
   },
 };
-const PRODUCCION_ESTADOS = ["En diseño", "En proceso", "En revisión", "Terminado"];
+const PRODUCCION_ESTADOS = ["En diseño", "En revisión", "En producción", "Terminado"];
 const ROTULACION_ESTADOS = [
   "Recibida",
   "Aprobado",
@@ -492,12 +492,17 @@ const ROTULACION_ESTADOS = [
   "Render concluido",
   "Rotulación terminada",
 ];
+const ESTADO_LABELS_V2_FLAG = path.join(dataDir, "estado-labels-v2.done");
+let estadoLabelsV2Done = null;
+const migratedEstadoKeys = new Set();
 
 function normalizeProduccionEstado(raw) {
   const value = String(raw || "").trim().toLowerCase();
   if (value === "en diseño" || value === "en diseno") return "En diseño";
-  if (value === "en proceso") return "En proceso";
+  // Legado: "En proceso" → nuevo segundo paso "En revisión"
+  if (value === "en proceso") return "En revisión";
   if (value === "en revisión" || value === "en revision") return "En revisión";
+  if (value === "en producción" || value === "en produccion") return "En producción";
   if (value === "terminado") return "Terminado";
   if (value === "recibida") return "Recibida";
   if (value === "aprobado" || value === "aprobada") return "Aprobado";
@@ -505,6 +510,74 @@ function normalizeProduccionEstado(raw) {
   if (value === "render concluido") return "Render concluido";
   if (value === "rotulación terminada" || value === "rotulacion terminada") return "Rotulación terminada";
   return "";
+}
+
+function isEstadoLabelsV2Done() {
+  if (estadoLabelsV2Done != null) return estadoLabelsV2Done;
+  try {
+    estadoLabelsV2Done = fs.existsSync(ESTADO_LABELS_V2_FLAG);
+  } catch (_) {
+    estadoLabelsV2Done = false;
+  }
+  return estadoLabelsV2Done;
+}
+
+function markEstadoLabelsV2Done() {
+  ensureStore();
+  try {
+    fs.writeFileSync(ESTADO_LABELS_V2_FLAG, new Date().toISOString(), "utf8");
+    estadoLabelsV2Done = true;
+  } catch (_) {}
+}
+
+/** Una vez: En revisión (viejo 3er paso) → En producción; En proceso → En revisión. */
+function remapEstadoForMigration(raw, { migrateOldRevision = false } = {}) {
+  const text = String(raw || "").trim();
+  if (!text) return "";
+  if (migrateOldRevision && /^en revisi[oó]n$/i.test(text)) return "En producción";
+  if (/^en proceso$/i.test(text)) return "En revisión";
+  return normalizeProduccionEstado(text) || text;
+}
+
+function persistNormalizedEstado(item, next) {
+  const id = String(item?.id || "").trim();
+  const folio = String(item?.folio || "").trim();
+  const key = id || folio;
+  if (!key || !next || migratedEstadoKeys.has(`estado:${key}`)) return;
+  migratedEstadoKeys.add(`estado:${key}`);
+
+  const list = readResponses();
+  let changedLocal = false;
+  for (const entry of list) {
+    if ((id && entry.id === id) || (folio && entry.folio === folio) || entry.folio === id) {
+      entry.answers = entry.answers && typeof entry.answers === "object" ? entry.answers : {};
+      entry.answers.estadoProduccion = next;
+      changedLocal = true;
+    }
+  }
+  if (changedLocal) writeResponses(list);
+  patchSheetEstado(id, folio, next);
+  if (SHEETS_WEBHOOK_URL) {
+    postToSheetsRaw(JSON.stringify({ action: "setEstado", id, folio, estado: next })).catch(() => {});
+  }
+}
+
+function queueEstadoLabelMigrations(items, { finalize = false } = {}) {
+  const migrateOldRevision = !isEstadoLabelsV2Done();
+  for (const item of items || []) {
+    if (isRotulacionItem(item)) continue;
+    const raw = String(item?.estadoProduccion || "").trim();
+    if (!raw) continue;
+    const next = remapEstadoForMigration(raw, { migrateOldRevision });
+    if (!next || next === raw) continue;
+    item.estadoProduccion = next;
+    try {
+      persistNormalizedEstado(item, next);
+    } catch (_) {}
+  }
+  // Solo cerrar la migración cuando ya vino Sheets (lista completa).
+  if (migrateOldRevision && finalize) markEstadoLabelsV2Done();
+  return items;
 }
 
 function estadosForItem(item) {
@@ -2262,6 +2335,7 @@ async function boardItems() {
   const sheets = await fetchSheetsItems();
   if (!sheets) {
     queueAutorizadaMigrations(local);
+    queueEstadoLabelMigrations(local, { finalize: false });
     return {
       items: local,
       source: "local",
@@ -2271,6 +2345,8 @@ async function boardItems() {
   const items = mergeBoardItems(local, withoutDeletedResponses(sheets));
   // Convierte "Autorizada" legado → T:/R: en memoria y lo persiste una vez (local + Sheets).
   queueAutorizadaMigrations(items);
+  // Lonas/toldos/caballetes: En proceso/En revisión viejos → En revisión/En producción.
+  queueEstadoLabelMigrations(items, { finalize: true });
   return {
     items,
     source: "sheets+local",

@@ -727,8 +727,10 @@ function rowFromPayload_(data) {
 function normalizeEstado_(raw) {
   var value = String(raw || "").trim().toLowerCase();
   if (value === "en diseño" || value === "en diseno") return "En diseño";
-  if (value === "en proceso") return "En proceso";
+  // Legado: "En proceso" → "En revisión"
+  if (value === "en proceso") return "En revisión";
   if (value === "en revisión" || value === "en revision") return "En revisión";
+  if (value === "en producción" || value === "en produccion") return "En producción";
   if (value === "terminado") return "Terminado";
   if (value === "recibida") return "Recibida";
   if (value === "aprobado" || value === "aprobada") return "Aprobado";

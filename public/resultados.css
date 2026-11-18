@@ -1715,6 +1715,7 @@ body.dashboard-foraneo .primary-link {
 .status-filter[data-tone="diseno"].is-active { background: #2f6fed; }
 .status-filter[data-tone="proceso"].is-active { background: #e0a100; color: #1a1a1a; }
 .status-filter[data-tone="revision"].is-active { background: #ef7d32; }
+.status-filter[data-tone="produccion"].is-active { background: #ef7d32; }
 .status-filter[data-tone="terminado"].is-active { background: #1f9d55; }
 
 .status-filter.is-active .status-light {
@@ -1763,7 +1764,11 @@ body.dashboard-foraneo .primary-link {
 .status-filter[data-tone="revision"] .status-light,
 .semaphore-choice[data-tone="revision"] .status-light,
 .semaphore-dot[data-tone="revision"],
-.estado-pill[data-tone="revision"] .status-light {
+.estado-pill[data-tone="revision"] .status-light,
+.status-filter[data-tone="produccion"] .status-light,
+.semaphore-choice[data-tone="produccion"] .status-light,
+.semaphore-dot[data-tone="produccion"],
+.estado-pill[data-tone="produccion"] .status-light {
   background: #ef7d32;
 }
 
@@ -2063,7 +2068,8 @@ body.dashboard-foraneo .primary-link {
   border-color: transparent;
 }
 
-.semaphore-choice[data-tone="revision"].is-on {
+.semaphore-choice[data-tone="revision"].is-on,
+.semaphore-choice[data-tone="produccion"].is-on {
   background: #ef7d32;
   color: #fff;
   border-color: transparent;

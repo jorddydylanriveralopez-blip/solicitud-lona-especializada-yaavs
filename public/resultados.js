@@ -37,8 +37,8 @@
 
   const ESTADOS = [
     { key: "En diseño", tone: "diseno" },
-    { key: "En proceso", tone: "proceso" },
-    { key: "En revisión", tone: "revision" },
+    { key: "En revisión", tone: "proceso" },
+    { key: "En producción", tone: "produccion" },
     { key: "Terminado", tone: "terminado" },
   ];
   const ESTADOS_ROTULACION = [
@@ -50,9 +50,10 @@
   ];
   const ESTADO_RANK = {
     "En diseño": 1,
-    "En proceso": 2,
-    "En revisión": 3,
+    "En revisión": 2,
+    "En producción": 3,
     Terminado: 4,
+    "En proceso": 2, // legado
     Recibida: 1,
     Aprobado: 2,
     "Diseño de render": 3,
@@ -63,8 +64,10 @@
   function normalizeEstado(raw) {
     const value = String(raw || "").trim().toLowerCase();
     if (value === "en diseño" || value === "en diseno") return "En diseño";
-    if (value === "en proceso") return "En proceso";
+    // Legado: "En proceso" → "En revisión"
+    if (value === "en proceso") return "En revisión";
     if (value === "en revisión" || value === "en revision") return "En revisión";
+    if (value === "en producción" || value === "en produccion") return "En producción";
     if (value === "terminado") return "Terminado";
     if (value === "recibida") return "Recibida";
     if (value === "aprobado" || value === "aprobada") return "Aprobado";
@@ -79,7 +82,9 @@
     if (ESTADOS_ROTULACION.some((item) => item.key === estado)) return estado;
     // Rotulaciones viejas usaban el semáforo de producción.
     if (estado === "En diseño") return "Diseño de render";
-    if (estado === "En proceso" || estado === "En revisión") return "Render concluido";
+    if (estado === "En proceso" || estado === "En revisión" || estado === "En producción") {
+      return "Render concluido";
+    }
     if (estado === "Terminado") return "Rotulación terminada";
     return estado;
   }
