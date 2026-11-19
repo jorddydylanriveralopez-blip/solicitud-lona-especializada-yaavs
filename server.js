@@ -440,16 +440,6 @@ const BOARD_ROLES = {
     zoneNames: ["Leon Perez Zamudio"],
     hash: "a9a49bd78238eebff2791b892762c88c:c30e56ac8069ea6714a9f14b0f1d43589728c7e35b660f28b82aa1a19ee42974",
   },
-  "foraneo-marco": {
-    label: "Gerente territorial · Marco Antonio Calderon Martinez",
-    seesAll: true,
-    canManage: false,
-    canDelete: false,
-    zonaFilter: "foraneo",
-    authorizeLevel: "territorial",
-    zoneNames: ["Marco Antonio Calderon Martinez"],
-    hash: "fed9019a8cc2a5474dee74fa78d21e90:bef590296c6837531f30af1342099fa1a58606a5fdf91486148dc4b9b92d9b1a",
-  },
   "foraneo-olyver": {
     label: "Gerente territorial · Olyver Alain Guerrero Lozano",
     seesAll: true,
